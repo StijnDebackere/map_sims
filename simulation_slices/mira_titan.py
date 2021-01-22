@@ -70,10 +70,18 @@ def save_slice_data(
 
     # create hdf5 file and generate the required datasets
     h5file = h5py.File(str(filename), mode='a')
+
+    h5file.attrs['slice_axis'] = slice_axis
+    h5file.attrs['slice_size'] = slice_size
+    h5file.attrs['box_size'] = box_size
+
+
     for i in range(num_slices):
         h5file.create_dataset(f'{i}/coords', shape=(3, 0), dtype=float, maxshape=(3, max_size))
         h5file.create_dataset(f'{i}/ids', shape=(0,), dtype=int, maxshape=(max_size,))
 
+    # now loop over all snapshot files and add their particle info
+    # to the correct slice
     for num in tqdm(
             extractor.datatype_info[datatype]['nums'],
             desc='Slicing particle files'):
@@ -107,7 +115,7 @@ def save_slice_data(
                 dset_coords.resize(
                     dset_coords.shape[-1] + coord[0].shape[-1], axis=1)
                 dset_coords[..., -coord[0].shape[-1]:] = coord[0]
-                
+
                 dset_ids = h5file[f'{idx}/ids']
                 dset_ids.resize(
                     dset_ids.shape[-1] + i[0].shape[-1], axis=0)
