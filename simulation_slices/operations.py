@@ -63,7 +63,7 @@ def slice_particle_list(
     slice_size = util.check_slice_size(slice_size=slice_size, box_size=box_size)
     num_slices = box_size // slice_size
 
-    slice_idx = get_coord_slices(
+    slice_idx = get_coords_slices(
         coords=properties['coords'], box_size=box_size,
         slice_size=slice_size, slice_axis=slice_axis
     )
