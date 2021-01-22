@@ -41,16 +41,16 @@ def save_slice_data(
     saves particles for each slice in the Particles/slices/
     directory
 
-    '''
-    filenames = {
-        0: 'x_slices.hdf5',
-        1: 'y_slices.hdf5',
-        2: 'z_slices.hdf5'
-    }
-
+    """
     slice_axis = util.check_slice_axis(slice_axis)
     slice_size = util.check_slice_size(slice_size=slice_size, box_size=box_size)
     num_slices = box_size // slice_size
+
+    filenames = {
+        0: f'x_slice_size_{util.num_to_str(slice_size)}.hdf5',
+        1: f'y_slice_size_{util.num_to_str(slice_size)}.hdf5',
+        2: f'z_slice_size_{util.num_to_str(slice_size)}.hdf5'
+    }
 
     extractor = ExtractMiraTitan(
         base_dir=base_dir, grid=grid, box_size=box_size, z=z)
