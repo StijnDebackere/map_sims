@@ -85,3 +85,33 @@ def check_path(path):
     if not type(path) is pathlib.PosixPath:
         return Path(path)
     return path
+
+
+def num_to_str(num, unit=None, log=False, precision=3):
+    """Convert num to a formatted string with precision, converted to
+    unit and with all '.' replaced by 'p'."""
+    units = {
+        None: 1,
+        'd': 10,
+        'c': 100,
+        'k': 1000,
+        'M': 1e6,
+        'G': 1e9,
+        'T': 1e12,
+        'P': 1e15
+    }
+    if unit not in units.keys():
+        raise ValueError(f'unit should be in {units.keys()}')
+    if log:
+        n = np.log10(num) / units[unit]
+    else:
+        n = num / units[unit]
+
+    if n % 1 == 0:
+        significand = ''
+    else:
+        significand = f'p{format(n % 1, f".{precision}f").replace("0.", "")}'
+
+    res = f'{format(n // 1, ".0f")}{significand}{unit}'.replace('None', '')
+
+    return res
