@@ -3,8 +3,8 @@ import numpy as np
 import simulation_slices.utilities as util
 
 
-def get_coord_slices(coords, box_size, slice_size, slice_axis):
-    '''For the list of coords in box of box_size, recover the slice_idx
+def get_coords_slices(coords, box_size, slice_size, slice_axis):
+    """For the list of coords in box of box_size, recover the slice_idx
     for the given slice_size and slice_axis.
 
     Parameters
@@ -23,14 +23,18 @@ def get_coord_slices(coords, box_size, slice_size, slice_axis):
     slice_idx : (N,) array
         index of the slice for each coordinate
 
-    '''
+    """
     slice_idx = np.floor(coords[slice_axis] / slice_size).astype(int)
     return slice_idx
 
 
+def pixelate_particle_list(
+        ):
+
+
 def slice_particle_list(
         box_size, slice_size, slice_axis, properties):
-    '''Slice the given list of (x, y, z) coordinates in slices of
+    """Slice the given list of (x, y, z) coordinates in slices of
     specified size along axis. Save the properties particle
     information as well.
 
@@ -53,7 +57,7 @@ def slice_particle_list(
                    to each slice
         **extra_properties : similar lists with other properties
 
-    '''
+    """
     # ensure all passed arguments match our expectations
     slice_axis = util.check_slice_axis(slice_axis)
     slice_size = util.check_slice_size(slice_size=slice_size, box_size=box_size)

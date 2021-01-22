@@ -31,7 +31,7 @@ def time_this(func):
 
 
 def check_coords(coords):
-    '''Check whether coordinates has shape (3, N).'''
+    """Check whether coordinates has shape (3, N)."""
     coords = np.atleast_2d(coords)
     if len(coords.shape) != 2:
         raise ValueError('coords needs to be 2D array')
@@ -41,7 +41,7 @@ def check_coords(coords):
 
 
 def check_properties(properties, N):
-    '''Check whether the properties kwargs are all either (..., N) or (1,).'''
+    """Check whether the properties kwargs are all either (..., N) or (1,)."""
     invalid_properties = []
     valid_properties = {}
     for k, v in properties.items():
@@ -60,14 +60,14 @@ def check_properties(properties, N):
 
 
 def check_slice_axis(slice_axis):
-    '''Check whether slice_axis is either 0, 1, or 2.'''
+    """Check whether slice_axis is either 0, 1, or 2."""
     if slice_axis not in [0, 1, 2]:
         raise ValueError('slice_axis should be either 0, 1, or 2')
     return slice_axis
 
 
 def check_slice_size(slice_size, box_size):
-    '''Ensure that slice_size evenly divides box_size.'''
+    """Ensure that slice_size evenly divides box_size."""
     if not box_size / slice_size % 1 == 0:
         new_slice_size = box_size / (box_size // slice_size)
         print(
@@ -81,7 +81,7 @@ def check_slice_size(slice_size, box_size):
 
 
 def check_path(path):
-    '''Ensure path is a pathlib.PosixPath.'''
+    """Ensure path is a pathlib.PosixPath."""
     if not type(path) is pathlib.PosixPath:
         return Path(path)
     return path

@@ -17,7 +17,7 @@ import pdb
 def save_slice_data(
         base_dir, grid, box_size, z, datatype='snap',
         slice_axis=0, slice_size=2):
-    '''For the simulation in base_dir with the specified grid, box_size and z,
+    """For the simulation in base_dir with the specified grid, box_size and z,
     slice the particle data along the x, y, and z directions. Slices
     are saved in the Particles directory.
 
