@@ -1,6 +1,4 @@
-import multiprocessing as mp
 from pathlib import Path
-import time
 
 import h5py
 from mira_titan import ExtractMiraTitan
