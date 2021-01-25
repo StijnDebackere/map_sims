@@ -53,7 +53,7 @@ def save_slice_data(
     }
 
 
-    N_tot = snap_info.num_part_tot
+    N_tot = sum(snap_info.num_part_tot)
     # crude estimate of maximum number of particles in each slice
     max_size = int(2 * N_tot / num_slices)
 
