@@ -28,10 +28,6 @@ def get_coords_slices(coords, box_size, slice_size, slice_axis):
     return slice_idx
 
 
-def pixelate_particle_list(
-        ):
-
-
 def slice_particle_list(
         box_size, slice_size, slice_axis, properties):
     """Slice the given list of (x, y, z) coordinates in slices of
