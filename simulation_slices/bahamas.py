@@ -60,8 +60,10 @@ def save_slice_data(
     # get the filename to save to
     if save_dir is None:
         save_dir = util.check_path(snap_info.filename.parent) / 'slices'
-        save_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        save_dir = util.check_path(save_dir) / 'slices'
 
+    save_dir.mkdir(parents=True, exist_ok=True)
     filename = save_dir / filenames[slice_axis]
 
     # ensure that we start with a clean slate
