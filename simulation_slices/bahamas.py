@@ -28,7 +28,7 @@ def save_slice_data(
     slice_axis : int
         axis to slice along [x=0, y=1, z=2]
     slice_size : float
-        thickness in Mpc of the slices
+        slice thickness in units of box_size
     save_dir : str or None
         location to save to, defaults to snapshot_xxx/slices/
 
@@ -108,7 +108,7 @@ def save_slice_data(
 
     # now loop over all snapshot files and add their particle info
     # to the correct slice
-    for num in tqdm(
+    for file_num in tqdm(
             range(snap_info.num_files),
             desc='Slicing particle files'):
         # cycle through the different particle types
@@ -116,12 +116,12 @@ def save_slice_data(
             # need to put particles along columns for hdf5 optimal usage
             # read everything in cMpc / h
             coords = snap_info.read_single_file(
-                i=num, var=f'PartType{parttype}/Coordinates',
+                i=file_num, var=f'PartType{parttype}/Coordinates',
                 gadgetunits=True, verbose=False, reshape=True,
             ).T
 
             ids = snap_info.read_single_file(
-                i=num, var=f'PartType{parttype}/ParticleIDs',
+                i=file_num, var=f'PartType{parttype}/ParticleIDs',
                 gadgetunits=True, verbose=False, reshape=True,
             )
 
@@ -129,7 +129,7 @@ def save_slice_data(
             if parttype != 1:
                 # these masses are in solar masses, h has been filled in!
                 masses = snap_info.read_single_file(
-                    i=num, var=f'PartType{parttype}/Mass',
+                    i=file_num, var=f'PartType{parttype}/Mass',
                     gadgetunits=True, verbose=False, reshape=True,
                 )
             else:
