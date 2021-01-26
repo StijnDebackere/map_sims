@@ -148,7 +148,7 @@ def save_slice_data(
             )
 
             # append results to hdf5 file
-            for idx, (coord, i) in enumerate(zip(
+            for idx, (coord, i, masses) in enumerate(zip(
                     slice_dict['coords'],
                     slice_dict['ids'],
                     slice_dict['masses'])):
@@ -162,8 +162,8 @@ def save_slice_data(
                     # add masses
                     dset_masses = h5file[f'{idx}/PartType{parttype}/Mass']
                     dset_masses.resize(
-                        dset_masses.shape[-1] + i[0].shape[-1], axis=0)
-                    dset_masses[..., -i[0].shape[-1]:] = i[0]
+                        dset_masses.shape[-1] + masses[0].shape[-1], axis=0)
+                    dset_masses[..., -masses[0].shape[-1]:] = masses[0]
 
                     # add particle IDs
                     dset_ids = h5file[f'{idx}/PartType{parttype}/ParticleIDs']
