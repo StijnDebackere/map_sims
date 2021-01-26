@@ -76,22 +76,35 @@ def save_slice_data(
     h5file.attrs['slice_axis'] = slice_axis
     h5file.attrs['slice_size'] = slice_size
     h5file.attrs['box_size'] = box_size
-
+    h5file.attrs['a'] = snap_info.a
+    h5file.attrs['h'] = snap_info.h
 
     for i in range(num_slices):
         for parttype in parttypes:
-            h5file.create_dataset(
+            # create coordinate datasets
+            dset_coords = h5file.create_dataset(
                 f'{i}/PartType{parttype}/Coordinates', shape=(3, 0),
                 dtype=float, maxshape=(3, max_size)
             )
-            h5file.create_dataset(
+            dset_coords.attrs['CGSConversionFactor'] = snap_info.cm_per_mpc
+            dset_coords.attrs['aexp-scale-exponent'] = 1.0
+            dset_coords.attrs['h-scale-exponent'] = -1.0
+
+            dset_mass = h5file.create_dataset(
                 f'{i}/PartType{parttype}/Masses', shape=(0,),
                 dtype=float, maxshape=(max_size,)
             )
-            h5file.create_dataset(
+            dset_mass.attrs['CGSConversionFactor'] = snap_info.mass_unit
+            dset_mass.attrs['aexp-scale-exponent'] = 0.0
+            dset_mass.attrs['h-scale-exponent'] = -1.0
+
+            dset_ids = h5file.create_dataset(
                 f'{i}/PartType{parttype}/IDs', shape=(0,),
                 dtype=int, maxshape=(max_size,)
             )
+            dset_ids.attrs['CGSConversionFactor'] = 1.0
+            dset_ids.attrs['aexp-scale-exponent'] = 0.0
+            dset_ids.attrs['h-scale-exponent'] = 0.0
 
     # now loop over all snapshot files and add their particle info
     # to the correct slice
