@@ -66,6 +66,9 @@ def slice_particle_list(
 
     for idx in np.unique(slice_idx):
         for prop, value in properties.items():
-            slice_dict[prop][idx].append(value[..., slice_idx == idx])
+            if value.shape[-1] == len(slice_idx):
+                slice_dict[prop][idx].append(value[..., slice_idx == idx])
+            elif value.shape[-1] == 1:
+                slice_dict[prop][idx].append(value)
 
     return slice_dict
