@@ -44,7 +44,7 @@ def save_slice_data(
     box_size = snap_info.boxsize
     slice_axis = util.check_slice_axis(slice_axis)
     slice_size = util.check_slice_size(slice_size=slice_size, box_size=box_size)
-    num_slices = box_size // slice_size
+    num_slices = int(box_size // slice_size)
 
     filenames = {
         0: f'x_slice_size_{util.num_to_str(slice_size)}.hdf5',
