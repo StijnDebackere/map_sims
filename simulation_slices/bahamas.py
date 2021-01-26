@@ -91,7 +91,7 @@ def save_slice_data(
             dset_coords.attrs['h-scale-exponent'] = -1.0
 
             dset_mass = h5file.create_dataset(
-                f'{i}/PartType{parttype}/Masses', shape=(0,),
+                f'{i}/PartType{parttype}/Mass', shape=(0,),
                 dtype=float, maxshape=(max_size,)
             )
             dset_mass.attrs['CGSConversionFactor'] = snap_info.mass_unit
@@ -99,7 +99,7 @@ def save_slice_data(
             dset_mass.attrs['h-scale-exponent'] = -1.0
 
             dset_ids = h5file.create_dataset(
-                f'{i}/PartType{parttype}/IDs', shape=(0,),
+                f'{i}/PartType{parttype}/ParticleIDs', shape=(0,),
                 dtype=int, maxshape=(max_size,)
             )
             dset_ids.attrs['CGSConversionFactor'] = 1.0
@@ -160,13 +160,13 @@ def save_slice_data(
                     dset_coords[..., -coord[0].shape[-1]:] = coord[0]
 
                     # add masses
-                    dset_masses = h5file[f'{idx}/PartType{parttype}/Masses']
+                    dset_masses = h5file[f'{idx}/PartType{parttype}/Mass']
                     dset_masses.resize(
                         dset_masses.shape[-1] + i[0].shape[-1], axis=0)
                     dset_masses[..., -i[0].shape[-1]:] = i[0]
 
                     # add particle IDs
-                    dset_ids = h5file[f'{idx}/PartType{parttype}/IDs']
+                    dset_ids = h5file[f'{idx}/PartType{parttype}/ParticleIDs']
                     dset_ids.resize(
                         dset_ids.shape[-1] + i[0].shape[-1], axis=0)
                     dset_ids[..., -i[0].shape[-1]:] = i[0]
