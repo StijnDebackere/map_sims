@@ -116,12 +116,12 @@ def save_slice_data(
             # need to put particles along columns for hdf5 optimal usage
             # read everything in cMpc / h
             coords = snap_info.read_single_file(
-                i=num, var='PartType{parttype}/Coordinates',
+                i=num, var=f'PartType{parttype}/Coordinates',
                 gadgetunits=True, verbose=False, reshape=True,
             ).T
 
             ids = snap_info.read_single_file(
-                i=num, var='PartType{parttype}/ParticleIDs',
+                i=num, var=f'PartType{parttype}/ParticleIDs',
                 gadgetunits=True, verbose=False, reshape=True,
             )
 
@@ -129,7 +129,7 @@ def save_slice_data(
             if parttype != 1:
                 # these masses are in solar masses, h has been filled in!
                 masses = snap_info.read_single_file(
-                    i=num, var='PartType{parttype}/Mass',
+                    i=num, var=f'PartType{parttype}/Mass',
                     gadgetunits=True, verbose=False, reshape=True,
                 )
             else:
