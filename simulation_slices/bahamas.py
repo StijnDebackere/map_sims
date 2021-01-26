@@ -114,27 +114,27 @@ def save_slice_data(
         # cycle through the different particle types
         for parttype in parttypes:
             # need to put particles along columns for hdf5 optimal usage
+            # read everything in cMpc / h
             coords = snap_info.read_single_file(
                 i=num, var='PartType{parttype}/Coordinates',
-                gadgetunits=False, verbose=False, reshape=True,
+                gadgetunits=True, verbose=False, reshape=True,
             ).T
 
             ids = snap_info.read_single_file(
                 i=num, var='PartType{parttype}/ParticleIDs',
-                gadgetunits=False, verbose=False, reshape=True,
+                gadgetunits=True, verbose=False, reshape=True,
             )
 
             # dark matter does not have the Mass variable
             if parttype != 1:
+                # these masses are in solar masses, h has been filled in!
                 masses = snap_info.read_single_file(
                     i=num, var='PartType{parttype}/Mass',
-                    gadgetunits=False, verbose=False, reshape=True,
+                    gadgetunits=True, verbose=False, reshape=True,
                 )
             else:
-                masses = np.atleast_1d(
-                    snap_info.masses[parttype] * snap_info.mass_unit
-                    / snap_info.solar_mass
-                )
+                # need to fill in h^-1 scaling
+                masses = np.atleast_1d(snap_info.masses[parttype])
 
             slice_dict = ops.slice_particle_list(
                 box_size=box_size,
