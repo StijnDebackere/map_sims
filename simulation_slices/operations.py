@@ -3,18 +3,20 @@ import numpy as np
 import simulation_slices.utilities as util
 
 
-def get_coords_slices(coords, slice_size, slice_axis):
+def get_coords_slices(coords, slice_size, slice_axis, origin=None):
     """For the list of coords recover the slice_idx for the given
     slice_size and slice_axis.
 
     Parameters
     ----------
-    coords : (3, N) array
+    coords : (ndim, N) array
         coordinates
     slice_size : float
         size of the slices
     slice_axis : int
-        axis along which box has been sliced [x=0, y=1, z=2]
+        dimension along which box has been sliced
+    origin : float
+        origin to compute slices with respect to
 
     Returns
     -------
@@ -22,7 +24,9 @@ def get_coords_slices(coords, slice_size, slice_axis):
         index of the slice for each coordinate
 
     """
-    slice_idx = np.floor(coords[slice_axis] / slice_size).astype(int)
+    if origin is None:
+        origin = 0
+    slice_idx = np.floor((coords[slice_axis] - origin) / slice_size).astype(int)
     return slice_idx
 
 
@@ -58,7 +62,8 @@ def slice_particle_list(
     num_slices = int(box_size // slice_size)
 
     slice_idx = get_coords_slices(
-        coords=properties['coords'], slice_size=slice_size, slice_axis=slice_axis
+        coords=properties['coords'], slice_size=slice_size,
+        slice_axis=slice_axis, origin=0
     )
 
     # place holder to organize slice data for each property
