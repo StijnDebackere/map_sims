@@ -92,3 +92,79 @@ def slice_particle_list(
                 slice_dict[prop][idx].append(value)
 
     return slice_dict
+
+
+def coords_to_map(
+        coords, map_center, map_size, map_res, func_sum, num_threads=1,
+        **props):
+    """Convert the given 2D coordinates to a pixelated map.
+
+    Parameters
+    ----------
+    coords : (2, N) array
+        (x, y) coordinates
+    map_center : (2,) array
+        center of the (x, y) coordinate system
+    map_size : float
+        size of the map
+    map_res : float
+        resolution of a pixel
+    func_sum : callable
+        function that takes props as arguments and sums their values in some way
+        ensure that it also handles the case of empty properties in case the pixel
+        is empty
+    props : dict of (..., N) or (1,) arrays
+        properties to average, should be the kwargs of func_sum
+    num_threads : int
+        number of threads to use
+
+    Returns
+    -------
+    mapped : (map_extent // map_res, map_extent // map_res) array
+        func_avg(props) in each pixel
+    """
+    map_res = util.check_slice_size(slice_size=map_res, box_size=map_size)
+    num_pix = int(map_size // map_res)
+    A_pix = map_res**2
+
+    # convert the coordinates to the pixel coordinate system
+    map_origin = (np.atleast_1d(map_center) - map_size / 2)
+    coords_pix = coords - map_origin.reshape(2, 1)
+
+    # get the x and y values of the pixelated maps
+    x_pix = get_coords_slices(coords=coords_pix, slice_size=map_res, slice_axis=0)
+    y_pix = get_coords_slices(coords=coords_pix, slice_size=map_res, slice_axis=1)
+
+    # map (i, j) pixels to 1D pixel id = i + j * num_pix
+    pix_ids = x_pix + y_pix * num_pix
+
+    # get lists of all coords and props belonging to each pix_id
+    coords_sort = [
+        coords[..., pix_ids == idx] if ((pix_ids == idx).sum() > 0)
+        else np.nan
+        for idx in range(num_pix**2)
+    ]
+    props_sort = [
+        dict(
+            [
+                (k, v[..., pix_ids == idx])
+                if v.shape[-1] == len(pix_ids)
+                # if v is a single value, apply it for all coords in pixel
+                else (k, np.ones((pix_ids == idx).sum()) * v)
+                for k, v in props.items()
+            ])
+        for idx in range(num_pix**2)
+    ]
+
+    # now fill up pixel_values by performing func_sum(**props) / A_pix
+    pixel_values = np.empty(num_pix**2, dtype=float)
+    for idx, (c, props) in enumerate(zip(coords_sort, props_sort)):
+        pixel_value = func_sum(**props) / A_pix
+        if pixel_value:
+            pixel_values[idx] = pixel_value
+        else:
+            pixel_values[idx] = np.nan
+
+    # reshape the array to the map we wanted
+    mapped = np.atleast_1d(pixel_values).reshape(num_pix, num_pix)
+    return mapped
