@@ -172,3 +172,75 @@ def save_slice_data(
                     dset_ids[..., -i[0].shape[-1]:] = i[0]
 
     h5file.close()
+
+
+@util.time_this
+def get_mass_projection_map(
+        coord, slice_file, slice_size, map_size, map_res, parttypes):
+    """Project mass around coord in a box of (map_size, map_size, slice_size)
+    in a map of map_res.
+
+    Parameters
+    ----------
+    coord : (3,) array
+        (x, y, z) coordinates to slice around
+    slice_file : str
+        filename of the saved simulation slices
+    slice_size : float
+        thickness of the slice in units of box_size
+    map_size : float
+        size of the map in units of box_size
+    map_res : float
+        resolution of the map in units of box_size
+    parttypes : [0, 1, 4, 5]
+        particle types to include in projection
+
+    Returns
+    -------
+    map : (map_size // map_res, map_size // map_res)
+        pixelated projected mass
+
+    """
+    h5file = h5py.File(str(slice_file), mode='r')
+    slice_axis = h5file.attrs['slice_axis']
+
+    thickness = np.zeros((3,), dtype=float)
+    thickness[slice_axis] += slice_size
+
+    extent = np.array([
+        coord - thickness, coord + thickness
+    ]).T
+
+    slice_ids = ops.get_coords_slices(
+        coords=extent, slice_axis=slice_axis,
+        slice_size=h5file.attrs['slice_size'],
+    )
+
+    # add the projected mass map for each particle type to maps
+    maps = []
+    for parttype in parttypes:
+        coords = []
+        masses = []
+        for idx in range(*slice_ids):
+            coords.append(h5file[f'{idx}/PartType{parttype}/Coordinates'][:])
+            masses.append(h5file[f'{idx}/PartType{parttype}/Mass'][:])
+
+        # ignore sliced dimension
+        coords_2d = np.concatenate(coords)[range(coords.shape[0]) != slice_axis, :]
+        map_center = coord[range(coord.shape[0]) != slice_axis]
+
+        if parttype == 1:
+            masses = np.unique(masses)
+        else:
+            masses = np.concatenate(masses)
+
+        props = {'masses': masses}
+        mp = ops.coords_to_map(
+            coords=coords_2d, map_center=map_center, map_size=map_size,
+            map_res=map_res, func_sum=ops.sum_masses, **props
+        )
+
+        maps.append(mp)
+
+    h5file.close()
+    return maps
