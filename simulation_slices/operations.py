@@ -1,6 +1,12 @@
+import astropy.constants as c
 import numpy as np
 
 import simulation_slices.utilities as util
+
+def sum_masses(masses):
+    """Return the sum of the list of masses."""
+    return sum(masses)
+
 
 
 def get_coords_slices(coords, slice_size, slice_axis, origin=None):
