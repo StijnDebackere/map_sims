@@ -1,4 +1,5 @@
 import astropy.constants as c
+import astropy.units as u
 import numpy as np
 
 import simulation_slices.utilities as util
@@ -7,6 +8,13 @@ def sum_masses(masses):
     """Return the sum of the list of masses."""
     return sum(masses)
 
+
+def sum_y_sz(electron_numbers, temperatures):
+    """Return the y_SZ for the list of particles."""
+    norm = c.sigma_T * c.k_B / (c.c**2 * c.m_e)
+    norm = norm.to(u.Mpc**2 / u.K).value
+    # temperatures are given in K, will divide by pixel area in Mpc^2
+    return norm * sum(electron_numbers * temperatures)
 
 
 def get_coords_slices(coords, slice_size, slice_axis, origin=None):
