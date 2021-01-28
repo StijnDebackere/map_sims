@@ -178,7 +178,8 @@ def save_slice_data(
 
 @util.time_this
 def get_mass_projection_map(
-        coord, slice_file, map_size, map_res, map_thickness, parttypes):
+        coord, slice_file, map_size, map_res, map_thickness, parttypes,
+        verbose=True):
     """Project mass around coord in a box of (map_size, map_size, slice_size)
     in a map of map_res.
 
@@ -196,6 +197,8 @@ def get_mass_projection_map(
         thickness of the map projection in units of box_size
     parttypes : [0, 1, 4, 5]
         particle types to include in projection
+    verbose : bool
+        show progress bar
 
     Returns
     -------
@@ -225,9 +228,14 @@ def get_mass_projection_map(
 
     # add the projected mass map for each particle type to maps
     maps = []
-    for parttype in tqdm(
+    if verbose:
+        iter_parttypes = tqdm(
             parttypes,
-            desc=f'Joining slices for PartTypes'):
+            desc=f'Joining slices for PartTypes')
+    else:
+        iter_parttypes = parttypes
+
+    for parttype in iter_parttypes:
         coords = []
         masses = []
         for idx in range(*slice_ids):
