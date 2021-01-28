@@ -176,7 +176,7 @@ def save_slice_data(
 
 @util.time_this
 def get_mass_projection_map(
-        coord, slice_file, slice_size, map_size, map_res, parttypes):
+        coord, slice_file, map_size, map_res, map_thickness, parttypes):
     """Project mass around coord in a box of (map_size, map_size, slice_size)
     in a map of map_res.
 
@@ -186,12 +186,12 @@ def get_mass_projection_map(
         (x, y, z) coordinates to slice around
     slice_file : str
         filename of the saved simulation slices
-    slice_size : float
-        thickness of the slice in units of box_size
     map_size : float
         size of the map in units of box_size
     map_res : float
         resolution of the map in units of box_size
+    map_thickness : float
+        thickness of the map projection in units of box_size
     parttypes : [0, 1, 4, 5]
         particle types to include in projection
 
@@ -203,9 +203,12 @@ def get_mass_projection_map(
     """
     h5file = h5py.File(str(slice_file), mode='r')
     slice_axis = h5file.attrs['slice_axis']
+    slice_size = h5file.attrs['slice_size']
+    box_size = h5file.attrs['box_size']
+    num_slices = int(box_size // slice_size)
 
     thickness = np.zeros((3,), dtype=float)
-    thickness[slice_axis] += slice_size
+    thickness[slice_axis] += map_thickness / 2
 
     extent = np.array([
         coord - thickness, coord + thickness
