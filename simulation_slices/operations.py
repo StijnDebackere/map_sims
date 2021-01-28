@@ -99,7 +99,7 @@ def slice_particle_list(
 
 def coords_to_map(
         coords, map_center, map_size, map_res, box_size, func,
-        num_threads=1, **props):
+        **props):
     """Convert the given 2D coordinates to a pixelated map.
 
     Parameters
