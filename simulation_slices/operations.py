@@ -4,17 +4,19 @@ import numpy as np
 
 import simulation_slices.utilities as util
 
-def sum_masses(masses):
+import pdb
+
+def masses(masses):
     """Return the sum of the list of masses."""
-    return sum(masses)
+    return masses
 
 
-def sum_y_sz(electron_numbers, temperatures):
+def y_sz(electron_numbers, temperatures):
     """Return the y_SZ for the list of particles."""
     norm = c.sigma_T * c.k_B / (c.c**2 * c.m_e)
     norm = norm.to(u.Mpc**2 / u.K).value
     # temperatures are given in K, will divide by pixel area in Mpc^2
-    return norm * sum(electron_numbers * temperatures)
+    return norm * electron_numbers * temperatures
 
 
 def get_coords_slices(coords, slice_size, slice_axis, origin=None):
@@ -95,8 +97,8 @@ def slice_particle_list(
 
 
 def coords_to_map(
-        coords, map_center, map_size, map_res, func_sum, num_threads=1,
-        **props):
+        coords, map_center, map_size, map_res, box_size, func,
+        num_threads=1, **props):
     """Convert the given 2D coordinates to a pixelated map.
 
     Parameters
@@ -109,27 +111,30 @@ def coords_to_map(
         size of the map
     map_res : float
         resolution of a pixel
-    func_sum : callable
-        function that takes props as arguments and sums their values in some way
-        ensure that it also handles the case of empty properties in case the pixel
-        is empty
+    box_size : float
+        periodicity of the box
+    func : callable
+        function that calculates observable for each particle
     props : dict of (..., N) or (1,) arrays
-        properties to average, should be the kwargs of func_sum
+        properties to average, should be the kwargs of func
     num_threads : int
         number of threads to use
 
     Returns
     -------
     mapped : (map_extent // map_res, map_extent // map_res) array
-        func_avg(props) in each pixel
+        Sum_{i in pixel} func(**props_i) / A_pix
     """
     map_res = util.check_slice_size(slice_size=map_res, box_size=map_size)
     num_pix = int(map_size // map_res)
     A_pix = map_res**2
 
     # convert the coordinates to the pixel coordinate system
-    map_origin = (np.atleast_1d(map_center) - map_size / 2)
-    coords_pix = coords - map_origin.reshape(2, 1)
+    map_origin = util.diff(np.atleast_1d(map_center), map_size / 2, box_size)
+
+    # compute the offsets w.r.t the map_origin, taking into account
+    # periodic boundary conditions
+    coords_pix = util.diff(coords, map_origin.reshape(2, 1), box_size)
 
     # get the x and y values of the pixelated maps
     x_pix = get_coords_slices(coords=coords_pix, slice_size=map_res, slice_axis=0)
@@ -138,32 +143,31 @@ def coords_to_map(
     # map (i, j) pixels to 1D pixel id = i + j * num_pix
     pix_ids = x_pix + y_pix * num_pix
 
-    # get lists of all coords and props belonging to each pix_id
-    coords_sort = [
-        coords[..., pix_ids == idx] if ((pix_ids == idx).sum() > 0)
-        else np.nan
-        for idx in range(num_pix**2)
-    ]
-    props_sort = [
-        dict(
-            [
-                (k, v[..., pix_ids == idx])
-                if v.shape[-1] == len(pix_ids)
-                # if v is a single value, apply it for all coords in pixel
-                else (k, np.ones((pix_ids == idx).sum()) * v)
-                for k, v in props.items()
-            ])
-        for idx in range(num_pix**2)
-    ]
+    # only use props that are within map
+    within_map = pix_ids < num_pix**2
+    pix_ids = pix_ids[within_map]
+    sort_order = np.argsort(pix_ids)
+
+    # get the starting index for each sorted pixel
+    unique_ids, loc_ids = np.unique(pix_ids[sort_order], return_index=True)
+    pix_range = np.concatenate([loc_ids, [len(pix_ids)]])
+
+    props = dict(
+        [
+            (k, v[..., within_map])
+            if v.shape[-1] == len(within_map)
+            # if v is a single value, apply it for all coords in pixel
+            else (k, v * np.ones(within_map.sum()))
+            for k, v in props.items()
+        ])
 
     # now fill up pixel_values by performing func_sum(**props) / A_pix
-    pixel_values = np.empty(num_pix**2, dtype=float)
-    for idx, (c, props) in enumerate(zip(coords_sort, props_sort)):
-        pixel_value = func_sum(**props) / A_pix
-        if pixel_value:
-            pixel_values[idx] = pixel_value
-        else:
-            pixel_values[idx] = np.nan
+    func_values = func(**props)[sort_order] / A_pix
+
+    pixel_values = np.zeros(num_pix**2, dtype=float)
+    pixel_values[unique_ids] = np.array([
+        np.sum(func_values[i:j]) for i, j in zip(pix_range[:-1], pix_range[1:])
+    ])
 
     # reshape the array to the map we wanted
     mapped = np.atleast_1d(pixel_values).reshape(num_pix, num_pix)

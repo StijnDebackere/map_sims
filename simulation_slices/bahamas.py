@@ -6,6 +6,8 @@ from tqdm import tqdm
 import simulation_slices.operations as ops
 import simulation_slices.utilities as util
 
+import pdb
+
 
 @util.time_this
 def save_slice_data(
@@ -218,32 +220,46 @@ def get_mass_projection_map(
         coords=extent, slice_axis=slice_axis,
         slice_size=h5file.attrs['slice_size'],
     )
+    # create index array that cuts out the slice_axis
+    no_slice_axis = range(coord.shape[0]) != slice_axis
 
     # add the projected mass map for each particle type to maps
     maps = []
-    for parttype in parttypes:
+    for parttype in tqdm(
+            parttypes,
+            desc=f'Joining slices for PartTypes'):
         coords = []
         masses = []
         for idx in range(*slice_ids):
-            coords.append(h5file[f'{idx}/PartType{parttype}/Coordinates'][:])
-            masses.append(h5file[f'{idx}/PartType{parttype}/Mass'][:])
+            # take into account periodic boundary conditions
+            # all coordinates are 0 < x, y, z < L
+            idx_mod = idx % num_slices
+            coords.append(
+                h5file[f'{idx_mod}/PartType{parttype}/Coordinates'][:][no_slice_axis, :]
+            )
+            masses.append(
+                h5file[f'{idx_mod}/PartType{parttype}/Mass'][:]
+            )
 
         # ignore sliced dimension
-        coords_2d = np.concatenate(coords)[range(coords.shape[0]) != slice_axis, :]
-        map_center = coord[range(coord.shape[0]) != slice_axis]
+        coords_2d = np.concatenate(coords, axis=-1)
+        map_center = coord[no_slice_axis]
 
         if parttype == 1:
-            masses = np.unique(masses)
+            # all dark matter particles have the same mass
+            masses = np.unique(np.concatenate(masses))
         else:
             masses = np.concatenate(masses)
 
         props = {'masses': masses}
         mp = ops.coords_to_map(
             coords=coords_2d, map_center=map_center, map_size=map_size,
-            map_res=map_res, func_sum=ops.sum_masses, **props
+            map_res=map_res, box_size=box_size, func=ops.masses,
+            **props
         )
 
-        maps.append(mp)
+        maps.append(mp[None,...])
 
     h5file.close()
+    maps = np.concatenate(maps, axis=0)
     return maps
