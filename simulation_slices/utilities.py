@@ -19,6 +19,20 @@ def on_queue(queue, func, *args, **kwargs):
     queue.put([os.getpid(), func(*args, **kwargs)])
 
 
+def arrays_to_coords(*xi):
+    """
+    Convert a set of N 1-D coordinate arrays to a regular coordinate grid of
+    dimension (npoints, N) for the interpolator
+    """
+    # the meshgrid matches each of the *xi to all the other *xj
+    Xi = np.meshgrid(*xi, indexing='ij')
+
+    # now we create a column vector of all the coordinates
+    coords = np.concatenate([X.reshape(X.shape + (1,)) for X in Xi], axis=-1)
+
+    return coords.reshape(-1, len(xi))
+
+
 def time_this(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -115,49 +129,3 @@ def num_to_str(num, unit=None, log=False, precision=3):
     res = f'{format(n // 1, ".0f")}{significand}{unit}'.replace('None', '')
 
     return res
-
-
-def diff(x, y, box_size):
-    """Return the vector x - y, taking into account periodic boundary
-    conditions.
-
-    Parameters
-    ----------
-    x : array-like
-        coordinates
-    y : array-like
-        coordinates
-    box_size : float
-        periodicity of the box
-    axis : axis along which dimensions are defined
-
-    Returns
-    -------
-    diff : array-like
-        vector x - y
-
-    """
-    return np.mod(x - y, box_size)
-
-
-def dist(x, y, box_size, axis=0):
-    """Return the distance |x-y| taking into account periodic boundary
-    conditions.
-
-    Parameters
-    ----------
-    x : array-like
-        coordinates
-    y : array-like
-        coordinates
-    box_size : float
-        periodicity of the box
-    axis : axis along which dimensions are defined
-
-    Returns
-    -------
-    dist : float
-        distance between x and y
-
-    """
-    return np.linalg.norm(np.mod(x - y, box_size / 2), axis=axis)
