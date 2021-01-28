@@ -271,3 +271,14 @@ def get_mass_projection_map(
     h5file.close()
     maps = np.concatenate(maps, axis=0)
     return maps
+
+
+def get_mass_projection_maps(coords, *args, **kwargs):
+    """For all coords run get_mass_projection_map()."""
+    maps = []
+    for coord in coords:
+        mp = get_mass_projection_map(coord, *args, **kwargs)
+        maps.append(mp)
+
+    maps = np.concatenate(maps, axis=0)
+    return maps
