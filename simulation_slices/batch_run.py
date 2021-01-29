@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from gadget import Gadget
 from multiprocessing import Process, Queue
 import numpy as np
@@ -9,6 +11,7 @@ import simulation_slices.bahamas as bahamas
 def put_maps_on_queue(queue, *args, **kwargs):
     result = bahamas.get_mass_projection_maps(*args, **kwargs)
     queue.put([os.getpid(), result])
+    print(f'Process {os.getpid()} done')
 
 
 def map_bahamas_clusters(
@@ -18,12 +21,22 @@ def map_bahamas_clusters(
     """For the simulation in sim_dir with slices in slice_file,
     generate maps for all haloes within m200m_range."""
     group_info = Gadget(
-        model_dir=sim_dir, file_type='subh', snapshot=snapshot, sim='BAHAMAS')
+        model_dir=sim_dir, file_type='subh', snapnum=snapshot, sim='BAHAMAS')
 
     # gadget units are in 10^10 M_sun / h
     log10_m200m = 10 + np.log10(
         group_info.read_var('FOF/Group_M_Mean200', gadgetunits=True)
     )
+    log10_m200c = 10 + np.log10(
+        group_info.read_var('FOF/Group_M_Crit200', gadgetunits=True)
+    )
+    log10_m500c = 10 + np.log10(
+        group_info.read_var('FOF/Group_M_Crit500', gadgetunits=True)
+    )
+
+    group_ids = np.arange(len(log10_m200m))
+
+    # and the group centers
     centers = group_info.read_var('FOF/GroupCentreOfPotential', gadgetunits=True)
 
     selected = (
@@ -39,7 +52,7 @@ def map_bahamas_clusters(
     for c in centers_split:
         process = Process(
             target=put_maps_on_queue,
-            args=(out_q),
+            args=(out_q,),
             kwargs={
                 'coords': c,
                 'slice_file': slice_file,
@@ -62,4 +75,13 @@ def map_bahamas_clusters(
 
     results.sort()
     maps = np.concatenate([item[1] for item in results], axis=0)
+
+    np.savez(
+        Path(slice_file)
+        log10_m200m=log10_m200m[selected],
+        log10_m200c=log10_m200c[selected],
+        log10_m500c=log10_m500c[selected],
+        group_ids=group_ids[selected],
+        maps=maps,
+    )
     return maps
