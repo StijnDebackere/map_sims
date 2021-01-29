@@ -9,7 +9,6 @@ import simulation_slices.utilities as util
 import pdb
 
 
-@util.time_this
 def save_slice_data(
         base_dir, snapshot, datatype='snap', parttypes=[0, 1, 4, 5],
         slice_axis=0, slice_size=2, save_dir=None):
@@ -49,9 +48,9 @@ def save_slice_data(
     num_slices = int(box_size // slice_size)
 
     filenames = {
-        0: f'x_slice_size_{util.num_to_str(slice_size)}.hdf5',
-        1: f'y_slice_size_{util.num_to_str(slice_size)}.hdf5',
-        2: f'z_slice_size_{util.num_to_str(slice_size)}.hdf5'
+        0: f'x_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}.hdf5',
+        1: f'y_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}.hdf5',
+        2: f'z_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}.hdf5'
     }
 
 
@@ -176,7 +175,6 @@ def save_slice_data(
     h5file.close()
 
 
-@util.time_this
 def get_mass_projection_map(
         coord, slice_file, map_size, map_res, map_thickness, parttypes,
         verbose=True):
