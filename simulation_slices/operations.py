@@ -20,8 +20,8 @@ def y_sz(electron_numbers, temperatures):
     return norm * electron_numbers * temperatures
 
 
-def get_coords_slices(coords, slice_size, slice_axis, origin=None):
-    """For the list of coords recover the slice_idx for the given
+def get_coords_slices(coords, slice_size, slice_axis):
+    """For the list of periodic coords recover the slice_idx for the given
     slice_size and slice_axis.
 
     Parameters
@@ -41,9 +41,7 @@ def get_coords_slices(coords, slice_size, slice_axis, origin=None):
         index of the slice for each coordinate
 
     """
-    if origin is None:
-        origin = 0
-    slice_idx = ((coords[slice_axis] - origin) // slice_size).astype(int)
+    slice_idx = (coords[slice_axis] // slice_size).astype(int)
     return slice_idx
 
 
@@ -82,7 +80,7 @@ def slice_particle_list(
     # belongs to
     slice_idx = get_coords_slices(
         coords=properties['coords'], slice_size=slice_size,
-        slice_axis=slice_axis, origin=0
+        slice_axis=slice_axis
     )
 
     # place holder to organize slice data for each property
