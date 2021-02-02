@@ -43,7 +43,7 @@ def get_coords_slices(coords, slice_size, slice_axis, origin=None):
     """
     if origin is None:
         origin = 0
-    slice_idx = np.floor((coords[slice_axis] - origin) / slice_size).astype(int)
+    slice_idx = ((coords[slice_axis] - origin) // slice_size).astype(int)
     return slice_idx
 
 
@@ -78,6 +78,8 @@ def slice_particle_list(
     slice_size = util.check_slice_size(slice_size=slice_size, box_size=box_size)
     num_slices = int(box_size // slice_size)
 
+    # for each coordinate along the slice axis, determine the slice it
+    # belongs to
     slice_idx = get_coords_slices(
         coords=properties['coords'], slice_size=slice_size,
         slice_axis=slice_axis, origin=0
