@@ -3,6 +3,7 @@ import h5py
 import numpy as np
 from tqdm import tqdm
 
+import simulation_slices.map_tools as map_tools
 import simulation_slices.operations as ops
 import simulation_slices.utilities as util
 
@@ -241,21 +242,29 @@ def get_mass_projection_map(
             # all coordinates are 0 < x, y, z < L
             idx_mod = idx % num_slices
             coords.append(
-                h5file[f'{idx_mod}/PartType{parttype}/Coordinates'][:][no_slice_axis, :]
+                h5file[f'{idx_mod}/PartType{parttype}/Coordinates'][:]
             )
             masses.append(
                 h5file[f'{idx_mod}/PartType{parttype}/Mass'][:]
             )
 
+        coords = np.concatenate(coords, axis=-1)
+        # now that we have all the particles that are roughly within
+        # map_thickness, enforce map_thickness relative to coord
+        selection = (
+            map_tools.dist(coords[slice_axis], coord[slice_axis], box_size)
+            <= map_thickness
+        )
+
         # ignore sliced dimension
-        coords_2d = np.concatenate(coords, axis=-1)
+        coords_2d = coords[no_slice_axis][:, selection]
         map_center = coord[no_slice_axis]
 
         if parttype == 1:
             # all dark matter particles have the same mass
             masses = np.unique(np.concatenate(masses))
         else:
-            masses = np.concatenate(masses)
+            masses = np.concatenate(masses)[selection]
 
         props = {'masses': masses}
         mp = ops.coords_to_map(

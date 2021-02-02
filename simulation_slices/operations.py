@@ -109,9 +109,9 @@ def coords_to_map(
     map_center : (2,) array
         center of the (x, y) coordinate system
     map_size : float
-        size of the map
+        size of the map in units of box_size
     map_res : float
-        resolution of a pixel
+        resolution of a pixel in units of box_size
     box_size : float
         periodicity of the box
     func : callable
