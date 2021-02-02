@@ -3,7 +3,7 @@ import numpy as np
 
 def pix_id_to_pixel(pix_id, num_pix):
     """Convert pix_id to pixel (i, j)."""
-    return np.array([[pix_id % num_pix], [pid_id // num_pix]])
+    return np.array([[pix_id % num_pix], [pix_id // num_pix]])
 
 
 def pixel_to_pix_id(pixel, num_pix):
