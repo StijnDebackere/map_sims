@@ -77,11 +77,16 @@ def map_bahamas_clusters(
     maps = np.concatenate([item[1] for item in results], axis=0)
 
     np.savez(
-        Path(slice_file)
+        Path(slice_file),
         log10_m200m=log10_m200m[selected],
         log10_m200c=log10_m200c[selected],
         log10_m500c=log10_m500c[selected],
+        centers=centers[selected],
         group_ids=group_ids[selected],
+        map_size=map_size, map_res=map_res,
+        map_thickness=map_thickness,
+        snapshot=snapshot,
+        slice_file=slice_file,
         maps=maps,
     )
     return maps
