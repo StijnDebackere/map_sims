@@ -252,8 +252,13 @@ def get_mass_projection_map(
         # now that we have all the particles that are roughly within
         # map_thickness, enforce map_thickness relative to coord
         selection = (
-            map_tools.dist(coords[slice_axis], coord[slice_axis], box_size)
-            <= map_thickness
+            (
+                map_tools.dist(coords[slice_axis], coord[slice_axis], box_size)
+                <= map_thickness
+            ) & (
+                map_tools.dist(coords[no_slice_axis], coord[no_slice_axis], box_size)
+                <= np.sqrt(2) * map_size / 2
+            )
         )
 
         # ignore sliced dimension
