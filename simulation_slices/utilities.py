@@ -136,3 +136,9 @@ def num_to_str(num, unit=None, log=False, precision=3):
     res = f'{format(n // 1, ".0f")}{significand}{unit}'.replace('None', '')
 
     return res
+
+
+def make_dir(path, dirname):
+    """Creates path/dirname."""
+    dr = check_path(path) / str(dirname)
+    dr.mkdir(parents=True, exist_ok=True)
