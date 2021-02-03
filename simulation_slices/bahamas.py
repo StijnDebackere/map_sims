@@ -285,7 +285,7 @@ def get_mass_projection_map(
     for parttype in iter_parttypes:
         coords = []
         masses = []
-        for idx in range(*slice_ids):
+        for idx in range(slice_ids[0], slice_ids[1] + 1):
             # take into account periodic boundary conditions
             # all coordinates are 0 < x, y, z < L
             idx_mod = idx % num_slices
