@@ -1,17 +1,22 @@
 import numpy as np
 
 
-def pix_id_to_pixel(pix_id, num_pix):
-    """Convert pix_id to pixel (i, j)."""
-    return np.array([[pix_id % num_pix], [pix_id // num_pix]])
+def pix_id_to_pixel(pix_id, num_pix_side):
+    """Convert pix_id = i + j * num_pix_side  to pixel (i, j)."""
+    if ((pix_id >= num_pix_side**2) | (pix_id < 0)).any():
+        raise ValueError('pix_id should be in [0, num_pix_side**2)')
+    return np.array([[pix_id % num_pix_side], [pix_id // num_pix_side]])
 
 
-def pixel_to_pix_id(pixel, num_pix):
-    """Convert pixel (i, j) to pix_id = i * num_pix + j."""
+def pixel_to_pix_id(pixel, num_pix_side):
+    """Convert pixel (i, j) to pix_id = i + j * num_pix_side."""
     pixel = np.atleast_2d(pixel)
     if pixel.shape[0] != 2 and len(pixel.shape) != 2:
         raise ValueError('pixel should be (2, n) array')
-    return pixel[0] + pixel[1] * num_pix
+    if ((pixel >= num_pix_side) | (pixel < 0)).any():
+        raise ValueError('mapping is only 1-1 for i,j in [0, num_pix_side)')
+
+    return pixel[0] + pixel[1] * num_pix_side
 
 
 def min_diff(x, y, box_size):
