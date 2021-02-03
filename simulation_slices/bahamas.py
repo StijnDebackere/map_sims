@@ -12,7 +12,7 @@ import pdb
 
 def save_slice_data(
         base_dir, snapshot, datatype='snap', parttypes=[0, 1, 4, 5],
-        slice_axis=0, slice_size=2, save_dir=None):
+        slice_axis=0, slice_size=1, save_dir=None):
     """For snapshot of simulation in base_dir, slice the particle data for
     all parttypes along the x, y, and z directions. Slices are saved
     in the Snapshots directory by default.
@@ -41,7 +41,9 @@ def save_slice_data(
 
     """
     snap_info = Gadget(
-        model_dir=base_dir, file_type=datatype, snapnum=snapshot, sim='BAHAMAS')
+        model_dir=base_dir, file_type=datatype, snapnum=snapshot, sim='BAHAMAS',
+        gadgetunits=True
+    )
 
     box_size = snap_info.boxsize
     slice_axis = util.check_slice_axis(slice_axis)
@@ -53,7 +55,6 @@ def save_slice_data(
         1: f'y_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}.hdf5',
         2: f'z_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}.hdf5'
     }
-
 
     N_tot = sum(snap_info.num_part_tot)
     # crude estimate of maximum number of particles in each slice
@@ -100,13 +101,6 @@ def save_slice_data(
             dset_mass.attrs['aexp-scale-exponent'] = 0.0
             dset_mass.attrs['h-scale-exponent'] = -1.0
 
-            dset_ids = h5file.create_dataset(
-                f'{i}/PartType{parttype}/ParticleIDs', shape=(0,),
-                dtype=int, maxshape=(max_size,)
-            )
-            dset_ids.attrs['CGSConversionFactor'] = 1.0
-            dset_ids.attrs['aexp-scale-exponent'] = 0.0
-            dset_ids.attrs['h-scale-exponent'] = 0.0
 
     # now loop over all snapshot files and add their particle info
     # to the correct slice
@@ -119,13 +113,8 @@ def save_slice_data(
             # read everything in cMpc / h
             coords = snap_info.read_single_file(
                 i=file_num, var=f'PartType{parttype}/Coordinates',
-                gadgetunits=True, verbose=False, reshape=True,
+                verbose=False, reshape=True,
             ).T
-
-            ids = snap_info.read_single_file(
-                i=file_num, var=f'PartType{parttype}/ParticleIDs',
-                gadgetunits=True, verbose=False, reshape=True,
-            )
 
             # dark matter does not have the Mass variable
             if parttype != 1:
@@ -137,22 +126,21 @@ def save_slice_data(
             else:
                 # need to fill in h^-1 scaling
                 masses = np.atleast_1d(snap_info.masses[parttype])
+            properties = {
+                    'coords': coords,
+                    'masses': masses
+            }
 
             slice_dict = ops.slice_particle_list(
                 box_size=box_size,
                 slice_size=slice_size,
                 slice_axis=slice_axis,
-                properties={
-                    'coords': coords,
-                    'ids': ids,
-                    'masses': masses
-                }
+                properties=properties
             )
 
             # append results to hdf5 file
-            for idx, (coord, i, masses) in enumerate(zip(
+            for idx, (coord, masses) in enumerate(zip(
                     slice_dict['coords'],
-                    slice_dict['ids'],
                     slice_dict['masses'])):
                 if coord:
                     # add coordinates
@@ -167,11 +155,6 @@ def save_slice_data(
                         dset_masses.shape[-1] + masses[0].shape[-1], axis=0)
                     dset_masses[..., -masses[0].shape[-1]:] = masses[0]
 
-                    # add particle IDs
-                    dset_ids = h5file[f'{idx}/PartType{parttype}/ParticleIDs']
-                    dset_ids.resize(
-                        dset_ids.shape[-1] + i[0].shape[-1], axis=0)
-                    dset_ids[..., -i[0].shape[-1]:] = i[0]
 
     h5file.close()
 
