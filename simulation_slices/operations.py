@@ -144,7 +144,7 @@ def coords_to_map(
     # slice out only pixel values within the map
     in_map = (
         (x_pix < num_pix_side) & (x_pix >= 0)
-        (y_pix <= num_pix_side) & (y_pix >= 0)
+        & (y_pix <= num_pix_side) & (y_pix >= 0)
     )
 
     # map (i, j) pixels to 1D pixel id = i + j * num_pix for all the
