@@ -16,7 +16,8 @@ import numpy as np
 
 #     return get_result
 def on_queue(queue, func, *args, **kwargs):
-    queue.put([os.getpid(), func(*args, **kwargs)])
+    res = time_this(func, pid=True)(*args, **kwargs)
+    queue.put([os.getpid(), res])
 
 
 def arrays_to_coords(*xi):
@@ -33,13 +34,19 @@ def arrays_to_coords(*xi):
     return coords.reshape(-1, len(xi))
 
 
-def time_this(func):
+def time_this(func, pid=False):
     @wraps(func)
     def wrapper(*args, **kwargs):
         t1 = time.time()
         result = func(*args, **kwargs)
         t2 = time.time()
-        print(f'Evaluating {func.__name__} took {t2 - t1:.2f}s')
+        if pid:
+            print(
+                f'Process {os.getpid()}: '
+                f'Evaluating {func.__name__} took {t2 - t1:.2f}s'
+            )
+        else:
+            print(f'Evaluating {func.__name__} took {t2 - t1:.2f}s')
         return result
     return wrapper
 
