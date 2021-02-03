@@ -41,10 +41,11 @@ def M_ap_from_sigma_map(
     M_ap : float
         mass contained within filt around x_0
     """
-    num_pix = sigma_map.shape[0]
-    pixels = map_tools.pix_id_to_pixel(np.arange(num_pix**2), num_pix)
+    num_pix_side = sigma_map.shape[0]
+    pixels = map_tools.pix_id_to_pixel(
+        np.arange(num_pix_side**2), num_pix_side)
 
     R = np.linalg.norm(pixels - pix_0.reshape(2, 1)) * pix_scale
     A_pix = pix_scale**2
-    M_ap = filt(R, sigma, A_pix, **filt_kwargs)
+    M_ap = filt(R, sigma_map, A_pix, **filt_kwargs)
     return M_ap
