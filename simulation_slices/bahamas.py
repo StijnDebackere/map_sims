@@ -101,6 +101,30 @@ def save_slice_data(
             dset_mass.attrs['aexp-scale-exponent'] = 0.0
             dset_mass.attrs['h-scale-exponent'] = -1.0
 
+            if parttype == 0:
+                dset_temp = h5file.create_dataset(
+                    f'{i}/PartType{parttype}/Temperature', shape=(0,),
+                    dtype=float, maxshape=(max_size,)
+                )
+                dset_temp.attrs['CGSConversionFactor'] = 1.0
+                dset_temp.attrs['aexp-scale-exponent'] = 0.0
+                dset_temp.attrs['h-scale-exponent'] = 0.0
+
+                dset_dens = h5file.create_dataset(
+                    f'{i}/PartType{parttype}/Density', shape=(0,),
+                    dtype=float, maxshape=(max_size,)
+                )
+                dset_dens.attrs['CGSConversionFactor'] = snap_info.rho_unit
+                dset_dens.attrs['aexp-scale-exponent'] = -3.0
+                dset_dens.attrs['h-scale-exponent'] = 2.0
+
+                dset_z = h5file.create_dataset(
+                    f'{i}/PartType{parttype}/SmoothedMetallicity', shape=(0,),
+                    dtype=float, maxshape=(max_size,)
+                )
+                dset_z.attrs['CGSConversionFactor'] = 1
+                dset_z.attrs['aexp-scale-exponent'] = 0.0
+                dset_z.attrs['h-scale-exponent'] = 0.0
 
     # now loop over all snapshot files and add their particle info
     # to the correct slice
@@ -131,6 +155,26 @@ def save_slice_data(
                     'coords': coords,
                     'masses': masses
             }
+            # only gas particles have extra properties saved
+            if parttype == 0:
+                temperatures = snap_info.read_single_file(
+                    i=file_num, var=f'PartType{parttype}/Temperature',
+                    verbose=False, reshape=True,
+                )
+                densities = snap_info.read_single_file(
+                    i=file_num, var=f'PartType{parttype}/Density',
+                    verbose=False, reshape=True,
+                )
+                metallicities = snap_info.read_single_file(
+                    i=file_num, var=f'PartType{parttype}/SmoothedMetallicity',
+                    verbose=False, reshape=True,
+                )
+                properties = {
+                    'temperatures': temperatures,
+                    'densities': densities,
+                    'metallicities': metallicities,
+                    **properties
+                }
 
             slice_dict = ops.slice_particle_list(
                 box_size=box_size,
@@ -156,6 +200,26 @@ def save_slice_data(
                         dset_masses.shape[-1] + masses[0].shape[-1], axis=0)
                     dset_masses[..., -masses[0].shape[-1]:] = masses[0]
 
+                    if parttype == 0:
+                        # get gas properties, list of array
+                        temps = slice_dict['temperatures'][idx]
+                        dens = slice_dict['densities'][idx]
+                        metals = slice_dict['metallicities'][idx]
+
+                        dset_temps = h5file[f'{idx}/PartType{parttype}/Temperature']
+                        dset_temps.resize(
+                            dset_temps.shape[-1] + temps[0].shape[-1], axis=0)
+                        dset_temps[..., -temps[0].shape[-1]:] = temps[0]
+
+                        dset_dens = h5file[f'{idx}/PartType{parttype}/Density']
+                        dset_dens.resize(
+                            dset_dens.shape[-1] + dens[0].shape[-1], axis=0)
+                        dset_dens[..., -dens[0].shape[-1]:] = dens[0]
+
+                        dset_metals = h5file[f'{idx}/PartType{parttype}/SmoothedMetallicity']
+                        dset_metals.resize(
+                            dset_metals.shape[-1] + metals[0].shape[-1], axis=0)
+                        dset_metals[..., -metals[0].shape[-1]:] = metals[0]
 
     h5file.close()
 
