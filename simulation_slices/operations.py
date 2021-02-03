@@ -131,11 +131,11 @@ def coords_to_map(
     A_pix = map_res**2
 
     # convert the coordinates to the pixel coordinate system
-    map_origin = map_tools.diff(np.atleast_1d(map_center), map_size / 2, box_size)
+    map_origin = map_tools.min_diff(np.atleast_1d(map_center), map_size / 2, box_size)
 
     # compute the offsets w.r.t the map_origin, taking into account
     # periodic boundary conditions
-    coords_origin = map_tools.diff(coords, map_origin.reshape(2, 1), box_size)
+    coords_origin = map_tools.min_diff(coords, map_origin.reshape(2, 1), box_size)
 
     # get the x and y values of the pixelated maps
     x_pix = get_coords_slices(coords=coords_origin, slice_size=map_res, slice_axis=0)

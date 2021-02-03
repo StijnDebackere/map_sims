@@ -14,8 +14,8 @@ def pixel_to_pix_id(pixel, num_pix):
     return pixel[0] + pixel[1] * num_pix
 
 
-def diff(x, y, box_size):
-    """Return the vector x - y, taking into account periodic boundary
+def min_diff(x, y, box_size):
+    """Return the minimum vector x - y, taking into account periodic boundary
     conditions.
 
     Parameters
@@ -34,7 +34,7 @@ def diff(x, y, box_size):
         vector x - y
 
     """
-    return np.mod(x - y, box_size)
+    return np.mod(x - y + box_size / 2, box_size) - box_size / 2
 
 
 def dist(x, y, box_size, axis=0):
@@ -57,4 +57,5 @@ def dist(x, y, box_size, axis=0):
         distance between x and y
 
     """
-    return np.linalg.norm(np.mod(x - y, box_size / 2), axis=axis)
+    dx = min_diff(x=x, y=y, box_size=box_size)
+    return np.linalg.norm(dx, axis=axis)
