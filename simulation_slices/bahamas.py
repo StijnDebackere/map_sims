@@ -301,11 +301,14 @@ def get_mass_projection_map(
         # map_thickness, enforce map_thickness relative to coord
         selection = (
             (
-                map_tools.dist(coords[slice_axis], coord[slice_axis], box_size)
-                <= map_thickness
+                map_tools.dist(
+                    coords[slice_axis].reshape(1, -1),
+                    coord[slice_axis].reshape(1, -1), box_size, axis=0)
+                <= map_thickness / 2
             ) & (
-                map_tools.dist(coords[no_slice_axis], coord[no_slice_axis], box_size)
-                <= np.sqrt(2) * map_size / 2
+                map_tools.dist(
+                    coords[no_slice_axis], coord[no_slice_axis].reshape(2, 1),
+                    box_size, axis=0) <= 2**0.5 * map_size / 2
             )
         )
 
