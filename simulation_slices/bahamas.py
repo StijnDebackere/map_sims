@@ -97,7 +97,7 @@ def save_slice_data(
                 f'{i}/PartType{parttype}/Mass', shape=(0,),
                 dtype=float, maxshape=(max_size,)
             )
-            dset_mass.attrs['CGSConversionFactor'] = snap_info.mass_unit
+            dset_mass.attrs['CGSConversionFactor'] = snap_info.mass_unit * 1e-10
             dset_mass.attrs['aexp-scale-exponent'] = 0.0
             dset_mass.attrs['h-scale-exponent'] = -1.0
 
@@ -121,11 +121,12 @@ def save_slice_data(
                 # these masses are in solar masses, h has been filled in!
                 masses = snap_info.read_single_file(
                     i=file_num, var=f'PartType{parttype}/Mass',
-                    gadgetunits=True, verbose=False, reshape=True,
-                )
+                    verbose=False, reshape=True,
+                ) + 10
             else:
                 # need to fill in h^-1 scaling
-                masses = np.atleast_1d(snap_info.masses[parttype])
+                masses = np.atleast_1d(snap_info.masses[parttype]) + 10
+
             properties = {
                     'coords': coords,
                     'masses': masses
