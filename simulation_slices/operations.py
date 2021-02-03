@@ -127,7 +127,7 @@ def coords_to_map(
         Sum_{i in pixel} func(**props_i) / A_pix
     """
     map_res = util.check_slice_size(slice_size=map_res, box_size=map_size)
-    num_pix = int(map_size // map_res)
+    num_pix_side = int(map_size // map_res)
     A_pix = map_res**2
 
     # convert the coordinates to the pixel coordinate system
@@ -137,39 +137,50 @@ def coords_to_map(
     # periodic boundary conditions
     coords_origin = map_tools.min_diff(coords, map_origin.reshape(2, 1), box_size)
 
-    # get the x and y values of the pixelated maps
+    # get the x and y values of the pixelated maps w.r.t. origin
     x_pix = get_coords_slices(coords=coords_origin, slice_size=map_res, slice_axis=0)
     y_pix = get_coords_slices(coords=coords_origin, slice_size=map_res, slice_axis=1)
 
-    # map (i, j) pixels to 1D pixel id = i + j * num_pix
-    pix_ids = map_tools.pixel_to_pix_id([x_pix, y_pix], num_pix)
+    # slice out only pixel values within the map
+    in_map = (
+        (x_pix < num_pix_side) & (x_pix >= 0)
+        (y_pix <= num_pix_side) & (y_pix >= 0)
+    )
 
-    # only use props that are within map
-    within_map = pix_ids < num_pix**2
-    pix_ids = pix_ids[within_map]
-    sort_order = np.argsort(pix_ids)
-
-    # get the starting index for each sorted pixel
-    unique_ids, loc_ids = np.unique(pix_ids[sort_order], return_index=True)
-    pix_range = np.concatenate([loc_ids, [len(pix_ids)]])
+    # map (i, j) pixels to 1D pixel id = i + j * num_pix for all the
+    # pixels in the map
+    pix_ids = map_tools.pixel_to_pix_id([x_pix[in_map], y_pix[in_map]], num_pix_side)
 
     props = dict(
         [
-            (k, v[..., within_map])
-            if v.shape[-1] == len(within_map)
+            (k, v[..., in_map])
+            if v.shape[-1] == len(in_map)
             # if v is a single value, apply it for all coords in pixel
-            else (k, v * np.ones(within_map.sum()))
+            else (k, v * np.ones(in_map.sum()))
             for k, v in props.items()
         ])
 
-    # now fill up pixel_values by performing func_sum(**props) / A_pix
-    func_values = func(**props)[sort_order] / A_pix
+    # calculate func for each particle, we already divide by A_pix
+    func_values = func(**props) / A_pix
 
-    pixel_values = np.zeros(num_pix**2, dtype=float)
+    # now we need to associate each value to the correct pixel
+    sort_order = np.argsort(pix_ids)
+    func_values = func_values[sort_order]
+
+    # get the location of each pixel for the sorted pixel list
+    # e.g. for sorted pix_ids = [0, 0, 0, 1, 1, ..., num_pix_side**2, ...]
+    # we would get back [0, 3, ...]
+    unique_ids, loc_ids = np.unique(pix_ids[sort_order], return_index=True)
+
+    # need to also add the final value for pix_id = num_pix**2 - 1
+    pix_range = np.concatenate([loc_ids, [len(pix_ids)]])
+
+    pixel_values = np.zeros(num_pix_side**2, dtype=float)
     pixel_values[unique_ids] = np.array([
         np.sum(func_values[i:j]) for i, j in zip(pix_range[:-1], pix_range[1:])
     ])
 
     # reshape the array to the map we wanted
-    mapped = np.atleast_1d(pixel_values).reshape(num_pix, num_pix)
+    # we get (j, i) array with x_pix along columns and y_pix along rows
+    mapped = np.atleast_1d(pixel_values).reshape(num_pix_side, num_pix_side)
     return mapped
