@@ -6,12 +6,13 @@ import numpy as np
 import os
 
 import simulation_slices.bahamas as bahamas
+import simulation_slices.utilities as util
 
 
-def put_maps_on_queue(queue, *args, **kwargs):
-    result = bahamas.get_mass_projection_maps(*args, **kwargs)
-    queue.put([os.getpid(), result])
-    print(f'Process {os.getpid()} done')
+# def put_maps_on_queue(queue, *args, **kwargs):
+#     result = util.time_this(
+#         bahamas.get_mass_projection_maps, pid=True)(*args, **kwargs)
+#     queue.put([os.getpid(), result])
 
 
 def map_bahamas_clusters(
@@ -51,8 +52,8 @@ def map_bahamas_clusters(
 
     for c in centers_split:
         process = Process(
-            target=put_maps_on_queue,
-            args=(out_q,),
+            target=util.on_queue,
+            args=(out_q, bahamas.get_mass_projection_maps),
             kwargs={
                 'coords': c,
                 'slice_file': slice_file,
