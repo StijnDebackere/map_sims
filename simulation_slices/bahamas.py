@@ -11,6 +11,21 @@ import simulation_slices.utilities as util
 
 import pdb
 
+def slice_file_name(slice_axis, slice_size, snapshot, slice_num=None):
+    """Return the formatted base filename for the given slice. If
+    slice_num is None, base filename is returned."""
+    prefix = {
+        0: 'x',
+        1: 'y',
+        2: 'z',
+    }
+    pref = prefix[slice_axis]
+    fname = f'{pref}_slice_size_{slice_size:d}_{snapshot:03d}'
+    if slice_num is not None:
+        fname = f'{fname}_slice_num_{slice_num:d}.hdf5'
+
+    return fname
+
 
 def save_slice_data(
         base_dir, snapshot, datatype='snap', parttypes=[0, 1, 4, 5],
@@ -64,13 +79,6 @@ def save_slice_data(
     N_tot = sum(snap_info.num_part_tot)
     maxshape = int(2 * N_tot / num_slices)
 
-    # set up to generate slice files
-    filenames_base = {
-        0: f'x_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}',
-        1: f'y_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}',
-        2: f'z_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}'
-    }
-
     hdf_properties = layouts.bahamas_layout_properties(
         snap_info=snap_info, maxshape=maxshape
     )
@@ -85,7 +93,10 @@ def save_slice_data(
             attrs=hdf_attrs,
         )
 
-        filename = save_dir / f'{filenames_base[slice_axis]}_slice_num_{i}.hdf5'
+        fname = slice_file_name(
+            slice_axis=slice_axis, slice_size=slice_size,
+            snapshot=snapshot, slice_num=i)
+        filename = save_dir / fname
 
         # ensure that we start with a clean slate
         print(f'Removing {filename.name} if it exists!')
