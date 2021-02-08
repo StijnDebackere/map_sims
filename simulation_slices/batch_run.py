@@ -14,9 +14,30 @@ import simulation_slices.utilities as util
 #         bahamas.get_mass_projection_maps, pid=True)(*args, **kwargs)
 #     queue.put([os.getpid(), result])
 
+AXIS2STR = {
+    0: 'x',
+    1: 'y',
+    2: 'z',
+}
+
+
+def order_coords(coords, map_thickness, box_size, slice_axis):
+    """Order the list of coords such that each cpu accesses independent
+    slice_files."""
+    # divide the box up in independent regions of map_thickness
+    bin_edges = np.arange(0, box_size, map_thickness)
+
+    # sort the coords according to slice_axis
+    coords_sorted = coords[:, coords[slice_axis].argsort()]
+    bin_ids = np.digitize(coords[slice_axis], bin_edges)
+    n_max = len(bin_edges)
+
+    coords_split = [coords[:, bin_ids == idx] for idx in range(1, n_max)]
+    return coords_split
+
 
 def map_bahamas_clusters(
-        sim_dir, slice_file, snapshot, n_cpus,
+        sim_dir, slice_dir, snapshot, slice_axis, slice_size, box_size,
         map_size=10, map_res=0.1, map_thickness=20,
         parttypes=[0, 1, 4], log10_m200m_range=np.array([14.5, 15.])):
     """For the simulation in sim_dir with slices in slice_file,
@@ -48,7 +69,10 @@ def map_bahamas_clusters(
     # set up multiprocessing
     out_q = Queue()
     procs = []
-    centers_split = np.array_split(centers[selected], n_cpus)
+    centers_split = order_coords(
+        coords=centers[selected].T, map_thickness=map_thickness,
+        box_size=group_info.boxsize, slice_axis=slice_axis)
+    n_cpus = len(centers_split)
 
     for c in centers_split:
         process = Process(
@@ -56,7 +80,11 @@ def map_bahamas_clusters(
             args=(out_q, bahamas.get_mass_projection_maps),
             kwargs={
                 'coords': c,
-                'slice_file': slice_file,
+                'slice_dir': slice_dir,
+                'snapshot': snapshot,
+                'slice_axis': slice_axis,
+                'slice_size': slice_size,
+                'box_size': box_size,
                 'map_size': map_size,
                 'map_res': map_res,
                 'map_thickness': map_thickness,
@@ -79,9 +107,8 @@ def map_bahamas_clusters(
     maps = maps.reshape((-1, len(parttypes)) + maps.shape[-2:])
 
     fname = (
-        Path(slice_file).parent / (
-            ''.join(Path(slice_file).name.split('.')[:-1])
-            + f'_maps_size_{map_size}_res_{map_res}_L_{map_thickness}.npz')
+        Path(slice_dir) / f'{AXIS2STR[slice_axis]}_maps_size_{map_size}_'
+        f'res_{map_res}_L_{map_thickness}.npz'
     )
 
     np.savez(
@@ -94,7 +121,6 @@ def map_bahamas_clusters(
         map_size=map_size, map_res=map_res,
         map_thickness=map_thickness,
         snapshot=snapshot,
-        slice_file=slice_file,
         maps=maps,
     )
     return maps

@@ -208,7 +208,8 @@ def save_slice_data(
 
 
 def get_mass_projection_map(
-        coord, slice_file, map_size, map_res, map_thickness, parttypes,
+        coord, slice_dir, snapshot, slice_axis, slice_size, box_size,
+        map_size, map_res, map_thickness, parttypes,
         verbose=True):
     """Project mass around coord in a box of (map_size, map_size, slice_size)
     in a map of map_res.
@@ -236,25 +237,21 @@ def get_mass_projection_map(
         pixelated projected mass
 
     """
-    h5file = h5py.File(str(slice_file), mode='r')
-    slice_axis = h5file.attrs['slice_axis']
-    slice_size = h5file.attrs['slice_size']
-    box_size = h5file.attrs['box_size']
-    num_slices = int(box_size // slice_size)
-
+    # determine which slices need to be included
     thickness = np.zeros((3,), dtype=float)
     thickness[slice_axis] += map_thickness / 2
+    num_slices = int(box_size // slice_size)
 
     extent = np.array([
         coord - thickness, coord + thickness
     ]).T
 
     slice_ids = ops.get_coords_slices(
-        coords=extent, slice_axis=slice_axis,
-        slice_size=h5file.attrs['slice_size'],
+        coords=extent, slice_axis=slice_axis, slice_size=slice_size,
     )
+
     # create index array that cuts out the slice_axis
-    no_slice_axis = range(coord.shape[0]) != slice_axis
+    no_slice_axis = np.arange(coord.shape[0]) != slice_axis
 
     # add the projected mass map for each particle type to maps
     maps = []
@@ -269,15 +266,21 @@ def get_mass_projection_map(
         coords = []
         masses = []
         for idx in range(slice_ids[0], slice_ids[1] + 1):
+            idx_mod = idx % num_slices
+            fname = slice_file_name(
+                slice_axis=slice_axis, slice_size=slice_size, snapshot=snapshot,
+                slice_num=idx_mod
+            )
+            h5file = h5py.File(f'{slice_dir}/{fname}', mode='r')
             # take into account periodic boundary conditions
             # all coordinates are 0 < x, y, z < L
-            idx_mod = idx % num_slices
             coords.append(
-                h5file[f'{idx_mod}/PartType{parttype}/Coordinates'][:]
+                h5file[f'PartType{parttype}/Coordinates'][:]
             )
             masses.append(
-                h5file[f'{idx_mod}/PartType{parttype}/Mass'][:]
+                h5file[f'PartType{parttype}/Mass'][:]
             )
+            h5file.close()
 
         coords = np.concatenate(coords, axis=-1)
         # now that we have all the particles that are roughly within
@@ -314,7 +317,6 @@ def get_mass_projection_map(
 
         maps.append(mp[None,...])
 
-    h5file.close()
     maps = np.concatenate(maps, axis=0)
     return maps
 
@@ -322,7 +324,9 @@ def get_mass_projection_map(
 def get_mass_projection_maps(coords, *args, **kwargs):
     """For all coords run get_mass_projection_map()."""
     maps = []
-    for coord in coords:
+    # need to iterate over columns...
+    for coord in coords.T:
+        # reshape to correct shape
         mp = get_mass_projection_map(coord, *args, **kwargs)
         maps.append(mp)
 
