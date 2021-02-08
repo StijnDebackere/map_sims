@@ -138,7 +138,7 @@ def num_to_str(num, unit=None, log=False, precision=3):
     return res
 
 
-def make_dir(path, dirname):
-    """Creates path/dirname."""
-    dr = check_path(path) / str(dirname)
+def make_dir(path):
+    """Creates path."""
+    dr = check_path(path)
     dr.mkdir(parents=True, exist_ok=True)

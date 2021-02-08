@@ -3,6 +3,8 @@ import h5py
 import numpy as np
 from tqdm import tqdm
 
+import simulation_slices.io as io
+import simulation_slices.hdf5_layouts as layouts
 import simulation_slices.map_tools as map_tools
 import simulation_slices.operations as ops
 import simulation_slices.utilities as util
@@ -45,86 +47,52 @@ def save_slice_data(
         gadgetunits=True
     )
 
+    # ensure that save_dir exists
+    if save_dir is None:
+        save_dir = util.check_path(snap_info.filename.parent) / 'slices'
+    util.make_dir(save_dir)
+
+    # read snapshot properties
     box_size = snap_info.boxsize
     slice_axis = util.check_slice_axis(slice_axis)
     slice_size = util.check_slice_size(slice_size=slice_size, box_size=box_size)
     num_slices = int(box_size // slice_size)
 
-    filenames = {
-        0: f'x_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}.hdf5',
-        1: f'y_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}.hdf5',
-        2: f'z_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}.hdf5'
+    # crude estimate of maximum number of particles in each slice
+    N_tot = sum(snap_info.num_part_tot)
+    maxshape = int(2 * N_tot / num_slices)
+
+    # set up to generate slice files
+    filenames_base = {
+        0: f'x_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}',
+        1: f'y_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}',
+        2: f'z_slice_size_{util.num_to_str(slice_size)}_{snapshot:03d}'
     }
 
-    N_tot = sum(snap_info.num_part_tot)
-    # crude estimate of maximum number of particles in each slice
-    max_size = int(2 * N_tot / num_slices)
+    hdf_properties = layouts.bahamas_layout_properties(
+        snap_info=snap_info, maxshape=maxshape
+    )
+    hdf_attrs = layouts.bahamas_attrs(
+        snap_info=snap_info, slice_axis=slice_axis, slice_size=slice_size
+    )
 
-    # get the filename to save to
-    if save_dir is None:
-        save_dir = util.check_path(snap_info.filename.parent) / 'slices'
-    else:
-        save_dir = util.check_path(save_dir) / 'slices'
-
-    save_dir.mkdir(parents=True, exist_ok=True)
-    filename = save_dir / filenames[slice_axis]
-
-    # ensure that we start with a clean slate
-    print(f'Removing {filename.name} if it exists!')
-    filename.unlink(missing_ok=True)
-
-    # create hdf5 file and generate the required datasets
-    h5file = h5py.File(str(filename), mode='a')
-
-    h5file.attrs['slice_axis'] = slice_axis
-    h5file.attrs['slice_size'] = slice_size
-    h5file.attrs['box_size'] = box_size
-    h5file.attrs['a'] = snap_info.a
-    h5file.attrs['h'] = snap_info.h
-
+    # generate hd5file for each slice
     for i in range(num_slices):
-        for parttype in parttypes:
-            # create coordinate datasets
-            dset_coords = h5file.create_dataset(
-                f'{i}/PartType{parttype}/Coordinates', shape=(3, 0),
-                dtype=float, maxshape=(3, max_size)
-            )
-            dset_coords.attrs['CGSConversionFactor'] = snap_info.cm_per_mpc
-            dset_coords.attrs['aexp-scale-exponent'] = 1.0
-            dset_coords.attrs['h-scale-exponent'] = -1.0
+        hdf_layout = layouts.get_slice_layout(
+            slice_num=i, parttypes=parttypes, properties=hdf_properties,
+            attrs=hdf_attrs,
+        )
 
-            dset_mass = h5file.create_dataset(
-                f'{i}/PartType{parttype}/Mass', shape=(0,),
-                dtype=float, maxshape=(max_size,)
-            )
-            dset_mass.attrs['CGSConversionFactor'] = snap_info.mass_unit * 1e-10
-            dset_mass.attrs['aexp-scale-exponent'] = 0.0
-            dset_mass.attrs['h-scale-exponent'] = -1.0
+        filename = save_dir / f'{filenames_base[slice_axis]}_slice_num_{i}.hdf5'
 
-            if parttype == 0:
-                dset_temp = h5file.create_dataset(
-                    f'{i}/PartType{parttype}/Temperature', shape=(0,),
-                    dtype=float, maxshape=(max_size,)
-                )
-                dset_temp.attrs['CGSConversionFactor'] = 1.0
-                dset_temp.attrs['aexp-scale-exponent'] = 0.0
-                dset_temp.attrs['h-scale-exponent'] = 0.0
+        # ensure that we start with a clean slate
+        print(f'Removing {filename.name} if it exists!')
+        filename.unlink(missing_ok=True)
 
-                dset_dens = h5file.create_dataset(
-                    f'{i}/PartType{parttype}/Density', shape=(0,),
-                    dtype=float, maxshape=(max_size,)
-                )
-                dset_dens.attrs['CGSConversionFactor'] = snap_info.rho_unit
-                dset_dens.attrs['aexp-scale-exponent'] = -3.0
-                dset_dens.attrs['h-scale-exponent'] = 2.0
-
-                dset_z = h5file.create_dataset(
-                    f'{i}/PartType{parttype}/SmoothedMetallicity', shape=(0,),
-                    dtype=float, maxshape=(max_size,)
-                )
-                dset_z.attrs['CGSConversionFactor'] = 1
-                dset_z.attrs['aexp-scale-exponent'] = 0.0
-                dset_z.attrs['h-scale-exponent'] = 0.0
+        # create hdf5 file and generate the required datasets
+        io.create_hdf5(
+            fname=filename, layout=hdf_layout, close=True
+        )
 
     # now loop over all snapshot files and add their particle info
     # to the correct slice
@@ -188,17 +156,20 @@ def save_slice_data(
                     slice_dict['coords'],
                     slice_dict['masses'])):
                 if coord:
+                    fname = save_dir / f'{filenames_base[slice_axis]}_slice_num_{idx}.hdf5'
+                    h5file = h5py.File(fname, 'r+')
+
                     # add coordinates
-                    dset_coords = h5file[f'{idx}/PartType{parttype}/Coordinates']
-                    dset_coords.resize(
-                        dset_coords.shape[-1] + coord[0].shape[-1], axis=1)
-                    dset_coords[..., -coord[0].shape[-1]:] = coord[0]
+                    io.add_to_hdf5(
+                        h5file=h5file, dataset=f'PartType{parttype}/Coordinates',
+                        vals=coord[0], axis=1
+                    )
 
                     # add masses
-                    dset_masses = h5file[f'{idx}/PartType{parttype}/Mass']
-                    dset_masses.resize(
-                        dset_masses.shape[-1] + masses[0].shape[-1], axis=0)
-                    dset_masses[..., -masses[0].shape[-1]:] = masses[0]
+                    io.add_to_hdf5(
+                        h5file=h5file, dataset=f'PartType{parttype}/Mass',
+                        vals=masses[0], axis=0
+                    )
 
                     if parttype == 0:
                         # get gas properties, list of array
@@ -206,22 +177,21 @@ def save_slice_data(
                         dens = slice_dict['densities'][idx]
                         metals = slice_dict['metallicities'][idx]
 
-                        dset_temps = h5file[f'{idx}/PartType{parttype}/Temperature']
-                        dset_temps.resize(
-                            dset_temps.shape[-1] + temps[0].shape[-1], axis=0)
-                        dset_temps[..., -temps[0].shape[-1]:] = temps[0]
+                        io.add_to_hdf5(
+                            h5file=h5file, dataset=f'PartType{parttype}/Temperature',
+                            vals=temps[0], axis=0
+                        )
+                        io.add_to_hdf5(
+                            h5file=h5file, dataset=f'PartType{parttype}/Density',
+                            vals=dens[0], axis=0
+                        )
+                        io.add_to_hdf5(
+                            h5file=h5file, dataset=f'PartType{parttype}/SmoothedMetallicity',
+                            vals=metals[0], axis=0
+                        )
 
-                        dset_dens = h5file[f'{idx}/PartType{parttype}/Density']
-                        dset_dens.resize(
-                            dset_dens.shape[-1] + dens[0].shape[-1], axis=0)
-                        dset_dens[..., -dens[0].shape[-1]:] = dens[0]
 
-                        dset_metals = h5file[f'{idx}/PartType{parttype}/SmoothedMetallicity']
-                        dset_metals.resize(
-                            dset_metals.shape[-1] + metals[0].shape[-1], axis=0)
-                        dset_metals[..., -metals[0].shape[-1]:] = metals[0]
-
-    h5file.close()
+                    h5file.close()
 
 
 def get_mass_projection_map(
