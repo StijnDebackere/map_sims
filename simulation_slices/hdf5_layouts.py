@@ -1,6 +1,7 @@
 def bahamas_attrs(snap_info, slice_axis, slice_size):
     """Return the hdf5 attributes for BAHAMAS slices."""
     return {
+
         'slice_axis': slice_axis,
         'slice_size': slice_size,
         'box_size': snap_info.boxsize,
@@ -61,6 +62,7 @@ def bahamas_layout_properties(snap_info, maxshape):
                     'aexp-scale-exponent': 0.0,
                     'h-scale-exponent': 0.0,
                 }},
+            **joint,
         },
         1 : {**joint},
         4 : {**joint},
@@ -71,7 +73,7 @@ def bahamas_layout_properties(snap_info, maxshape):
 
 def bahamas_properties_to_dsets(parttypes, properties):
     """Return the dataset matching each property in properties."""
-
+    pass
 
 
 def get_slice_layout(slice_num, parttypes, properties, attrs):
@@ -100,13 +102,13 @@ def get_slice_layout(slice_num, parttypes, properties, attrs):
     layout : dict
         layout for hdf5 file
     """
-    layout = {}
+    layout = {'attrs': {}, 'dsets': {}}
     for attr, val in attrs.items():
-        layout[attr] = val
-        layout['slice_num'] = i
+        layout['attrs'][attr] = val
+        layout['attrs']['slice_num'] = slice_num
 
     for parttype in parttypes:
-        for prop, val in properties[parttype]:
-            layout[f'PartType{parttype}/{prop}'] = val
+        for prop, val in properties[parttype].items():
+            layout['dsets'][f'PartType{parttype}/{prop}'] = val
 
     return layout

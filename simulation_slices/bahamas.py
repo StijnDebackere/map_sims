@@ -50,6 +50,8 @@ def save_slice_data(
     # ensure that save_dir exists
     if save_dir is None:
         save_dir = util.check_path(snap_info.filename.parent) / 'slices'
+    else:
+        save_dir = util.check_path(save_dir)
     util.make_dir(save_dir)
 
     # read snapshot properties

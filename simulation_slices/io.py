@@ -1,5 +1,7 @@
 import h5py
 
+import pdb
+
 
 def create_hdf5(fname, layout, close=False):
     """Create an empty hdf5 file with layout given by dictionary
@@ -35,8 +37,8 @@ def create_hdf5(fname, layout, close=False):
             dset, shape=val['shape'], dtype=val['dtype'],
             maxshape=val['maxshape']
         )
-        for attr, val in dset['attrs']:
-            ds.attrs[attr] = val
+        for attr, attr_val in val['attrs'].items():
+            ds.attrs[attr] = attr_val
     if close:
         h5file.close()
 
