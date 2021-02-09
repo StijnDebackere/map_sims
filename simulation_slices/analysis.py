@@ -45,7 +45,8 @@ def M_ap_from_sigma_map(
     pixels = map_tools.pix_id_to_pixel(
         np.arange(num_pix_side**2), num_pix_side)
 
-    R = np.linalg.norm(pixels - pix_0.reshape(2, 1)) * pix_scale
+    R_pix = np.linalg.norm(pixels - pix_0.reshape(2, 1), axis=0)
+    R = (R_pix * pix_scale).reshape(num_pix_side, num_pix_side)
     A_pix = pix_scale**2
     M_ap = filt(R, sigma_map, A_pix, **filt_kwargs)
     return M_ap

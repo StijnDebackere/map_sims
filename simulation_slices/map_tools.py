@@ -5,7 +5,7 @@ def pix_id_to_pixel(pix_id, num_pix_side):
     """Convert pix_id = i + j * num_pix_side  to pixel (i, j)."""
     if ((pix_id >= num_pix_side**2) | (pix_id < 0)).any():
         raise ValueError('pix_id should be in [0, num_pix_side**2)')
-    return np.array([[pix_id % num_pix_side], [pix_id // num_pix_side]])
+    return np.array([pix_id % num_pix_side, pix_id // num_pix_side])
 
 
 def pixel_to_pix_id(pixel, num_pix_side):
