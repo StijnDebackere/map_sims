@@ -11,10 +11,10 @@ def filter_zeta(R, sigma, A_pix, R1, R2, Rm, **kwargs):
     (1998)."""
     sigma_R1 = np.sum(
         PI_INV / R1**2 * sigma[np.where(R <= R1)]
-    ) / A_pix
+    ) * A_pix
     sigma_R2_Rm = np.sum(
         -PI_INV / (Rm**2 - R2**2) * sigma[np.where((R > R2) & (R < Rm))]
-    ) / A_pix
+    ) * A_pix
 
     return sigma_R1 + sigma_R2_Rm
 
@@ -30,7 +30,7 @@ def M_ap_from_sigma_map(
     sigma_crit : float
         critical surface mass density
     filt : callable
-        filter that takes a distance R - R_0 as first argument
+        filter function (R, Sigma, A_pix, **filt_kwargs)
     pix_scale : float
         physical scale of pixels in length units matching sigma_crit
     x_0 : (2,) array
