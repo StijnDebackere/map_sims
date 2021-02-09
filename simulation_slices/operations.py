@@ -7,8 +7,8 @@ import simulation_slices.utilities as util
 
 import pdb
 
-def masses(masses):
-    """Return the sum of the list of masses."""
+def masses(masses, log=False):
+    """Return the list of masses."""
     return masses
 
 

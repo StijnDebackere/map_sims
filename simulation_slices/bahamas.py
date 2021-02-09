@@ -292,8 +292,9 @@ def get_mass_projection_map(
             coords.append(
                 h5file[f'{idx_mod}/PartType{parttype}/Coordinates'][:]
             )
+            # need to convert to actual masses
             masses.append(
-                h5file[f'{idx_mod}/PartType{parttype}/Mass'][:]
+                10**h5file[f'{idx_mod}/PartType{parttype}/Mass'][:]
             )
 
         coords = np.concatenate(coords, axis=-1)
