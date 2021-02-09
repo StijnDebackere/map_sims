@@ -6,8 +6,9 @@ import numpy as np
 
 def save_mass_map(
         mp, map_size, map_res, map_thickness, ptypes,
-        coord, coord_format=r'.2f', coord_unit=r'h^{-1} \, \mathrm{Mpc}',
-        mass, mass_label=r'\log_{10}m_\mathrm{200m}',
+        coord, mass,
+        coord_format=r'.2f', coord_unit=r'h^{-1} \, \mathrm{Mpc}',
+        mass_label=r'\log_{10}m_\mathrm{200m}',
         mass_format=r'.2f',
         mass_unit=r'h^{-1} \, \mathrm{M_odot}'):
     """Save an image of mass map mp.
