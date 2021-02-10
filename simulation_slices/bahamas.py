@@ -123,14 +123,13 @@ def save_slice_data(
 
             # dark matter does not have the Mass variable
             if parttype != 1:
-                # these masses are in solar masses, h has been filled in!
+                # gadgetunit masses are in 1e10 M_sun / h
                 masses = snap_info.read_single_file(
                     i=file_num, var=f'PartType{parttype}/Mass',
                     verbose=False, reshape=True,
-                ) + 10
+                ) * 1e10
             else:
-                # need to fill in h^-1 scaling
-                masses = np.atleast_1d(snap_info.masses[parttype]) + 10
+                masses = np.atleast_1d(snap_info.masses[parttype]) * 1e10
 
             properties = {
                     'coords': coords,
@@ -169,7 +168,9 @@ def save_slice_data(
                     slice_dict['coords'],
                     slice_dict['masses'])):
                 if coord:
-                    fname = save_dir / f'{filenames_base[slice_axis]}_slice_num_{idx}.hdf5'
+                    fname = save_dir / slice_file_name(
+                        slice_axis=slice_axis, slice_size=slice_size,
+                        snapshot=snapshot, slice_num=idx)
                     h5file = h5py.File(fname, 'r+')
 
                     # add coordinates
@@ -277,9 +278,8 @@ def get_mass_projection_map(
             coords.append(
                 h5file[f'PartType{parttype}/Coordinates'][:]
             )
-            # need to convert to actual masses
             masses.append(
-                10**h5file[f'PartType{parttype}/Mass'][:]
+                h5file[f'PartType{parttype}/Mass'][:]
             )
             h5file.close()
 
