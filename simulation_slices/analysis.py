@@ -80,4 +80,4 @@ def get_M_aps(maps, sigma_crit, pix_scale, R1, R2, Rm):
         pix_0=np.array([maps.shape[-1] // 2, maps.shape[-1] // 2]),
         R1=R1, R2=R2, Rm=Rm
     )
-    return results
+    return np.asarray(results)
