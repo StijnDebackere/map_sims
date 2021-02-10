@@ -9,6 +9,7 @@ import simulation_slices.settings as settings
 import pdb
 
 FIGURE_DIR = settings.FIGURE_DIR
+bw_color = 'black'
 mpl.use('pdf')
 
 
@@ -72,8 +73,8 @@ def save_mass_map(
     ]
     ax_cb = fig.add_axes([0.5 - dx, 0.075, 2 * dx, 0.1])
 
-    cmap = mpl.cm.magma
-    cmap.set_bad(color='black')
+    cmap = mpl.cm.gray_r
+    # cmap.set_bad(color='black')
 
     # ensure valid colorbar range
     mp_tot = np.log10(mp.sum(axis=0))
@@ -94,22 +95,23 @@ def save_mass_map(
         0.5, 0.05,
         f'${mass_label} = {format(mass, mass_format)} \, [{mass_unit}]$',
         ha='center', va='bottom',
-        transform=axs[0].transAxes, color='white', fontsize=30,
+        transform=axs[0].transAxes, color=bw_color, fontsize=30,
     )
     set_spines_labels(
-        axs[0], left=False, right=False, top=False, bottom=False, labels=False
+        axs[0], left=True, right=True, top=True, bottom=True,
+        labels=False
     )
 
     scalebar = AnchoredSizeBar(
         axs[0].transData,
         map_size / 4, f'${map_size / 4} \, {coord_unit}$', 'upper left',
-        pad=0.1, color='white',
+        pad=0.1, color='black',
         frameon=False, size_vertical=map_size / 100)
     axs[0].add_artist(scalebar)
 
     cb = plt.colorbar(img, cax=ax_cb, orientation='horizontal')
     cb.set_label(
-        f'${map_label} \, [{map_unit}]$', color='white', labelpad=-85)
+        f'${map_label} \, [{map_unit}]$', color=bw_color, labelpad=-90)
 
     for idx, ptype in enumerate(ptypes):
         i = idx + 1
@@ -122,15 +124,15 @@ def save_mass_map(
         )
         axs[i].set_title(ptype_labels[ptype])
         set_spines_labels(
-            axs[i], left=False, right=False, top=False,
-            bottom=False, labels=False
+            axs[i], left=True, right=True, top=True,
+            bottom=True, labels=False
         )
 
     axs[-1].text(
         0.5, 0.05,
         f'$\Delta l = {format(map_thickness, coord_format)} \, [{coord_unit}]$',
         ha='center', va='bottom',
-        transform=axs[-1].transAxes, color='white', fontsize=30,
+        transform=axs[-1].transAxes, color=bw_color, fontsize=30,
     )
 
     plt.savefig(f'{FIGURE_DIR}/map_gid_{group_id}.pdf')
