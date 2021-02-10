@@ -1,16 +1,26 @@
 import matplotlib as mpl
-from matplotlib import gridspec
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 import numpy as np
+from plotting_tools.axes import set_spines_labels
+
+import simulation_slices.settings as settings
+
+import pdb
+
+FIGURE_DIR = settings.FIGURE_DIR
+mpl.use('pdf')
 
 
 def save_mass_map(
         mp, map_size, map_res, map_thickness, ptypes,
-        coord, mass,
+        coord, mass, group_id,
         coord_format=r'.2f', coord_unit=r'h^{-1} \, \mathrm{Mpc}',
         mass_label=r'\log_{10}m_\mathrm{200m}',
         mass_format=r'.2f',
-        mass_unit=r'h^{-1} \, \mathrm{M_odot}'):
+        mass_unit=r'h^{-1} \, \mathrm{M_\odot}',
+        map_label=r'\log_{10} \Sigma',
+        map_unit=r'h \, \mathrm{M_\odot/Mpc^2}'):
     """Save an image of mass map mp.
 
     Parameters
@@ -30,6 +40,8 @@ def save_mass_map(
         central coordinate of the map in units of box_size
     mass : float
         chosen mass
+    group_id : int
+        id of the group
     mass_label : str
         TeX-formatted label to give to mass
     mass_format : str
@@ -49,43 +61,76 @@ def save_mass_map(
         5 : 'bh'
     }
     num_plots = len(ptypes) + 1
-    plt.clf()
-    fig, axs = plt.subplots(
-        nrows=1, ncols=num_plots , sharey=True,
-        gridspec_kw={
-            'height_ratio': [1, 1],
-        },
-        figsize=(num_plots * 5, 5)
-    )
+    dx = 0.8 / num_plots
 
-    vmin = mp[0].min()
-    vmax = mp[0].max()
-    axs[0].imshow(
-        mp[0], extent=(
+    plt.clf()
+    fig = plt.figure(figsize=(num_plots * 7, 8))
+
+    axs = [
+        fig.add_axes([0.1 + i * dx, 0.175, dx, 0.8])
+        for i in range(num_plots)
+    ]
+    ax_cb = fig.add_axes([0.5 - dx, 0.075, 2 * dx, 0.1])
+
+    cmap = mpl.cm.magma
+    cmap.set_bad(color='black')
+
+    # ensure valid colorbar range
+    mp_tot = np.log10(mp.sum(axis=0))
+    mp = np.log10(mp)
+
+    vmin = np.quantile(mp_tot[~np.isneginf(mp_tot)], 0.01)
+    vmax = np.quantile(mp_tot[~np.isneginf(mp_tot)], 0.99)
+
+    img = axs[0].imshow(
+        mp_tot, extent=(
             -map_size / 2, map_size / 2,
             -map_size / 2, map_size / 2),
         vmin=vmin, vmax=vmax,
-        cmap='magma'
+        cmap=cmap, aspect='equal'
     )
     axs[0].set_title(r'total')
     axs[0].text(
-        0.05, 0.05,
+        0.5, 0.05,
         f'${mass_label} = {format(mass, mass_format)} \, [{mass_unit}]$',
+        ha='center', va='bottom',
         transform=axs[0].transAxes, color='white', fontsize=30,
     )
+    set_spines_labels(
+        axs[0], left=False, right=False, top=False, bottom=False, labels=False
+    )
+
+    scalebar = AnchoredSizeBar(
+        axs[0].transData,
+        map_size / 4, f'${map_size / 4} \, {coord_unit}$', 'upper left',
+        pad=0.1, color='white',
+        frameon=False, size_vertical=map_size / 100)
+    axs[0].add_artist(scalebar)
+
+    cb = plt.colorbar(img, cax=ax_cb, orientation='horizontal')
+    cb.set_label(
+        f'${map_label} \, [{map_unit}]$', color='white', labelpad=-85)
 
     for idx, ptype in enumerate(ptypes):
         i = idx + 1
         axs[i].imshow(
-            mp[i], extent=(
+            mp[i - 1], extent=(
                 -map_size / 2, map_size / 2,
                 -map_size / 2, map_size / 2),
             vmin=vmin, vmax=vmax,
-            cmap='magma'
+            cmap=cmap, aspect='equal'
+        )
+        axs[i].set_title(ptype_labels[ptype])
+        set_spines_labels(
+            axs[i], left=False, right=False, top=False,
+            bottom=False, labels=False
         )
 
     axs[-1].text(
-        0.05, 0.05,
+        0.5, 0.05,
         f'$\Delta l = {format(map_thickness, coord_format)} \, [{coord_unit}]$',
+        ha='center', va='bottom',
         transform=axs[-1].transAxes, color='white', fontsize=30,
     )
+
+    plt.savefig(f'{FIGURE_DIR}/map_gid_{group_id}.pdf')
