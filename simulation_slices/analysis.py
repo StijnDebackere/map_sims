@@ -3,6 +3,7 @@ import numpy as np
 import simulation_slices.map_tools as map_tools
 import simulation_slices.utilities as util
 
+PI = np.pi
 PI_INV = 1. / np.pi
 
 
@@ -16,7 +17,7 @@ def filter_zeta(R, sigma, A_pix, R1, R2, Rm, **kwargs):
         -PI_INV / (Rm**2 - R2**2) * sigma[np.where((R > R2) & (R < Rm))]
     ) * A_pix
 
-    return sigma_R1 + sigma_R2_Rm
+    return PI * R1**2 * (sigma_R1 + sigma_R2_Rm)
 
 
 def M_ap_from_sigma_map(
