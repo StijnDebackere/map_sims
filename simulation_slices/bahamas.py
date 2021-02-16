@@ -145,14 +145,21 @@ def save_slice_data(
                     i=file_num, var=f'PartType{parttype}/Density',
                     verbose=False, reshape=True,
                 )
-                metallicities = snap_info.read_single_file(
-                    i=file_num, var=f'PartType{parttype}/SmoothedMetallicity',
+                hydrogen_abundance = snap_info.read_single_file(
+                    i=file_num,
+                    var=f'PartType{parttype}/SmoothedElementAbundance/Hydrogen',
+                    verbose=False, reshape=True,
+                )
+                helium_abundance = snap_info.read_single_file(
+                    i=file_num,
+                    var=f'PartType{parttype}/SmoothedElementAbundance/Helium',
                     verbose=False, reshape=True,
                 )
                 properties = {
                     'temperatures': temperatures,
                     'densities': densities,
-                    'metallicities': metallicities,
+                    'hydrogen_abundance': hydrogen_abundance,
+                    'helium_abundance': helium_abundance,
                     **properties
                 }
 
@@ -189,7 +196,8 @@ def save_slice_data(
                         # get gas properties, list of array
                         temps = slice_dict['temperatures'][idx]
                         dens = slice_dict['densities'][idx]
-                        metals = slice_dict['metallicities'][idx]
+                        hydrogen = slice_dict['hydrogen_abundance'][idx]
+                        helium = slice_dict['helium_abundance'][idx]
 
                         io.add_to_hdf5(
                             h5file=h5file, dataset=f'PartType{parttype}/Temperature',
@@ -200,8 +208,12 @@ def save_slice_data(
                             vals=dens[0], axis=0
                         )
                         io.add_to_hdf5(
-                            h5file=h5file, dataset=f'PartType{parttype}/SmoothedMetallicity',
-                            vals=metals[0], axis=0
+                            h5file=h5file, dataset=f'PartType{parttype}/SmoothedHydrogenAbundance',
+                            vals=hydrogen[0], axis=0
+                        )
+                        io.add_to_hdf5(
+                            h5file=h5file, dataset=f'PartType{parttype}/SmoothedHeliumAbundance',
+                            vals=helium[0], axis=0
                         )
 
 

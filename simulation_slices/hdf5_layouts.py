@@ -53,7 +53,16 @@ def bahamas_layout_properties(snap_info, maxshape):
                     'aexp-scale-exponent': -3.0,
                     'h-scale-exponent': 2.0,
                 }},
-            'SmoothedMetallicity': {
+            'SmoothedHydrogenAbundance': {
+                'shape': (0,),
+                'maxshape': (maxshape,),
+                'dtype': float,
+                'attrs': {
+                    'CGSConversionFactor': 1.0,
+                    'aexp-scale-exponent': 0.0,
+                    'h-scale-exponent': 0.0,
+                }},
+            'SmoothedHeliumAbundance': {
                 'shape': (0,),
                 'maxshape': (maxshape,),
                 'dtype': float,
