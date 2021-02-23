@@ -110,22 +110,21 @@ def save_slice_data(
                 slice_size=slice_size, maxshape=maxshape
             )
 
+    # set unit conversions
+    a = snap_info.a
+    z = 1 / a - 1
+
+    # we want M_sun / h and Mpc / h
+    m_unit = 1e10
+    r_unit = a
+
+    # and h^2 M_sun / Mpc^3
+    rho_unit = m_unit / r_unit**3
     # now loop over all snapshot files and add their particle info
     # to the correct slice
     for file_num in tqdm(
             range(snap_info.num_files),
             desc='Slicing particle files'):
-        # set unit conversions
-        a = snap_info.a
-        z = 1 / a - 1
-
-        # we want M_sun / h and Mpc / h
-        m_unit = 1e10
-        r_unit = a
-
-        # and h^2 M_sun / Mpc^3
-        rho_unit = m_unit / r_unit**3
-
         for ptype in ptypes:
             # need to put particles along columns for hdf5 optimal usage
             # read everything in Mpc / h
