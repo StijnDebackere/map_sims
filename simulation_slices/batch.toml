@@ -1,6 +1,5 @@
 [sims]
-# base_dir = "/hpcdata0/simulations/"
-base_dir = "/Users/stijn/Documents/PhD/projects/aperture_masses/data/"
+base_dir = "/hpcdata0/simulations/BAHAMAS/"
 sim_dirs = [
      "AGN_TUNED_nu0_L100N256_WMAP9", 
      "DMONLY_2fluid_nu0_L100N256_WMAP9"
@@ -17,14 +16,12 @@ slice_size = 5
 # axis along which slice is performed
 slice_axes = [0]
 # parent directory to save slice files in
-# save_dir = "/hpcdata0/simulations/BAHAMAS/extsdeba/slices/"
-save_dir = "/Users/stijn/Documents/PhD/projects/aperture_masses/data/slices/"
+save_dir = "/hpcdata0/simulations/BAHAMAS/extsdeba/slices/"
 # all files will be saved under
 # {save_dir}/{sim_dir}/axis_{slice_axis}_size_{slice_size}_{snapshot:03d}_{i:d}.hdf5
 
 [maps]
-# save_dir = "/hpcdata0/simulations/BAHAMAS/extsdeba/maps/"
-save_dir = "/Users/stijn/Documents/PhD/projects/aperture_masses/data/maps/"
+save_dir = "/hpcdata0/simulations/BAHAMAS/extsdeba/maps/"
 map_types = ["gas_mass", "dm_mass", "stars_mass", "bh_mass", "sz"]
 # maps are saved as
 # {save_dir}/{sim_dir}/{slice_axis}_map_{map_type}_{coords_name}.hdf5
