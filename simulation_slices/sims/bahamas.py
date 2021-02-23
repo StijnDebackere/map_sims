@@ -182,8 +182,7 @@ def save_slice_data(
             # write each slice to a separate file
             for slice_axis in slice_axes:
                 slice_dict = slicing.slice_particle_list(
-                    # need to convert the box size to cgs units!
-                    box_size=box_size / snap_info.h * snap_info.cm_per_mpc,
+                    box_size=box_size,
                     slice_size=slice_size,
                     slice_axis=slice_axis,
                     properties=properties
