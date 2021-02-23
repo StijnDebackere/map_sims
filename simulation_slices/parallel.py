@@ -96,4 +96,5 @@ class Worker(Process):
                 self.worker_out_q.put((result, None))
             except Exception as e:
                 e.stack_trace = format_exc()
+                print(f'<{self.name}> ran into exception {e}')
                 self.worker_out_q.put((None, e))
