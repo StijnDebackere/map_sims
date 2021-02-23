@@ -310,7 +310,6 @@ def run_pipeline(
             workers.append(worker)
             worker.start()
 
-        pdb.set_trace()
         while sims_out_q.qsize() < sims_q_size:
             time.sleep(5)
 
