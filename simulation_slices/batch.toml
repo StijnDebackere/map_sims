@@ -1,0 +1,48 @@
+[sims]
+# base_dir = "/hpcdata0/simulations/"
+base_dir = "/Users/stijn/Documents/PhD/projects/aperture_masses/data/"
+sim_dirs = [
+     "AGN_TUNED_nu0_L100N256_WMAP9", 
+     "DMONLY_2fluid_nu0_L100N256_WMAP9"
+]
+sim_type = "BAHAMAS"
+# scalar or list of lists for each sim_dir
+# 
+snapshots = 32
+box_sizes = 100
+
+[slices]
+# size in units of box size of box slices
+slice_size = 5
+# axis along which slice is performed
+slice_axes = [0]
+# parent directory to save slice files in
+# save_dir = "/hpcdata0/simulations/BAHAMAS/extsdeba/slices/"
+save_dir = "/Users/stijn/Documents/PhD/projects/aperture_masses/data/slices/"
+# all files will be saved under
+# {save_dir}/{sim_dir}/axis_{slice_axis}_size_{slice_size}_{snapshot:03d}_{i:d}.hdf5
+
+[maps]
+# save_dir = "/hpcdata0/simulations/BAHAMAS/extsdeba/maps/"
+save_dir = "/Users/stijn/Documents/PhD/projects/aperture_masses/data/maps/"
+map_types = ["gas_mass", "dm_mass", "stars_mass", "bh_mass", "sz"]
+# maps are saved as
+# {save_dir}/{sim_dir}/{slice_axis}_map_{map_type}_{coords_name}.hdf5
+
+# coords files are expected in
+# {save_dir}/{sim_dir}/{coords_name}.hdf5
+coords_name = "random_test"
+
+# details of the map, all in units of box size
+map_size = 5
+map_thickness = 10
+map_res = 0.05
+
+[observables]
+# which maps should be saved
+observable_types = ""
+save_dir = "/hpcdata0/simulations/BAHAMAS/extsdeba/observables/"
+
+# [DIRECTORIES]
+# FIGURE_DIR = /Users/stijn/Documents/PhD/projects/aperture_masses/figures/
+# DATA_DIR = /Users/stijn/Documents/PhD/projects/aperture_masses/data/

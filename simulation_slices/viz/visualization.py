@@ -4,11 +4,11 @@ from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 import numpy as np
 from plotting_tools.axes import set_spines_labels
 
-import simulation_slices.settings as settings
+from simulation_slices import CONFIG
 
 import pdb
 
-FIGURE_DIR = settings.FIGURE_DIR
+FIGURE_DIR = CONFIG['DIRECTORIES']['FIGURE_DIR']
 mpl.use('pdf')
 
 
@@ -134,3 +134,27 @@ def save_mass_map(
     )
 
     plt.savefig(f'{FIGURE_DIR}/map_gid_{group_id}.pdf')
+
+
+def plot_masses(
+        m_x, m_y,
+        x_label='$\log_{10} m_\mathrm{200m} \, [h^{-1} \mathrm{M_\odot}]$',
+        y_label='$\log_{10} M_\mathrm{\zeta}(R) \, [h^{-1} \mathrm{M_\odot}]$',
+        text='$R = 0.5 \, h^{-1} \, \mathrm{Mpc}$'):
+    """Plot masses"""
+    plt.clf()
+    fig = plt.figure(1)
+    ax = fig.add_axes([0.15, 0.15, 0.8, 0.8])
+
+    m_bins = np.linspace(m_x.min(), m_x.max(), 15)
+    m_med = np.quantile([])
+    ax.plot(m_x, m_y, lw=0, marker='o')
+    ax.text(
+        0.95, 0.05, text, ha='right', va='center',
+        transform=ax.transAxes
+    )
+    ax.set_xlabel(f'{x_label}')
+    ax.set_ylabel(f'{y_label}')
+    # plt.xscale('log')
+    # plt.yscale('log')
+    plt.savefig(f'{FIGURE_DIR}/masses.pdf')

@@ -3,8 +3,6 @@ from pathlib import Path
 import numpy as np
 import toml
 
-import pdb
-
 
 class Config(object):
     def __init__(self, config_file):
@@ -13,11 +11,11 @@ class Config(object):
         self.sim_dirs = config['sims']['sim_dirs']
         self.sim_type = config['sims']['sim_type']
         self.snapshots = config['sims']['snapshots']
-        self.box_sizes = config['sims']['box_sizes']
 
         self.slice_size = config['slices']['slice_size']
         self.slice_axes = config['slices']['slice_axes']
         self.slice_dir = config['slices']['save_dir']
+
 
         self.map_dir = config['maps']['save_dir']
         self.coords_name = config['maps']['coords_name']
@@ -29,9 +27,6 @@ class Config(object):
         self.obs_dir = config['observables']['save_dir']
 
         self.build_config()
-
-    def __getitem__(self, key):
-        return self.config[key]
 
     @property
     def base_dir(self):
@@ -107,36 +102,21 @@ class Config(object):
 
     @snapshots.setter
     def snapshots(self, val):
-        if type(val) is list:
-            # snapshots specified for each sim
-            if len(val) == self._n_sims:
-                self._snapshots = [np.atleast_1d(v) for v in val]
-            # multiple snapshots for each sim
+        val = np.array(val, dtype=object)
+        if len(val.shape) == 1:
+            if val.shape[0] == 1:
+                self._snapshots = np.ones(self._n_sims) * val
+            elif val.shape[0] == self._n_sims:
+                self._snapshots = val
             else:
-                self._snaphots = np.tile(np.atleast_1d(val)[None], (self._n_sims, 1))
-
-        elif type(val) is int:
-            self._snapshots = np.ones((self._n_sims, 1), dtype=int) * val
-        else:
-            raise ValueError('snapshots should be list or int')
-
-    @property
-    def box_sizes(self):
-        return self._box_sizes
-
-    @box_sizes.setter
-    def box_sizes(self, val):
-        if type(val) is list:
-            # box_sizes specified for each sim
-            if len(val) == self._n_sims:
-                self._box_sizes = [np.atleast_1d(v) for v in val]
+                raise ValueError('snapshots should be scalar or list of length sim_dirs')
+        elif len(val.shape) == 2:
+            if val.shape[0] == self._n_sims:
+                self._snapshots = val
             else:
-                raise ValueError('can only have 1 box_size per sim')
-
-        elif type(val) is int:
-            self._box_sizes = np.ones(self._n_sims) * val
+                raise ValueError('snapshots should match len(sim_dirs) along dimension 0')
         else:
-            raise ValueError('box_sizes should be list or int')
+            raise ValueError('cannot match snapshots to sim_dirs')
 
     @property
     def slice_size(self):
@@ -144,9 +124,21 @@ class Config(object):
 
     @slice_size.setter
     def slice_size(self, val):
-        if type(val) is not int and type(val) is not float:
-            raise ValueError('slice_size should be scalar')
-        self._slice_size = val
+        val = np.array(val, dtype=object)
+        if len(val.shape) == 1:
+            if val.shape[0] == 1:
+                self._slice_size = np.ones(self._n_sims) * val
+            elif val.shape[0] == self._n_sims:
+                self._slice_size = val
+            else:
+                raise ValueError('slice_size should be scalar or list of length sim_dirs')
+        elif len(val.shape) == 2:
+            if val.shape[0] == self._n_sims:
+                self._slice_size = val
+            else:
+                raise ValueError('slice_size should match len(sim_dirs) along dimension 0')
+        else:
+            raise ValueError('cannot match slice_size to sim_dirs')
 
     @property
     def slice_axes(self):

@@ -7,14 +7,6 @@ import time
 import numpy as np
 
 
-# # unfortunately, this wrapper does not work when wrapping
-# # a function as a target of a Process...
-# def on_queue(func, queue):
-#     @wraps(func)
-#     def get_result(*args, **kwargs):
-#         queue.put([os.getpid(), func(*args, **kwargs)])
-
-#     return get_result
 def on_queue(queue, func, *args, **kwargs):
     res = time_this(func, pid=True)(*args, **kwargs)
     queue.put([os.getpid(), res])
@@ -32,6 +24,20 @@ def arrays_to_coords(*xi):
     coords = np.concatenate([X.reshape(X.shape + (1,)) for X in Xi], axis=-1)
 
     return coords.reshape(-1, len(xi))
+
+
+def join_dict_arrays(a, b, axis=-1):
+    """Concatenate with matching keys."""
+    if a == {} or b == {}:
+        return a or b
+
+    if not a.keys() == b.keys():
+        raise ValueError('a and b should have matching keys')
+
+    for key in a.keys():
+        a[key] = np.concatenate([a[key], b[key]], axis=axis)
+
+    return a
 
 
 def time_this(func, pid=False):

@@ -13,6 +13,7 @@ setuptools.setup(
     # long_description_content_type="text/markdown",
     url="",
     packages=['simulation_slices'],
+    # package_dir={'':'src'},
     install_requires=[
         "h5py",
         "numpy",

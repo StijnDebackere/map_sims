@@ -5,7 +5,8 @@ from mira_titan import ExtractMiraTitan
 import numpy as np
 from tqdm import tqdm
 
-import simulation_slices.operations as ops
+import simulation_slices.maps.generation as gen
+import simulation_slices.maps.observables as obs
 import simulation_slices.utilities as util
 
 import pdb
@@ -95,7 +96,7 @@ def save_slice_data(
         ])
         particle_mass = extractor.simulation_info['m_p']
 
-        slice_dict = ops.slice_particle_list(
+        slice_dict = gen.slice_particle_list(
             box_size=extractor.box_size,
             slice_size=slice_size,
             slice_axis=slice_axis,
