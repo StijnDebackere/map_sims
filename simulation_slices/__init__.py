@@ -114,7 +114,7 @@ class Config(object):
                 self._snapshots = [np.atleast_1d(v) for v in val]
             # multiple snapshots for each sim
             else:
-                self._snaphots = np.tile(np.atleast_1d(val)[None], (self._n_sims, 1))
+                self._snapshots = np.tile(np.atleast_1d(val)[None], (self._n_sims, 1))
 
         elif type(val) is int:
             self._snapshots = np.ones((self._n_sims, 1), dtype=int) * val
