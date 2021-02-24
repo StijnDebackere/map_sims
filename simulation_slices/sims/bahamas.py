@@ -51,8 +51,7 @@ PROPS_PTYPES[0] = {
 }
 
 def save_slice_data(
-        base_dir, snapshot, ptypes=[0, 1, 4, 5],
-        slice_axes=0, slice_size=1, save_dir=None):
+        base_dir, snapshot, ptypes, slice_axes, slice_size, save_dir=None, verbose=False):
     """For snapshot of simulation in base_dir, slice the particle data for
     all ptypes along the x, y, and z directions. Slices are saved
     in the Snapshots directory by default.
@@ -122,9 +121,16 @@ def save_slice_data(
     rho_unit = m_unit / r_unit**3
     # now loop over all snapshot files and add their particle info
     # to the correct slice
-    for file_num in tqdm(
+
+    if verbose:
+        num_files_range = tqdm(
             range(snap_info.num_files),
-            desc='Slicing particle files'):
+            desc='Slicing particle files'
+        )
+    else:
+        num_files_range = range(snap_info.num_files)
+
+    for file_num in num_files_range:
         for ptype in ptypes:
             # need to put particles along columns for hdf5 optimal usage
             # read everything in Mpc / h

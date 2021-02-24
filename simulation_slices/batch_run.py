@@ -1,7 +1,9 @@
+from itertools import repeat
 from pathlib import Path
 
 from gadget import Gadget
 import h5py
+from multiprocessing import Pool
 import numpy as np
 import os
 import time
@@ -10,11 +12,19 @@ import toml
 from simulation_slices import Config
 import simulation_slices.maps.analysis as analysis
 import simulation_slices.maps.generation as map_gen
-from simulation_slices.parallel import Queue, Worker
 import simulation_slices.sims.bahamas as bahamas
 import simulation_slices.utilities as util
 
 import pdb
+
+
+def starmap_with_kwargs(pool, fn, kwargs_iter):
+    kwargs_for_starmap = zip(repeat(fn), kwargs_iter)
+    return pool.starmap(apply_args_and_kwargs, kwargs_for_starmap)
+
+
+def apply_args_and_kwargs(fn, kwargs):
+    return fn(**kwargs)
 
 
 # def analyze_maps(maps, func, **func_kwargs):
@@ -245,12 +255,13 @@ def load_coords(coords_dir, sim_name):
     filename = ''
 
 
-def slice_sim(sim_dir, sim_type, snapshots, slice_axes, slice_size, save_dir):
+def slice_sim(sim_dir, sim_type, snapshots, ptypes, slice_axes, slice_size, save_dir):
     if sim_type == 'BAHAMAS':
         for snap in np.atleast_1d(snapshots):
             bahamas.save_slice_data(
-                base_dir=str(sim_dir), snapshot=snap, slice_axes=slice_axes,
-                slice_size=slice_size, save_dir=save_dir
+                base_dir=str(sim_dir), snapshot=snap, ptypes=ptypes,
+                slice_axes=slice_axes, slice_size=slice_size,
+                save_dir=save_dir, verbose=False
             )
 
     return (os.getpid(), f'{sim_dir} sliced')
@@ -286,44 +297,31 @@ def run_pipeline(
     if sims:
         for p in config.slice_paths:
             p.mkdir(parents=True, exist_ok=True)
-        # Start by slicing all the simulations
-        sims_q_size = len(config.sim_dirs)
-        sims_in_q = Queue(maxsize=sims_q_size)
-        sims_out_q = Queue(maxsize=sims_q_size)
 
-        for sim_dir, snaps, save_dir in zip(
-                config.sim_paths, config.snapshots, config.slice_paths):
-            sims_in_q.put(
+        kwargs_list = []
+        for sim_dir, snaps, ptypes, save_dir in zip(
+                config.sim_paths, config.snapshots,
+                config.ptypes, config.slice_paths):
+            kwargs_list.append(dict(
                 sim_dir=sim_dir,
                 sim_type=config.sim_type,
+                ptypes=ptypes,
                 snapshots=snaps,
                 slice_axes=config.slice_axes,
                 slice_size=config.slice_size,
                 save_dir=save_dir
-            )
+            ))
 
-        workers = []
-        for _ in range(n_workers):
-            worker = Worker(
-                task_fn=slice_sim, worker_in_q=sims_in_q, worker_out_q=sims_out_q
-            )
-            workers.append(worker)
-            worker.start()
-
-        while sims_out_q.qsize() < sims_q_size:
-            time.sleep(5)
+        with Pool(n_workers) as pool:
+            result = starmap_with_kwargs(pool, slice_sim, kwargs_list)
 
     if maps:
         for p in config.map_paths:
             p.mkdir(parents=True, exist_ok=True)
-        # all simulations should have been sliced now
-        # let's generate the required maps
-        maps_q_size = len(config.sim_dirs)
-        maps_in_q = Queue(maxsize=maps_q_size)
-        maps_out_q = Queue(maxsize=maps_q_size)
 
+        kwargs_list = []
         for map_dir, slice_dir in zip(config.map_paths, config.slice_paths):
-            maps_in_q.put(
+            kwargs_list.append(dict(
                 snapshots=config.snapshots,
                 box_size=config.box_size,
                 coords_file=config.coords_file,
@@ -336,18 +334,10 @@ def run_pipeline(
                 map_res=config.map_res,
                 map_thickness=config.map_thickness,
                 save_dir=save_dir
-            )
+            ))
 
-        workers = []
-        for _ in range(n_workers):
-            worker = Worker(
-                task_fn=map_coords, worker_in_q=maps_in_q, worker_out_q=maps_out_q
-            )
-            workers.append(worker)
-            worker.start()
-
-        while maps_out_q.qsize() < maps_q_size:
-            time.sleep(5)
+        with Pool(n_workers) as pool:
+            result = starmap_with_kwargs(pool, map_coords, kwargs_list)
 
     if observables:
         pass

@@ -1,18 +1,21 @@
 [sims]
 base_dir = "/hpcdata0/simulations/BAHAMAS/"
 sim_dirs = [
-     "AGN_TUNED_nu0_L100N256_WMAP9", 
-     "DMONLY_2fluid_nu0_L100N256_WMAP9"
+     # "AGN_TUNED_nu0_L100N256_WMAP9",
+     # "DMONLY_2fluid_nu0_L100N256_WMAP9",
+     "AGN_TUNED_nu0_L400N1024_WMAP9",
+     "AGN_TUNED_nu0_L400N1024_Planck"
 ]
 sim_type = "BAHAMAS"
 # scalar or list of lists for each sim_dir
-# 
+#
 snapshots = 32
-box_sizes = 100
+box_sizes = 400
+ptypes = [[0, 1, 4, 5], [0, 1, 4, 5]]
 
 [slices]
 # size in units of box size of box slices
-slice_size = 5
+slice_size = 1
 # axis along which slice is performed
 slice_axes = [0]
 # parent directory to save slice files in

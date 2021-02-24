@@ -13,6 +13,7 @@ class Config(object):
         self.sim_dirs = config['sims']['sim_dirs']
         self.sim_type = config['sims']['sim_type']
         self.snapshots = config['sims']['snapshots']
+        self.ptypes = config['sims']['ptypes']
         self.box_sizes = config['sims']['box_sizes']
 
         self.slice_size = config['slices']['slice_size']
@@ -119,6 +120,25 @@ class Config(object):
             self._snapshots = np.ones((self._n_sims, 1), dtype=int) * val
         else:
             raise ValueError('snapshots should be list or int')
+
+    @property
+    def ptypes(self):
+        return self._ptypes
+
+    @ptypes.setter
+    def ptypes(self, val):
+        if type(val) is list:
+            # ptypes specified for each sim
+            if len(val) == self._n_sims:
+                self._ptypes = [np.atleast_1d(v) for v in val]
+            # multiple ptypes for each sim
+            else:
+                self._ptypes = np.tile(np.atleast_1d(val)[None], (self._n_sims, 1))
+
+        elif type(val) is int:
+            self._ptypes = np.ones((self._n_sims, 1), dtype=int) * val
+        else:
+            raise ValueError('ptypes should be list or int')
 
     @property
     def box_sizes(self):
