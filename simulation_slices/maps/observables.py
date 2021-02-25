@@ -10,14 +10,15 @@ def particles_masses(masses, log=False):
 
 
 def particles_y_sz(
-        z, densities, temperatures, masses,
+        densities, temperatures, masses,
         electron_number_densities=None, **kwargs):
     """Return the y_SZ for the list of particles."""
     if electron_number_densities is None:
         smoothed_hydrogen = kwargs.pop('smoothed_hydrogen', None)
         smoothed_helium = kwargs.pop('smoothed_helium', None)
-        if not (smoothed_hydrogen or smoothed_helium):
-            raise ValueError('smoothed_hydrogen and smoothed_helium required as kwargs')
+        z = kwargs.pop('z', None)
+        if z is None or smoothed_hydrogen is None or smoothed_helium is None:
+            raise ValueError('z, smoothed_hydrogen and smoothed_helium required as kwargs')
 
         electron_number_densities = interp_ne.n_e(
             z=z, T=temperatures, rho=densities,
