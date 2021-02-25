@@ -76,6 +76,98 @@ DSET_UNITS = {
     'FOF/Group_R_Crit2500': R_UNIT,
     'FOF/GroupCentreOfPotential': R_UNIT,
 }
+
+
+def save_coords_file(
+        base_dir, snapshot, group_dset, coord_dset, group_range, extra_dsets,
+        save_dir=None, coords_fname='', verbose=False):
+    """For snapshot of simulation in base_dir, save the coord_dset for
+    given group_dset and group_range.
+
+    Parameters
+    ----------
+    base_dir : str
+        path of the MiraTitanU directory
+    snapshot : int
+        snapshot to look at
+    group_dset : str
+        hdf5 FOF dataset to select group from
+    coord_dset : str
+        hdf5 dataset containing the coordinates
+    group_range : (min, max) tuple
+        minimum and maximum value for group_dset
+    extra_dsets : iterable
+        extra datasets to save to the file
+    save_dir : str or None
+        location to save to, defaults to snapshot_xxx/maps/
+    coords_fname : str
+        name for the coordinates file without extension
+
+    Returns
+    -------
+    saves a set of coordinates to save_dir
+
+    """
+    group_info = Gadget(
+        model_dir=base_dir, file_type='subh', snapnum=snapshot, sim='BAHAMAS',
+        gadgetunits=True
+    )
+
+    if 'FOF' not in group_dset:
+        raise ValueError('group_dset should be a FOF property')
+    if 'FOF' not in coord_dset:
+        raise ValueError('coord_dset should be a FOF property')
+    if not np.all(['FOF' in extra_dset for extra_dset in extra_dsets]):
+        raise ValueError('extra_dsets should be FOF properties')
+
+    # ensure that save_dir exists
+    if save_dir is None:
+        save_dir = util.check_path(group_info.filename).parent / 'maps'
+    else:
+        save_dir = util.check_path(save_dir)
+
+    fname = (save_dir / coords_fname).with_suffix('.hdf5')
+
+    group_data = group_info.read_var(group_dset, verbose=verbose) * DSET_UNITS.get(group_dset, 1.)
+    group_ids = np.arange(len(group_data))
+    selection = (group_data > np.min(group_range)) & (group_data < np.max(group_range))
+    coordinates = group_info.read_var(coord_dset, verbose=verbose)[selection] * DSET_UNITS.get(coord_dset, 1.)
+
+    extra = {
+        extra_dset: {
+            'data': group_info.read_var(extra_dset, verbose=verbose)[selection] * DSET_UNITS.get(extra_dset, 1.),
+        }
+        for extra_dset in extra_dsets
+    }
+    layout = {
+        'attrs': {
+            'description': 'File with selected coordinates for maps. All masses in M_sun/h',
+        },
+        'dsets': {
+            'coordinates': {
+                'data': coordinates,
+                'attrs': {
+                    'description': 'Coordinates in cMpc/h',
+                    'group_dset': group_dset,
+                    'group_range': group_range,
+
+                },
+            },
+            'group_ids': {
+                'data': group_ids[selection],
+                'attrs': {
+                    'description': 'Group IDs starting at 0',
+                }
+            },
+            **extra,
+        },
+    }
+
+    io.create_hdf5(
+        fname=fname, layout=layout, close=True
+    )
+
+
 def save_slice_data(
         base_dir, snapshot, ptypes, slice_axes, slice_size, save_dir=None, verbose=False):
     """For snapshot of simulation in base_dir, slice the particle data for
