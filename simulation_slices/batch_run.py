@@ -75,7 +75,7 @@ def map_coords(
 
     for snap in np.atleast_1d(snapshots):
         maps = map_gen.save_maps(
-            coord=coordinates, slice_dir=slice_dir, snapshot=snap,
+            coords=coordinates, slice_dir=slice_dir, snapshot=snap,
             slice_axes=slice_axes, slice_size=slice_size, box_size=box_size,
             map_size=map_size, map_res=map_res, map_thickness=map_thickness,
             map_types=map_types, save_dir=save_dir, coords_name=coords_name,
