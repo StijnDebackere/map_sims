@@ -17,7 +17,7 @@ def properties(maxshape):
             'maxshape': (3, maxshape),
             'dtype': float,
             'attrs': {
-                'description': 'Particle coordinates in Mpc / h'
+                'description': 'Particle coordinates in cMpc / h'
             },
         },
         'masses': {

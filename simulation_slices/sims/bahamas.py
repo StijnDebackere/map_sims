@@ -35,6 +35,7 @@ PROPS_TO_BAHAMAS[0] = {
     **PROPS_TO_BAHAMAS[0]
 }
 
+# get correct properties from BAHAMAS ptypes
 PROPS_PTYPES = {
     i: {
         'coordinates': f'{BAHAMAS_TO_PTYPES[i]}/coordinates',
@@ -50,6 +51,31 @@ PROPS_PTYPES[0] = {
     **PROPS_PTYPES[0]
 }
 
+# enforce consistent units
+# we want M_sun / h and cMpc / h
+M_UNIT = 1e10
+R_UNIT = 1
+
+# and h^2 M_sun / Mpc^3
+RHO_UNIT = M_UNIT / R_UNIT**3
+
+DSET_UNITS = {
+    'FOF/GroupMass': M_UNIT,
+    'FOF/Group_M_TopHat200': M_UNIT,
+    'FOF/Group_M_Mean200': M_UNIT,
+    'FOF/Group_M_Crit200': M_UNIT,
+    'FOF/Group_M_Mean500': M_UNIT,
+    'FOF/Group_M_Crit500': M_UNIT,
+    'FOF/Group_M_Mean2500': M_UNIT,
+    'FOF/Group_M_Crit2500': M_UNIT,
+    'FOF/Group_R_Mean200': R_UNIT,
+    'FOF/Group_R_Crit200': R_UNIT,
+    'FOF/Group_R_Mean500': R_UNIT,
+    'FOF/Group_R_Crit500': R_UNIT,
+    'FOF/Group_R_Mean2500': R_UNIT,
+    'FOF/Group_R_Crit2500': R_UNIT,
+    'FOF/GroupCentreOfPotential': R_UNIT,
+}
 def save_slice_data(
         base_dir, snapshot, ptypes, slice_axes, slice_size, save_dir=None, verbose=False):
     """For snapshot of simulation in base_dir, slice the particle data for
@@ -113,12 +139,6 @@ def save_slice_data(
     a = snap_info.a
     z = 1 / a - 1
 
-    # we want M_sun / h and Mpc / h
-    m_unit = 1e10
-    r_unit = a
-
-    # and h^2 M_sun / Mpc^3
-    rho_unit = m_unit / r_unit**3
     # now loop over all snapshot files and add their particle info
     # to the correct slice
 
