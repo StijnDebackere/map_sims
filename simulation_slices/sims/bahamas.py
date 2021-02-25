@@ -169,7 +169,8 @@ def save_coords_file(
 
 
 def save_slice_data(
-        base_dir, snapshot, ptypes, slice_axes, slice_size, save_dir=None, verbose=False):
+        base_dir, snapshot, ptypes, slice_axes, slice_size,
+        save_dir=None, verbose=False):
     """For snapshot of simulation in base_dir, slice the particle data for
     all ptypes along the x, y, and z directions. Slices are saved
     in the Snapshots directory by default.
@@ -190,6 +191,8 @@ def save_slice_data(
         slice thickness in units of box_size
     save_dir : str or None
         location to save to, defaults to snapshot_xxx/slices/
+    verbose : bool
+        print progress bar
 
     Returns
     -------
