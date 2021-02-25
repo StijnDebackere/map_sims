@@ -110,7 +110,11 @@ def check_slice_size(slice_size, box_size):
 def check_path(path):
     """Ensure path is a pathlib.PosixPath."""
     if not type(path) is pathlib.PosixPath:
-        return Path(path)
+        path = Path(path)
+
+    if not path.exists():
+        path.mkdir(parents=True, exist_ok=True)
+
     return path
 
 
