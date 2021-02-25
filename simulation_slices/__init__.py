@@ -21,11 +21,23 @@ class Config(object):
         self.slice_dir = config['slices']['save_dir']
 
         self.map_dir = config['maps']['save_dir']
-        self.coords_name = config['maps']['coords_name']
         self.map_types = config['maps']['map_types']
         self.map_size = config['maps']['map_size']
         self.map_res = config['maps']['map_res']
         self.map_thickness = config['maps']['map_thickness']
+
+        if 'coords' in config['sims'].keys():
+            self.compute_coords = True
+            self.coords_dir = config['sims']['coords']['coords_dir']
+            self.coords_name = config['sims']['coords']['coords_name']
+            self.coord_dset = config['sims']['coords']['coord_dset']
+            self.group_dset = config['sims']['coords']['group_dset']
+            self.group_range = config['sims']['coords']['group_range']
+            self.extra_dsets = config['sims']['coords']['extra_dsets']
+        else:
+            self.compute_coords = False
+            self.coords_dir = config['maps']['coords_dir']
+            self.coords_name = config['maps']['coords_name']
 
         self.obs_dir = config['observables']['save_dir']
 
@@ -74,13 +86,22 @@ class Config(object):
         self.map_paths = [self._map_dir / sd for sd in self.sim_dirs]
 
     @property
+    def coords_dir(self):
+        return self._coords_dir
+
+    @coords_dir.setter
+    def coords_dir(self, val):
+        self._coords_dir = Path(val)
+        self.coords_paths = [self._coords_dir / sd for sd in self.sim_dirs]
+
+    @property
     def coords_name(self):
         return self._coords_name
 
     @coords_name.setter
     def coords_name(self, val):
         self._coords_name = val
-        self.coords_files = [sd / f'{val}.hdf5' for sd in self.map_paths]
+        self.coords_files = [sd / f'{val}.hdf5' for sd in self.coords_paths]
 
     @property
     def obs_dir(self):
