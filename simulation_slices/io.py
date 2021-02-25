@@ -16,9 +16,14 @@ def create_hdf5(fname, layout, close=False):
             - 'attr' : value
         - 'dsets' : dict
             - 'dset' : dict
+                Either:
                 - 'shape' : tuple
                 - 'maxshape' : tuple
                 - 'dtype' : dtype
+                - 'attrs' : dict
+                    - 'attr' : value
+                Or:
+                - 'data': array-like
                 - 'attrs' : dict
                     - 'attr' : value
 
@@ -34,12 +39,24 @@ def create_hdf5(fname, layout, close=False):
         h5file.attrs[attr] = val
 
     for dset, val in layout['dsets'].items():
-        ds = h5file.create_dataset(
-            dset, shape=val['shape'], dtype=val['dtype'],
-            maxshape=val['maxshape']
-        )
-        for attr, attr_val in val['attrs'].items():
-            ds.attrs[attr] = attr_val
+        if 'data' in val.keys():
+            if dset in h5file.keys():
+                del h5file[dset]
+
+            ds = h5file.create_dataset(
+                dset, data=val['data']
+            )
+        else:
+            if dset in h5file.keys():
+                del h5file[dset]
+            ds = h5file.create_dataset(
+                dset, shape=val['shape'], dtype=val['dtype'],
+                maxshape=val['maxshape']
+            )
+
+        if 'attrs' in val.keys():
+            for attr, attr_val in val['attrs'].items():
+                ds.attrs[attr] = attr_val
     if close:
         h5file.close()
 
