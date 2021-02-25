@@ -49,9 +49,17 @@ def order_coords(coords, map_thickness, box_size, slice_axis):
 
 
 def save_coords(
+        sim_dir, sim_type, snapshots, group_dset, coord_dset, group_range, extra_dsets,
+        save_dir, coords_fname):
+    if sim_type == 'BAHAMAS':
+        for snap in np.atleast_1d(snapshots):
+            bahamas.save_coords_file(
+                base_dir=str(sim_dir), snapshot=snap, group_dset=group_dset,
+                coord_dset=coord_dset, group_range=group_range, extra_dsets=extra_dsets,
+                save_dir=save_dir, coords_fname=coords_fname, verbose=False
+            )
 
-def load_coords(coords_dir, sim_name):
-    filename = ''
+    return (os.getpid(), f'{save_dir} coords saved')
 
 
 def slice_sim(sim_dir, sim_type, snapshots, ptypes, slice_axes, slice_size, save_dir):
