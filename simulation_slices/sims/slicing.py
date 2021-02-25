@@ -12,9 +12,9 @@ def slice_file_name(
         save_dir, slice_axis, slice_size, snapshot, slice_num=None):
     """Return the formatted base filename for the given slice. If
     slice_num is None, base filename is returned."""
-    fname = f'axis_{slice_axis}_size_{slice_size}_{snapshot:03d}'
+    fname = f'axis_{slice_axis}_size_{slice_size}_{int(snapshot):03d}'
     if slice_num is not None:
-        fname = f'{save_dir}/{fname}_{slice_num:d}.hdf5'
+        fname = f'{save_dir}/{fname}_{int(slice_num):d}.hdf5'
 
     return fname
 
@@ -71,10 +71,9 @@ def read_slice_file_properties(
 
     results = {}
     with h5py.File(fname, 'r') as h5file:
-        for key, val in properties.items():
-            ptype = val['ptype']
+        for ptype, dsets in properties.items():
             results[ptype] = {
-                dset: h5file[f'{ptype}/{dset}'][:] for dset in val['dsets']
+                dset: h5file[f'{ptype}/{dset}'][:] for dset in dsets
             }
 
     return results
