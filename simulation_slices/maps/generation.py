@@ -264,7 +264,7 @@ def save_maps(
             maps.append(
                 get_map(
                     coord=coord, slice_dir=slice_dir, snapshot=snapshot,
-                    slice_axes=slice_axis, slice_size=slice_size, box_size=box_size,
+                    slice_axis=slice_axis, slice_size=slice_size, box_size=box_size,
                     map_size=map_size, map_res=map_res, map_thickness=map_thickness,
                     map_types=map_types, verbose=False)[None, ...]
             )
