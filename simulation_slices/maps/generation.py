@@ -155,7 +155,7 @@ def get_map(
     # create index array that cuts out the slice_axis
     no_slice_axis = np.arange(coord.shape[0]) != slice_axis
 
-    maps = {}
+    maps = []
     map_props = obs.map_types_to_properties(map_types)
     for idx in range(slice_ids[0], slice_ids[1] + 1):
         idx_mod = idx % num_slices
@@ -168,7 +168,8 @@ def get_map(
         # all map_types for slice idx will be added to slice_maps
         slice_maps = []
         for map_type in map_types:
-            coords = props[obs.MAP_TYPES_OPTIONS[map_type]['ptype']]['coords']
+            ptype = obs.MAP_TYPES_OPTIONS[map_type]['ptype']
+            coords = props[ptype]['coordinates']
             # slice bounding cylinder for map
             selection = (
                 (
@@ -184,12 +185,16 @@ def get_map(
                 )
             )
 
+            props_map_type = {
+                k: v for k, v in props[ptype].items() if (k != 'coordinates')
+            }
+
             # only include props for coords within cylinder
-            for prop in obs.MAP_TYPES_OPTIONS[map_type]['dsets']:
-                if props[prop].shape[-1] == coords.shape[-1]:
-                    props[prop] = props[prop][selection]
-                elif props[prop].shape == (1,):
-                    props[prop] = np.ones(selection.sum()) * props[prop]
+            for prop in props_map_type.keys():
+                if props_map_type[prop].shape[-1] == coords.shape[-1]:
+                    props_map_type[prop] = props_map_type[prop][..., selection]
+                elif props_map_type[prop].shape == (1,):
+                    props_map_type[prop] = props_map_type[prop]
 
                 else:
                     raise ValueError(f'{prop} is not scalar or matching len(coords)')
@@ -202,7 +207,7 @@ def get_map(
                 coords=coords_2d, map_center=map_center, map_size=map_size,
                 map_res=map_res, box_size=box_size,
                 func=obs.MAP_TYPES_OPTIONS[map_type]['func'],
-                **props
+                **props_map_type
             )
 
             slice_maps.append(mp[None, ...])
