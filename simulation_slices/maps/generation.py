@@ -150,73 +150,63 @@ def get_map(
 
     slice_ids = slicing.get_coords_slices(
         coords=extent, slice_axis=slice_axis, slice_size=slice_size,
-    )
+    ) % num_slices
 
     # create index array that cuts out the slice_axis
     no_slice_axis = np.arange(coord.shape[0]) != slice_axis
 
-    maps = []
     map_props = obs.map_types_to_properties(map_types)
-    for idx in range(slice_ids[0], slice_ids[1] + 1):
-        idx_mod = idx % num_slices
-        props = slicing.read_slice_file_properties(
-            properties=map_props, save_dir=slice_dir,
-            slice_axis=slice_axis, slice_size=slice_size,
-            snapshot=snapshot, slice_num=idx_mod
+    props = slicing.read_slice_file_properties(
+        slice_nums=slice_ids, properties=map_props, save_dir=slice_dir,
+        slice_axis=slice_axis, slice_size=slice_size,
+        snapshot=snapshot, num_slices=num_slices,
         )
 
-        # all map_types for slice idx will be added to slice_maps
-        slice_maps = []
-        for map_type in map_types:
-            ptype = obs.MAP_TYPES_OPTIONS[map_type]['ptype']
-            coords = props[ptype]['coordinates']
-            # slice bounding cylinder for map
-            selection = (
-                (
-                    tools.dist(
-                        coords[slice_axis].reshape(1, -1),
-                        coord[slice_axis].reshape(1, -1), box_size, axis=0)
-                    <= map_thickness / 2
-                ) & (
-                    tools.dist(
-                        coords[no_slice_axis],
-                        coord[no_slice_axis].reshape(2, 1), box_size, axis=0)
-                    <= 2**0.5 * map_size / 2
-                )
+    maps = []
+    # extract the properties within the map
+    for map_type in map_types:
+        ptype = obs.MAP_TYPES_OPTIONS[map_type]['ptype']
+        coords = props[ptype]['coordinates'][:]
+        # slice bounding cylinder for map
+        selection = (
+            (
+                tools.dist(
+                    coords[slice_axis].reshape(1, -1),
+                    coord[slice_axis].reshape(1, -1), box_size, axis=0)
+                <= map_thickness / 2
+            ) & (
+                tools.dist(
+                    coords[no_slice_axis],
+                    coord[no_slice_axis].reshape(2, 1), box_size, axis=0)
+                <= 2**0.5 * map_size / 2
             )
+        )
 
-            props_map_type = {
-                k: v for k, v in props[ptype].items() if (k != 'coordinates')
-            }
+        # only include props for coords within cylinder
+        props_map_type = {}
+        for prop in props[ptype].keys() - ['coordinates']:
+            if props[ptype][prop].shape[-1] == coords.shape[-1]:
+                props_map_type[prop] = props[ptype][prop][..., selection]
+            elif props[ptype][prop].shape == (1,):
+                props_map_type[prop] = props[ptype][prop]
+                continue
 
-            # only include props for coords within cylinder
-            for prop in props_map_type.keys():
-                if props_map_type[prop].shape[-1] == coords.shape[-1]:
-                    props_map_type[prop] = props_map_type[prop][..., selection]
-                elif props_map_type[prop].shape == (1,):
-                    props_map_type[prop] = props_map_type[prop]
+            else:
+                raise ValueError(f'{prop} is not scalar or matching len(coords)')
 
-                else:
-                    raise ValueError(f'{prop} is not scalar or matching len(coords)')
+        # ignore sliced dimension
+        coords_2d = coords[no_slice_axis][..., selection]
+        map_center = coord[no_slice_axis]
 
-            # ignore sliced dimension
-            coords_2d = coords[no_slice_axis][:, selection]
-            map_center = coord[no_slice_axis]
+        mp = coords_to_map(
+            coords=coords_2d, map_center=map_center, map_size=map_size,
+            map_res=map_res, box_size=box_size,
+            func=obs.MAP_TYPES_OPTIONS[map_type]['func'],
+            **props_map_type
+        )
+        maps.append(mp[None])
 
-            mp = coords_to_map(
-                coords=coords_2d, map_center=map_center, map_size=map_size,
-                map_res=map_res, box_size=box_size,
-                func=obs.MAP_TYPES_OPTIONS[map_type]['func'],
-                **props_map_type
-            )
-
-            slice_maps.append(mp[None, ...])
-
-        # append (len(map_types), n_pix, n_pix) array to maps
-        maps.append(np.concatenate(slice_maps, axis=0))
-
-    # sum over all slices
-    maps = np.sum(maps, axis=0)
+    maps = np.concatenate(maps, axis=0)
     return maps
 
 
