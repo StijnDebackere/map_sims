@@ -56,4 +56,32 @@ def M_ap_from_map(
     return M_ap
 
 
-# def Y_SZ_from_map
+def analyze_maps(maps, func, **func_kwargs):
+    """Analyze the given maps with func that requires func_kwargs.
+
+    Parameters
+    ----------
+    maps : (N, n_pix, n_pix) array
+        maps to be analyzed
+    func : callable
+        analysis function (map, **func_kwargs)
+
+    Returns
+    -------
+    results : (N, ...) array with results
+    """
+    results = []
+    for mp in maps:
+        results.append(func(mp, **func_kwargs))
+    return results
+
+
+def get_M_aps(maps, sigma_crit, pix_scale, R1, R2, Rm):
+    """Get M_ap for all maps."""
+    results = analyze_maps(
+        maps=maps, func=M_ap_from_map,
+        sigma_crit=1, filt=filter_zeta, pix_scale=pix_scale,
+        pix_0=np.array([maps.shape[-1] // 2, maps.shape[-1] // 2]),
+        R1=R1, R2=R2, Rm=Rm
+    )
+    return np.asarray(results)
