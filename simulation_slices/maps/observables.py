@@ -4,7 +4,7 @@ import astropy.units as u
 import simulation_slices.maps.interpolate_electron_density as interp_ne
 
 
-def particles_masses(masses, log=False):
+def particles_masses(masses, **kwargs):
     """Return the list of masses."""
     return masses
 
