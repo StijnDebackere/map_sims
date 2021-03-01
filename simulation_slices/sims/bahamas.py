@@ -221,14 +221,13 @@ def save_slice_data(
     maxshape = int(2 * N_tot / num_slices)
 
     for slice_axis in slice_axes:
-        for i in range(num_slices):
-            # create the hdf5 file to fill up
-            slicing.create_slice_file(
-                save_dir=save_dir, snapshot=snapshot, box_size=box_size,
-                ptypes=[BAHAMAS_TO_PTYPES[p] for p in ptypes],
-                slice_num=i, slice_axis=slice_axis,
-                slice_size=slice_size, maxshape=maxshape
-            )
+        # create the hdf5 file to fill up
+        slicing.create_slice_file(
+            save_dir=save_dir, snapshot=snapshot, box_size=box_size,
+            ptypes=[BAHAMAS_TO_PTYPES[p] for p in ptypes],
+            num_slices=num_slices, slice_axis=slice_axis,
+            slice_size=slice_size, maxshape=maxshape
+        )
 
     # set unit conversions
     a = snap_info.a
@@ -309,6 +308,12 @@ def save_slice_data(
                     properties=properties
                 )
 
+                fname = slicing.slice_file_name(
+                    save_dir=save_dir, slice_axis=slice_axis,
+                    slice_size=slice_size, snapshot=snapshot
+                )
+                h5file = h5py.File(fname, 'r+')
+
                 # append results to hdf5 file
                 for idx, (coord, masses) in enumerate(zip(
                         slice_dict['coordinates'],
@@ -316,28 +321,22 @@ def save_slice_data(
                     if not coord:
                         continue
 
-                    fname = slicing.slice_file_name(
-                        save_dir=save_dir, slice_axis=slice_axis,
-                        slice_size=slice_size, snapshot=snapshot, slice_num=idx
-                    )
-                    h5file = h5py.File(fname, 'r+')
-
                     io.add_to_hdf5(
-                        h5file=h5file, dataset=PROPS_PTYPES[ptype]['coordinates'],
+                        h5file=h5file, dataset=f'{idx}/{PROPS_PTYPES[ptype]["coordinates"]}',
                         vals=coord[0], axis=1
                     )
 
                     # add masses
                     if ptype == 1:
                         # only want to add single value for dm mass
-                        if h5file[PROPS_PTYPES[ptype]['masses']].shape[0] == 0:
+                        if h5file[f'{idx}/{PROPS_PTYPES[ptype]["masses"]}'].shape[0] == 0:
                             io.add_to_hdf5(
-                                h5file=h5file, dataset=PROPS_PTYPES[ptype]['masses'],
+                                h5file=h5file, dataset=f'{idx}/{PROPS_PTYPES[ptype]["masses"]}',
                                 vals=np.unique(masses[0]), axis=0
                             )
                     else:
                         io.add_to_hdf5(
-                            h5file=h5file, dataset=PROPS_PTYPES[ptype]['masses'],
+                            h5file=h5file, dataset=f'{idx}/{PROPS_PTYPES[ptype]["masses"]}',
                             vals=masses[0], axis=0
                         )
 
@@ -352,23 +351,15 @@ def save_slice_data(
 
                         io.add_to_hdf5(
                             h5file=h5file, vals=temps[0], axis=0,
-                            dataset=PROPS_PTYPES[ptype]['temperatures'],
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["temperatures"]}',
                         )
                         io.add_to_hdf5(
                             h5file=h5file, vals=dens[0], axis=0,
-                            dataset=PROPS_PTYPES[ptype]['densities'],
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["densities"]}',
                         )
                         io.add_to_hdf5(
                             h5file=h5file, vals=ne[0], axis=0,
-                            dataset=PROPS_PTYPES[ptype]['electron_number_densities'],
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["electron_number_densities"]}',
                         )
-                        # io.add_to_hdf5(
-                        #     h5file=h5file, vals=hydrogen[0], axis=0,
-                        #     dataset=PROPS_PTYPES[ptype]['smoothed_hydrogen'],
-                        # )
-                        # io.add_to_hdf5(
-                        #     h5file=h5file, vals=helium[0], axis=0,
-                        #     dataset=PROPS_PTYPES[ptype]['smoothed_helium'],
-                        # )
 
-                    h5file.close()
+                h5file.close()

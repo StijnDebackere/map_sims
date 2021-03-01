@@ -1,7 +1,7 @@
-def attrs(slice_num, slice_axis, slice_size, box_size, snapshot):
+def attrs(num_slices, slice_axis, slice_size, box_size, snapshot):
     """Return the required hdf5 attributes for all slices."""
     return {
-        'slice_num': slice_num,
+        'num_slices': num_slices,
         'slice_axis': slice_axis,
         'slice_size': slice_size,
         'box_size': box_size,
@@ -17,7 +17,8 @@ def properties(maxshape):
             'maxshape': (3, maxshape),
             'dtype': float,
             'attrs': {
-                'description': 'Particle coordinates in cMpc / h'
+                'description': 'Particle coordinates in cMpc / h',
+                'single_value': False
             },
         },
         'masses': {
@@ -25,7 +26,8 @@ def properties(maxshape):
             'maxshape': (maxshape,),
             'dtype': float,
             'attrs': {
-                'description': 'Particle masses M_sun / h'
+                'description': 'Particle masses M_sun / h',
+                'single_value': False
             },
         }
     }
@@ -36,7 +38,8 @@ def properties(maxshape):
                 'maxshape': (maxshape,),
                 'dtype': float,
                 'attrs': {
-                    'description': 'Particle temperatures in K'
+                    'description': 'Particle temperatures in K',
+                    'single_value': False
                 }
             },
             'densities': {
@@ -44,7 +47,8 @@ def properties(maxshape):
                 'maxshape': (maxshape,),
                 'dtype': float,
                 'attrs': {
-                    'description': 'Particle mass density in h^2 M_sun/Mpc^3'
+                    'description': 'Particle mass density in h^2 M_sun/Mpc^3',
+                    'single_value': False
                 }
             },
             'electron_number_densities': {
@@ -52,29 +56,24 @@ def properties(maxshape):
                 'maxshape': (maxshape,),
                 'dtype': float,
                 'attrs': {
-                    'description': 'Particle electron number density'
+                    'description': 'Particle electron number density',
+                    'single_value': False
                 }
             },
-            # # required to compute electron density for SZ signal
-            # 'smoothed_hydrogen': {
-            #     'shape': (0,),
-            #     'maxshape': (maxshape,),
-            #     'dtype': float,
-            #     'attrs': {
-            #         'description': 'Particle Hydrogen mass fraction'
-            #     }
-            # },
-            # 'smoothed_helium': {
-            #     'shape': (0,),
-            #     'maxshape': (maxshape,),
-            #     'dtype': float,
-            #     'attrs': {
-            #         'description': 'Particle Helium mass fraction'
-            #     }
-            # },
             **joint,
         },
-        'dm': {**joint},
+        'dm': {
+            **joint,
+            'masses': {
+                'shape': (0,),
+                'maxshape': (1,),
+                'dtype': float,
+                'attrs': {
+                    'description': 'Particle masses M_sun / h',
+                    'single_value': True
+                },
+            },
+        },
         'stars': {**joint},
         'bh': {**joint},
     }
@@ -82,14 +81,14 @@ def properties(maxshape):
 
 
 def get_slice_layout(
-        slice_num, slice_axis, slice_size, maxshape,
+        num_slices, slice_axis, slice_size, maxshape,
         box_size, snapshot, ptypes):
     """Generate the standard layout for our slice hdf5 files.
 
     Parameters
-    ----------n
-    slice_num : int
-        slice number
+    ----------
+    num_slices : int
+        total number of slices
     slice_axis : int
         dimension along which box has been sliced
     slice_size : float
@@ -113,7 +112,7 @@ def get_slice_layout(
 
     layout = {'dsets': {}}
     layout['attrs'] = attrs(
-        slice_num=slice_num, slice_axis=slice_axis,
+        num_slices=num_slices, slice_axis=slice_axis,
         slice_size=slice_size, box_size=box_size, snapshot=snapshot
     )
 
@@ -121,7 +120,8 @@ def get_slice_layout(
         maxshape=maxshape
     )
     for ptype in valid_ptypes:
-        for prop, val in props[ptype].items():
-            layout['dsets'][f'{ptype}/{prop}'] = val
+        for slice_idx in range(num_slices):
+            for prop, val in props[ptype].items():
+                layout['dsets'][f'{slice_idx}/{ptype}/{prop}'] = val
 
     return layout

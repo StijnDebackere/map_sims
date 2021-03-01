@@ -9,28 +9,25 @@ import simulation_slices.utilities as util
 
 
 def slice_file_name(
-        save_dir, slice_axis, slice_size, snapshot, slice_num=None):
-    """Return the formatted base filename for the given slice. If
-    slice_num is None, base filename is returned."""
+        save_dir, slice_axis, slice_size, snapshot):
+    """Return the formatted base filename for the given slice."""
     fname = f'axis_{slice_axis}_size_{slice_size}_{int(snapshot):03d}'
-    if slice_num is not None:
-        fname = f'{save_dir}/{fname}_{int(slice_num):d}.hdf5'
+    fname = f'{save_dir}/{fname}.hdf5'
 
     return fname
 
 
 def create_slice_file(
         save_dir, snapshot, box_size, ptypes,
-        slice_num, slice_axis, slice_size, maxshape
-):
+        num_slices, slice_axis, slice_size, maxshape):
     """Create the hdf5 file in save_dir for given slice."""
     fname = slice_file_name(
         save_dir=save_dir, slice_axis=slice_axis, slice_size=slice_size,
-        snapshot=snapshot, slice_num=slice_num
+        snapshot=snapshot
     )
 
     hdf_layout = slice_layout.get_slice_layout(
-        slice_num=slice_num, slice_axis=slice_axis, slice_size=slice_size,
+        num_slices=num_slices, slice_axis=slice_axis, slice_size=slice_size,
         maxshape=maxshape, box_size=box_size, snapshot=snapshot, ptypes=ptypes,
     )
 
@@ -48,7 +45,7 @@ def create_slice_file(
 
 
 def read_slice_file_properties(
-        properties, save_dir, snapshot, slice_num, slice_axis, slice_size):
+        slice_nums, properties, save_dir, snapshot, num_slices, slice_axis, slice_size):
     """Read the given properties into a dict for slice_file.
 
     Parameters
@@ -61,20 +58,29 @@ def read_slice_file_properties(
 
     Returns
     -------
-    properties : dict with loaded dset for each ptype in properties
+    properties : dict with loaded dset for each ptype and slice_num in properties
 
     """
     fname = slice_file_name(
-        save_dir=save_dir, slice_axis=slice_axis, slice_size=slice_size,
-        snapshot=snapshot, slice_num=slice_num
+        save_dir=save_dir, snapshot=snapshot,
+        slice_axis=slice_axis, slice_size=slice_size,
     )
 
     results = {}
     with h5py.File(fname, 'r') as h5file:
         for ptype, dsets in properties.items():
-            results[ptype] = {
-                dset: h5file[f'{ptype}/{dset}'][:] for dset in dsets
-            }
+            results[ptype] = {}
+            for dset in dsets:
+                res_dset = []
+                for slice_idx in slice_nums:
+                    h5_dset = h5file[f'{slice_idx}/{ptype}/{dset}']
+                    if h5_dset.attrs['single_value']:
+                        res_dset.append(h5file[f'{slice_nums[0]}/{ptype}/{dset}'][:])
+                        break
+                    else:
+                        res_dset.append(h5file[f'{slice_idx}/{ptype}/{dset}'][:])
+
+                results[ptype][dset] = np.concatenate(res_dset, axis=-1)
 
     return results
 
