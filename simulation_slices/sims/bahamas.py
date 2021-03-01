@@ -252,7 +252,7 @@ def save_slice_data(
             coords = snap_info.read_single_file(
                 i=file_num, var=PROPS_TO_BAHAMAS[ptype]['coordinates'],
                 verbose=False, reshape=True,
-            ).T * r_unit
+            ).T * R_UNIT
 
             # dark matter does not have the Mass variable
             # read in M_sun / h
@@ -264,7 +264,7 @@ def save_slice_data(
             else:
                 masses = np.atleast_1d(snap_info.masses[ptype])
 
-            masses *= m_unit
+            masses *= M_UNIT
 
             properties = {
                 'coordinates': coords,
@@ -292,7 +292,7 @@ def save_slice_data(
                     z=z, T=temperatures, rho=densities,
                     X=smoothed_hydrogen, Y=smoothed_helium,
                 )
-                densities *= rho_unit
+                densities *= RHO_UNIT
                 properties = {
                     'temperatures': temperatures,
                     'densities': densities,
