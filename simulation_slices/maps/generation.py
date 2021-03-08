@@ -279,7 +279,7 @@ def save_maps(
 
         for i, map_type in enumerate(map_types):
             np.savez(
-                f'{save_dir}/{slice_axis}_map_{map_type}_{coords_name}.hdf5',
+                f'{save_dir}/{slice_axis}_map_{map_type}_{coords_name}.npz',
                 maps=maps[:, i],
                 slice_size=slice_size,
                 map_size=map_size,
