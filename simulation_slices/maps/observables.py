@@ -85,9 +85,12 @@ def map_types_to_properties(map_types):
         for the given map_types
         - ptype: [dsets]
     """
+    if type(map_types) is not list:
+        map_types = [map_types]
+
     valid_map_types = set(map_types) & set(MAP_TYPES_OPTIONS.keys())
     if not valid_map_types:
-        raise ValueError(f'{map_types} not in {MAP_TYPES_OPTIONS}')
+        raise ValueError(f'{map_types} not in {MAP_TYPES_OPTIONS.keys()}')
 
     results = {}
     for map_type in valid_map_types:

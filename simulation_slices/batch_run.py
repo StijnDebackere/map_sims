@@ -74,6 +74,26 @@ def slice_sim(sim_dir, sim_type, snapshots, ptypes, slice_axes, slice_size, save
     return (os.getpid(), f'{sim_dir} sliced')
 
 
+def slice_sim_dag(sim_idx, config):
+    sim_dir = config.sim_paths[sim_idx]
+    sim_type = config.sim_type
+    snapshots = config.snapshots[sim_idx]
+    ptypes = config.ptypes[sim_idx]
+    save_dir = config.slice_paths[sim_idx]
+
+    slice_axes = config.slice_axes
+    slice_size = config.slice_size
+    if sim_type == 'BAHAMAS':
+        for snap in np.atleast_1d(snapshots):
+            bahamas.save_slice_data(
+                base_dir=str(sim_dir), snapshot=snap, ptypes=ptypes,
+                slice_axes=slice_axes, slice_size=slice_size,
+                save_dir=save_dir, verbose=False
+            )
+
+    return (os.getpid(), f'{sim_dir} sliced')
+
+
 def map_coords(
         snapshots, box_size, coords_file, coords_name,
         slice_dir, slice_axes, slice_size,
@@ -88,6 +108,52 @@ def map_coords(
             map_size=map_size, map_res=map_res, map_thickness=map_thickness,
             map_types=map_types, save_dir=save_dir, coords_name=coords_name,
 
+        )
+
+    return (os.getpid(), f'{save_dir} maps saved')
+
+
+def map_coords_dag(sim_idx, config):
+    sim_dir = config.sim_paths[sim_idx]
+    sim_type = config.sim_type
+    snapshots = config.snapshots[sim_idx]
+    box_size = config.box_sizes[sim_idx]
+    ptypes = config.ptypes[sim_idx]
+
+    coords_file = config.coords_files[sim_idx]
+    coords_name = config.coords_name
+    if config.compute_coords:
+        coords_dir = config.coords_paths[sim_idx]
+        save_coords(
+            sim_dir=sim_dir,
+            sim_type=sim_type,
+            snapshots=snapshots,
+            group_dset=config.group_dset,
+            coord_dset=config.coord_dset,
+            group_range=config.group_range,
+            extra_dsets=config.extra_dsets,
+            save_dir=coords_dir,
+            coords_fname=config.coords_name,
+        )
+
+    slice_dir = config.slice_paths[sim_idx]
+    slice_axes = config.slice_axes
+    slice_size = config.slice_size
+
+    save_dir = config.map_paths[sim_idx]
+    map_types = config.map_types[sim_idx]
+    map_size = config.map_size
+    map_res = config.map_res
+    map_thickness = config.map_thickness
+    with h5py.File(str(coords_file), 'r') as h5file:
+        centers = h5file['coordinates'][:]
+
+    for snap in np.atleast_1d(snapshots):
+        map_gen.save_maps(
+            centers=centers, slice_dir=slice_dir, snapshot=snap,
+            slice_axes=slice_axes, slice_size=slice_size, box_size=box_size,
+            map_size=map_size, map_res=map_res, map_thickness=map_thickness,
+            map_types=map_types, save_dir=save_dir, coords_name=coords_name,
         )
 
     return (os.getpid(), f'{save_dir} maps saved')
