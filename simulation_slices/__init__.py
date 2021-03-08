@@ -210,14 +210,20 @@ class Config(object):
         if type(val) is list:
             # map_types specified for each sim
             if len(val) == self._n_sims:
-                map_types = []
-                for v in val:
-                    if set(v) & set(valid_map_types) != set(v):
+                try:
+                    if set(val) & set(valid_map_types) != set(val):
                         raise ValueError(f'map_types can only contain {valid_map_types}')
                     else:
-                        map_types.append(v)
-
-                self._map_types = map_types
+                        self._map_types = [[v] for v in val]
+                # if val is list of lists
+                except TypeError:
+                    map_types = []
+                    for v in val:
+                        if set(v) & set(valid_map_types) != set(v):
+                            raise ValueError(f'map_types can only contain {valid_map_types}')
+                        else:
+                            map_types.append(v)
+                    self._map_types = map_types
 
             # multiple map_types for each sim
             else:
