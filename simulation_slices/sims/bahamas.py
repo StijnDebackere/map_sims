@@ -53,7 +53,7 @@ PROPS_PTYPES[0] = {
     'temperatures': f'gas/temperatures',
     'densities': f'gas/densities',
     'electron_number_densities': f'gas/electron_number_densities',
-    'emissivities': f'gas/emissivities',
+    'luminosities': f'gas/luminosities',
     'smoothed_hydrogen': f'gas/smoothed_hydrogen',
     'smoothed_helium': f'gas/smoothed_helium',
     'smoothed_carbon': f'gas/smoothed_carbon',
@@ -338,8 +338,8 @@ def save_slice_data(
                     z=z, T=temperatures, rho=densities,
                     X=smoothed_hydrogen, Y=smoothed_helium,
                 )
-                emissivities = interp_tables.x_ray_emissivity(
-                    z=z, rho=densities, T=temperatures,
+                luminosities = interp_tables.x_ray_luminosity(
+                    z=z, rho=densities, T=temperatures, masses=masses,
                     hydrogen_mf=smoothed_hydrogen, helium_mf=smoothed_helium,
                     carbon_mf=smoothed_carbon, nitrogen_mf=smoothed_nitrogen,
                     oxygen_mf=smoothed_oxygen, neon_mf=smoothed_neon,
@@ -353,7 +353,7 @@ def save_slice_data(
                     'temperatures': temperatures,
                     'densities': densities,
                     'electron_number_densities': electron_number_densities,
-                    'emissivities': emissivities,
+                    'luminosities': luminosities,
                     **properties
                 }
 
@@ -404,7 +404,7 @@ def save_slice_data(
                         temps = slice_dict['temperatures'][idx]
                         dens = slice_dict['densities'][idx]
                         ne = slice_dict['electron_number_densities'][idx]
-                        ems = slice_dict['emissivities'][idx]
+                        lums = slice_dict['luminosities'][idx]
                         # hydrogen = slice_dict['smoothed_hydrogen'][idx]
                         # helium = slice_dict['smoothed_helium'][idx]
 
@@ -421,8 +421,8 @@ def save_slice_data(
                             dataset=f'{idx}/{PROPS_PTYPES[ptype]["electron_number_densities"]}',
                         )
                         io.add_to_hdf5(
-                            h5file=h5file, vals=ems[0], axis=0,
-                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["emissivities"]}',
+                            h5file=h5file, vals=lums[0], axis=0,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["luminosities"]}',
                         )
 
                 h5file.close()

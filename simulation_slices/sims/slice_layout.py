@@ -60,12 +60,12 @@ def properties(maxshape):
                     'single_value': False
                 }
             },
-            'emissivities': {
+            'luminosities': {
                 'shape': (0,),
                 'maxshape': (maxshape,),
                 'dtype': float,
                 'attrs': {
-                    'description': 'Particle X-ray emissivity, L = 10**emissivity * sigma_sb * T^4',
+                    'description': 'Particle X-ray luminosity in h^-3 L_sun',
                     'single_value': False
                 }
             },

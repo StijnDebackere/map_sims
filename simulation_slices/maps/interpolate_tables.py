@@ -215,10 +215,10 @@ def get_table_interp(dn, dT, dx_T, dx_n, idx_T, idx_n, idx_he, dx_he, x_ray, abu
     return f_n_T_Z
 
 
-def x_ray_emissivity(
-        z, rho, T, hydrogen_mf, helium_mf, carbon_mf, nitrogen_mf,
+def x_ray_luminosity(
+        z, rho, T, masses, hydrogen_mf, helium_mf, carbon_mf, nitrogen_mf,
         oxygen_mf, neon_mf, magnesium_mf, silicon_mf, iron_mf,
-        m_H=1.6726e-24, fill_value=None):
+        m_H=1.6726e-24 * u.g, fill_value=None):
     """Compute the X-ray luminosity for the given particle data.
 
     Parameters
@@ -229,6 +229,8 @@ def x_ray_emissivity(
         mass density of particles [M_sun/Mpc^3]
     T : array-like
         temperature of particles [K]
+    masses : array-like
+        mass of particles [M_sun]
     hydrogen_mf : array-like
         mass fraction in Hydrogen
     helium_mf : array-like
@@ -254,7 +256,8 @@ def x_ray_emissivity(
 
     Returns
     -------
-    emissivities : array-like
+    luminosities : array-like
+        particle X-ray luminosities in L_sun with possible h^-3 scaling
 
     """
     #Initialise interpolation class
@@ -262,17 +265,17 @@ def x_ray_emissivity(
     interp.load_table()
 
     # check bounds for nH and T
-    nH = (hydrogen_mf * rho / m_H * u.M_sun / (u.Mpc**3 * u.g)).to(u.cm**-3)
+    n_H = (hydrogen_mf * rho * u.M_sun / u.Mpc**3 / m_H).to(u.cm**-3)
 
-    log10_nH, log10_T = coords_within_range(
-        (np.log10(nH.value), np.round(interp.density_bins, 1)),
+    log10_n_H, log10_T = coords_within_range(
+        (np.log10(n_H.value), np.round(interp.density_bins, 1)),
         (np.log10(T), np.round(interp.temperature_bins, 1))
     ).T
     #Initialise the emissivity array which will be returned
-    emissivities = np.zeros_like(log10_nH, dtype = float)
+    emissivities = np.zeros_like(log10_n_H, dtype = float)
 
     #Create density mask, round to avoid numerical errors
-    density_mask = (log10_nH >= np.round(interp.density_bins.min(), 1)) & (log10_nH <= np.round(interp.density_bins.max(), 1))
+    density_mask = (log10_n_H >= np.round(interp.density_bins.min(), 1)) & (log10_n_H <= np.round(interp.density_bins.max(), 1))
     #Create temperature mask, round to avoid numerical errors
     temperature_mask = (log10_T >= np.round(interp.temperature_bins.min(), 1)) & (log10_T <= np.round(interp.temperature_bins.max(), 1))
 
@@ -287,14 +290,14 @@ def x_ray_emissivity(
         if fill_value == None:
             print('Temperature or density are outside of the interpolation range and no fill_value is supplied')
             print('Temperature ranges between log(T) = 5 and log(T) = 9.5')
-            print('Density ranges between log(nH) = -8 and log(nH) = 6')
+            print('Density ranges between log(n_H) = -8 and log(n_H) = 6')
             print('Set the kwarg "fill_value = some value" to set all particles outside of the interpolation range to "some value"')
             print('Or limit your particle data set to be within the interpolation range')
             raise ValueError
         else:
             emissivities[~joint_mask] = fill_value
 
-    mass_fraction = np.zeros((len(log10_nH[joint_mask]), 9))
+    mass_fraction = np.zeros((len(log10_n_H[joint_mask]), 9))
 
     #get individual mass fraction
     mass_fraction[:, 0] = hydrogen_mf[joint_mask]
@@ -308,8 +311,8 @@ def x_ray_emissivity(
     mass_fraction[:, 8] = iron_mf[joint_mask]
 
     #Find density offsets
-    idx_n = find_idx(log10_nH[joint_mask], interp.density_bins, interp.dn)
-    dx_n = find_dx(log10_nH[joint_mask], interp.density_bins, idx_n[:, 0].astype(int))
+    idx_n = find_idx(log10_n_H[joint_mask], interp.density_bins, interp.dn)
+    dx_n = find_dx(log10_n_H[joint_mask], interp.density_bins, idx_n[:, 0].astype(int))
 
     #Find temperature offsets
     idx_T = find_idx(log10_T[joint_mask], interp.temperature_bins, interp.dT)
@@ -329,6 +332,13 @@ def x_ray_emissivity(
     idx_he = find_idx_he(np.log10(abundances[:, 1]), interp.He_bins)
     dx_he = find_dx_he(np.log10(abundances[:, 1]), interp.He_bins, idx_he[:, 0].astype(int))
 
-    emissivities[joint_mask] = get_table_interp(interp.dn, interp.dT, dx_T, dx_n, idx_T.astype(int), idx_n.astype(int), idx_he.astype(int), dx_he, interp.x_ray, abundance_to_solar[:, 2:])
+    emissivities[joint_mask] = get_table_interp(
+        interp.dn, interp.dT, dx_T, dx_n, idx_T.astype(int), idx_n.astype(int), idx_he.astype(int),
+        dx_he, interp.x_ray, abundance_to_solar[:, 2:]
+    )
+    luminosities = (
+        10**emissivities * u.erg * u.cm**-3 * u.s**-1
+        * masses * u.Msun / (rho * u.Msun / u.Mpc**3)
+    )
 
-    return emissivities
+    return luminosities.to(u.Lsun).value
