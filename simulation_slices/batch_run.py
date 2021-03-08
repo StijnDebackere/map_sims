@@ -82,7 +82,7 @@ def map_coords(
         centers = h5file['coordinates'][:]
 
     for snap in np.atleast_1d(snapshots):
-        maps = map_gen.save_maps(
+        map_gen.save_maps(
             centers=centers, slice_dir=slice_dir, snapshot=snap,
             slice_axes=slice_axes, slice_size=slice_size, box_size=box_size,
             map_size=map_size, map_res=map_res, map_thickness=map_thickness,

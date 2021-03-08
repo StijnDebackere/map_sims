@@ -7,7 +7,7 @@ import simulation_slices.io as io
 import simulation_slices.sims.slicing as slicing
 import simulation_slices.maps.tools as map_tools
 import simulation_slices.maps.generation as gen
-import simulation_slices.maps.interpolate_electron_density as interp_ne
+import simulation_slices.maps.interpolate_tables as interp_tables
 import simulation_slices.maps.observables as obs
 import simulation_slices.utilities as util
 
@@ -32,6 +32,13 @@ PROPS_TO_BAHAMAS[0] = {
     'densities': f'PartType0/Density',
     'smoothed_hydrogen': f'PartType0/SmoothedElementAbundance/Hydrogen',
     'smoothed_helium': f'PartType0/SmoothedElementAbundance/Helium',
+    'smoothed_carbon': f'PartType0/SmoothedElementAbundance/Carbon',
+    'smoothed_nitrogen': f'PartType0/SmoothedElementAbundance/Nitrogen',
+    'smoothed_oxygen': f'PartType0/SmoothedElementAbundance/Oxygen',
+    'smoothed_neon': f'PartType0/SmoothedElementAbundance/Neon',
+    'smoothed_magnesium': f'PartType0/SmoothedElementAbundance/Magnesium',
+    'smoothed_silicon': f'PartType0/SmoothedElementAbundance/Silicon',
+    'smoothed_iron': f'PartType0/SmoothedElementAbundance/Iron',
     **PROPS_TO_BAHAMAS[0]
 }
 
@@ -46,8 +53,16 @@ PROPS_PTYPES[0] = {
     'temperatures': f'gas/temperatures',
     'densities': f'gas/densities',
     'electron_number_densities': f'gas/electron_number_densities',
+    'emissivities': f'gas/emissivities',
     'smoothed_hydrogen': f'gas/smoothed_hydrogen',
     'smoothed_helium': f'gas/smoothed_helium',
+    'smoothed_carbon': f'gas/smoothed_carbon',
+    'smoothed_nitrogen': f'gas/smoothed_nitrogen',
+    'smoothed_oxygen': f'gas/smoothed_oxygen',
+    'smoothed_neon': f'gas/smoothed_neon',
+    'smoothed_magnesium': f'gas/smoothed_magnesium',
+    'smoothed_silicon': f'gas/smoothed_silicon',
+    'smoothed_iron': f'gas/smoothed_iron',
     **PROPS_PTYPES[0]
 }
 
@@ -271,7 +286,7 @@ def save_slice_data(
             }
             # only gas particles have extra properties saved
             if ptype == 0:
-                # load in particledata for SZ signal
+                # load in particledata for SZ & X-ray
                 temperatures = snap_info.read_single_file(
                     i=file_num, var=PROPS_TO_BAHAMAS[ptype]['temperatures'],
                     verbose=False, reshape=True,
@@ -280,6 +295,8 @@ def save_slice_data(
                     i=file_num, var=PROPS_TO_BAHAMAS[ptype]['densities'],
                     verbose=False, reshape=True,
                 )
+                densities *= RHO_UNIT
+
                 smoothed_hydrogen = snap_info.read_single_file(
                     i=file_num, var=PROPS_TO_BAHAMAS[ptype]['smoothed_hydrogen'],
                     verbose=False, reshape=True,
@@ -288,15 +305,55 @@ def save_slice_data(
                     i=file_num, var=PROPS_TO_BAHAMAS[ptype]['smoothed_helium'],
                     verbose=False, reshape=True,
                 )
-                electron_number_densities = interp_ne.n_e(
+                smoothed_carbon = snap_info.read_single_file(
+                    i=file_num, var=PROPS_TO_BAHAMAS[ptype]['smoothed_carbon'],
+                    verbose=False, reshape=True,
+                )
+                smoothed_nitrogen = snap_info.read_single_file(
+                    i=file_num, var=PROPS_TO_BAHAMAS[ptype]['smoothed_nitrogen'],
+                    verbose=False, reshape=True,
+                )
+                smoothed_oxygen = snap_info.read_single_file(
+                    i=file_num, var=PROPS_TO_BAHAMAS[ptype]['smoothed_oxygen'],
+                    verbose=False, reshape=True,
+                )
+                smoothed_neon = snap_info.read_single_file(
+                    i=file_num, var=PROPS_TO_BAHAMAS[ptype]['smoothed_neon'],
+                    verbose=False, reshape=True,
+                )
+                smoothed_magnesium = snap_info.read_single_file(
+                    i=file_num, var=PROPS_TO_BAHAMAS[ptype]['smoothed_magnesium'],
+                    verbose=False, reshape=True,
+                )
+                smoothed_silicon = snap_info.read_single_file(
+                    i=file_num, var=PROPS_TO_BAHAMAS[ptype]['smoothed_silicon'],
+                    verbose=False, reshape=True,
+                )
+                smoothed_iron = snap_info.read_single_file(
+                    i=file_num, var=PROPS_TO_BAHAMAS[ptype]['smoothed_iron'],
+                    verbose=False, reshape=True,
+                )
+
+                electron_number_densities = interp_tables.n_e(
                     z=z, T=temperatures, rho=densities,
                     X=smoothed_hydrogen, Y=smoothed_helium,
                 )
-                densities *= RHO_UNIT
+                emissivities = interp_tables.x_ray_emissivity(
+                    z=z, rho=densities, T=temperatures,
+                    hydrogen_mf=smoothed_hydrogen, helium_mf=smoothed_helium,
+                    carbon_mf=smoothed_carbon, nitrogen_mf=smoothed_nitrogen,
+                    oxygen_mf=smoothed_oxygen, neon_mf=smoothed_neon,
+                    magnesium_mf=smoothed_magnesium, silicon_mf=smoothed_silicon,
+                    iron_mf=smoothed_iron,
+                )
+
+                # load in remaining data for X-ray luminosities
+
                 properties = {
                     'temperatures': temperatures,
                     'densities': densities,
                     'electron_number_densities': electron_number_densities,
+                    'emissivities': emissivities,
                     **properties
                 }
 
@@ -347,6 +404,7 @@ def save_slice_data(
                         temps = slice_dict['temperatures'][idx]
                         dens = slice_dict['densities'][idx]
                         ne = slice_dict['electron_number_densities'][idx]
+                        ems = slice_dict['emissivities'][idx]
                         # hydrogen = slice_dict['smoothed_hydrogen'][idx]
                         # helium = slice_dict['smoothed_helium'][idx]
 
@@ -361,6 +419,10 @@ def save_slice_data(
                         io.add_to_hdf5(
                             h5file=h5file, vals=ne[0], axis=0,
                             dataset=f'{idx}/{PROPS_PTYPES[ptype]["electron_number_densities"]}',
+                        )
+                        io.add_to_hdf5(
+                            h5file=h5file, vals=ems[0], axis=0,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["emissivities"]}',
                         )
 
                 h5file.close()

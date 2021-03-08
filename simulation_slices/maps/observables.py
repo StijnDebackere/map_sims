@@ -1,7 +1,7 @@
 import astropy.constants as c
 import astropy.units as u
 
-import simulation_slices.maps.interpolate_electron_density as interp_ne
+import simulation_slices.maps.interpolate_tables as interp_tables
 
 
 def particles_masses(masses, **kwargs):
@@ -20,7 +20,7 @@ def particles_y_sz(
         if z is None or smoothed_hydrogen is None or smoothed_helium is None:
             raise ValueError('z, smoothed_hydrogen and smoothed_helium required as kwargs')
 
-        electron_number_densities = interp_ne.n_e(
+        electron_number_densities = interp_tables.n_e(
             z=z, T=temperatures, rho=densities,
             X=smoothed_hydrogen, Y=smoothed_helium,
         )

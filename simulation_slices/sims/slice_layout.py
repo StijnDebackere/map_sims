@@ -60,6 +60,15 @@ def properties(maxshape):
                     'single_value': False
                 }
             },
+            'emissivities': {
+                'shape': (0,),
+                'maxshape': (maxshape,),
+                'dtype': float,
+                'attrs': {
+                    'description': 'Particle X-ray emissivity, L = 10**emissivity * sigma_sb * T^4',
+                    'single_value': False
+                }
+            },
             **joint,
         },
         'dm': {
