@@ -87,6 +87,7 @@ def map_coords(
             slice_axes=slice_axes, slice_size=slice_size, box_size=box_size,
             map_size=map_size, map_res=map_res, map_thickness=map_thickness,
             map_types=map_types, save_dir=save_dir, coords_name=coords_name,
+
         )
 
     return (os.getpid(), f'{save_dir} maps saved')
@@ -136,8 +137,9 @@ def compute_maps(config, n_workers):
         result_coords = compute_tasks(save_coords, n_workers, kwargs_list)
 
     kwargs_list = []
-    for map_dir, slice_dir, coords_file, box_size in zip(
-            config.map_paths, config.slice_paths, config.coords_files, config.box_sizes):
+    for map_dir, slice_dir, coords_file, map_types, box_size in zip(
+            config.map_paths, config.slice_paths, config.coords_files,
+            config.map_types, config.box_sizes):
         kwargs_list.append(dict(
             snapshots=config.snapshots,
             box_size=box_size,
@@ -146,7 +148,7 @@ def compute_maps(config, n_workers):
             slice_dir=slice_dir,
             slice_axes=config.slice_axes,
             slice_size=config.slice_size,
-            map_types=config.map_types,
+            map_types=map_types,
             map_size=config.map_size,
             map_res=config.map_res,
             map_thickness=config.map_thickness,
@@ -157,9 +159,11 @@ def compute_maps(config, n_workers):
 
 
 def run_pipeline(
-        config_file, n_workers=10,
+        config_file, n_workers=None,
         sims=True, maps=True, observables=True):
     config = Config(config_file)
+    if n_workers is None:
+        n_workers = min(config._n_sims, 16)
 
     if sims:
         slice_sims(config, n_workers)

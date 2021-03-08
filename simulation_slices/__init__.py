@@ -206,10 +206,32 @@ class Config(object):
 
     @map_types.setter
     def map_types(self, val):
-        if set(val) & set(['gas_mass', 'dm_mass', 'stars_mass', 'bh_mass', 'sz']) != set(val):
-            raise ValueError('map_types can only contain 0, 1, 2')
+        valid_map_types = ['gas_mass', 'dm_mass', 'stars_mass', 'bh_mass', 'sz']
+        if type(val) is list:
+            # map_types specified for each sim
+            if len(val) == self._n_sims:
+                map_types = []
+                for v in val:
+                    if set(v) & set(valid_map_types) != set(v):
+                        raise ValueError(f'map_types can only contain {valid_map_types}')
+                    else:
+                        map_types.append(v)
+
+                self._map_types = map_types
+
+            # multiple map_types for each sim
+            else:
+                self._map_types = np.tile(np.atleast_1d(val)[None], (self._n_sims, 1))
+
+        elif type(val) is str:
+            self._map_types = np.asarray([val] * self._n_sims)
         else:
-            self._map_types = np.atleast_1d(list(set(val)))
+            raise ValueError('map_types should be list or string')
+
+        # if set(val) & set(['gas_mass', 'dm_mass', 'stars_mass', 'bh_mass', 'sz']) != set(val):
+        #     raise ValueError('map_types can only contain 0, 1, 2')
+        # else:
+        #     self._map_types = np.atleast_1d(list(set(val)))
 
     def build_config(self):
         self.config = dict(
