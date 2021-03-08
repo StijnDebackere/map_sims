@@ -261,18 +261,18 @@ def x_ray_emissivity(
     interp = interpolate()
     interp.load_table()
 
-    # check bounds for n and T
-    n = (rho / m_H * u.M_sun / (u.Mpc**3 * u.g)).to(u.cm**-3)
+    # check bounds for nH and T
+    nH = (hydrogen_mf * rho / m_H * u.M_sun / (u.Mpc**3 * u.g)).to(u.cm**-3)
 
-    log10_n, log10_T = coords_within_range(
-        (np.log10(n.value), np.round(interp.density_bins, 1)),
+    log10_nH, log10_T = coords_within_range(
+        (np.log10(nH.value), np.round(interp.density_bins, 1)),
         (np.log10(T), np.round(interp.temperature_bins, 1))
     ).T
     #Initialise the emissivity array which will be returned
-    emissivities = np.zeros_like(log10_n, dtype = float)
+    emissivities = np.zeros_like(log10_nH, dtype = float)
 
     #Create density mask, round to avoid numerical errors
-    density_mask = (log10_n >= np.round(interp.density_bins.min(), 1)) & (log10_n <= np.round(interp.density_bins.max(), 1))
+    density_mask = (log10_nH >= np.round(interp.density_bins.min(), 1)) & (log10_nH <= np.round(interp.density_bins.max(), 1))
     #Create temperature mask, round to avoid numerical errors
     temperature_mask = (log10_T >= np.round(interp.temperature_bins.min(), 1)) & (log10_T <= np.round(interp.temperature_bins.max(), 1))
 
@@ -294,7 +294,7 @@ def x_ray_emissivity(
         else:
             emissivities[~joint_mask] = fill_value
 
-    mass_fraction = np.zeros((len(log10_n[joint_mask]), 9))
+    mass_fraction = np.zeros((len(log10_nH[joint_mask]), 9))
 
     #get individual mass fraction
     mass_fraction[:, 0] = hydrogen_mf[joint_mask]
@@ -308,8 +308,8 @@ def x_ray_emissivity(
     mass_fraction[:, 8] = iron_mf[joint_mask]
 
     #Find density offsets
-    idx_n = find_idx(log10_n[joint_mask], interp.density_bins, interp.dn)
-    dx_n = find_dx(log10_n[joint_mask], interp.density_bins, idx_n[:, 0].astype(int))
+    idx_n = find_idx(log10_nH[joint_mask], interp.density_bins, interp.dn)
+    dx_n = find_dx(log10_nH[joint_mask], interp.density_bins, idx_n[:, 0].astype(int))
 
     #Find temperature offsets
     idx_T = find_idx(log10_T[joint_mask], interp.temperature_bins, interp.dT)
