@@ -1,2 +1,3 @@
 *.hdf5
 !electron_densities.hdf5
+!x_ray_table.hdf5
