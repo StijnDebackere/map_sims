@@ -271,6 +271,7 @@ def save_slice_data(
             }
             # only gas particles have extra properties saved
             if ptype == 0:
+                # load in particledata for SZ signal
                 temperatures = snap_info.read_single_file(
                     i=file_num, var=PROPS_TO_BAHAMAS[ptype]['temperatures'],
                     verbose=False, reshape=True,

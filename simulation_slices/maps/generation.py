@@ -102,15 +102,15 @@ def coords_to_map(
     return mapped
 
 
-def get_map(
-        coord, slice_dir, snapshot, slice_axis, slice_size, box_size,
+def get_maps(
+        centers, slice_dir, snapshot, slice_axis, slice_size, box_size,
         map_size, map_res, map_thickness, map_types, verbose=False):
     """Project map around coord in a box of (map_size, map_size, slice_size)
     in a map of map_res for given map_type.
 
     Parameters
     ----------
-    coord : (3,) array
+    centers : (N, 3) array
         (x, y, z) coordinates to slice around
     slice_dir : str
         directory of the saved simulation slices
@@ -139,86 +139,102 @@ def get_map(
         pixelated projected mass for each map_type
 
     """
-    # determine which slices need to be included
-    thickness = np.zeros((3,), dtype=float)
-    thickness[slice_axis] += map_thickness / 2
-    num_slices = int(box_size // slice_size)
+    # sort maps for speedup from hdf5 caching
+    centers = np.atleast_2d(centers).reshape(-1, 3)
+    sort_ids = np.argsort(centers[:, slice_axis])
+    centers_sorted = centers[sort_ids]
 
     extent = np.array([
-        coord - thickness, coord + thickness
-    ]).T
+        centers_sorted[:, slice_axis] - map_thickness / 2,
+        centers_sorted[:, slice_axis] + map_thickness / 2
+    ]).reshape(1, -1)
 
-    slice_ids = slicing.get_coords_slices(
-        coords=extent, slice_axis=slice_axis, slice_size=slice_size,
-    ) % num_slices
+    slice_ranges = slicing.get_coords_slices(
+        coords=extent, slice_axis=0, slice_size=slice_size,
+    ).reshape(2, -1).T
 
     # create index array that cuts out the slice_axis
-    no_slice_axis = np.arange(coord.shape[0]) != slice_axis
+    no_slice_axis = np.arange(0, 3) != slice_axis
+    num_slices = int(box_size // slice_size)
 
-    map_props = obs.map_types_to_properties(map_types)
-    props = slicing.read_slice_file_properties(
-        slice_nums=slice_ids, properties=map_props, save_dir=slice_dir,
-        slice_axis=slice_axis, slice_size=slice_size,
-        snapshot=snapshot, num_slices=num_slices,
-        )
+    slice_file = slicing.open_slice_file(
+        save_dir=slice_dir, slice_axis=slice_axis,
+        slice_size=slice_size, snapshot=snapshot,
+    )
 
     maps = []
-    # extract the properties within the map
-    for map_type in map_types:
-        ptype = obs.MAP_TYPES_OPTIONS[map_type]['ptype']
-        coords = props[ptype]['coordinates'][:]
-        # slice bounding cylinder for map
-        selection = (
-            (
-                tools.dist(
-                    coords[slice_axis].reshape(1, -1),
-                    coord[slice_axis].reshape(1, -1), box_size, axis=0)
-                <= map_thickness / 2
-            ) & (
-                tools.dist(
-                    coords[no_slice_axis],
-                    coord[no_slice_axis].reshape(2, 1), box_size, axis=0)
-                <= 2**0.5 * map_size / 2
+    map_props = obs.map_types_to_properties(map_types)
+    for center, slice_range in zip(centers_sorted, slice_ranges):
+        slice_nums = np.arange(slice_range[0], slice_range[1] + 1) % num_slices
+        props = slicing.read_slice_file_properties(
+            slice_file=slice_file, slice_nums=slice_nums, properties=map_props,
             )
-        )
 
-        # only include props for coords within cylinder
-        props_map_type = {}
-        for prop in props[ptype].keys() - ['coordinates']:
-            if props[ptype][prop].shape[-1] == coords.shape[-1]:
-                props_map_type[prop] = props[ptype][prop][..., selection]
-            elif props[ptype][prop].shape == (1,):
-                props_map_type[prop] = props[ptype][prop]
-                continue
+        coord_map = []
+        # extract the properties within the map
+        for map_type in map_types:
+            ptype = obs.MAP_TYPES_OPTIONS[map_type]['ptype']
+            coords = props[ptype]['coordinates'][:]
+            # slice bounding cylinder for map
+            selection = (
+                (
+                    tools.dist(
+                        coords[slice_axis].reshape(1, -1),
+                        center[slice_axis].reshape(1, -1), box_size, axis=0)
+                    <= map_thickness / 2
+                ) & (
+                    tools.dist(
+                        coords[no_slice_axis],
+                        center[no_slice_axis].reshape(2, 1), box_size, axis=0)
+                    <= 2**0.5 * map_size / 2
+                )
+            )
 
-            else:
-                raise ValueError(f'{prop} is not scalar or matching len(coords)')
+            # only include props for coords within cylinder
+            props_map_type = {}
+            for prop in props[ptype].keys() - ['coords']:
+                if props[ptype][prop].shape[-1] == coords.shape[-1]:
+                    props_map_type[prop] = props[ptype][prop][..., selection]
+                elif props[ptype][prop].shape == (1,):
+                    props_map_type[prop] = props[ptype][prop]
+                    continue
 
-        # ignore sliced dimension
-        coords_2d = coords[no_slice_axis][..., selection]
-        map_center = coord[no_slice_axis]
+                else:
+                    raise ValueError(f'{prop} is not scalar or matching len(coords)')
 
-        mp = coords_to_map(
-            coords=coords_2d, map_center=map_center, map_size=map_size,
-            map_res=map_res, box_size=box_size,
-            func=obs.MAP_TYPES_OPTIONS[map_type]['func'],
-            **props_map_type
-        )
-        maps.append(mp[None])
+            # ignore sliced dimension
+            coords_2d = coords[no_slice_axis][..., selection]
+            map_center = center[no_slice_axis]
 
-    maps = np.concatenate(maps, axis=0)
+            mp = coords_to_map(
+                coords=coords_2d, map_center=map_center, map_size=map_size,
+                map_res=map_res, box_size=box_size,
+                func=obs.MAP_TYPES_OPTIONS[map_type]['func'],
+                **props_map_type
+            )
+            # add axis for map_type dimension
+            coord_map.append(mp[None])
+
+        # add axis for centers dimension
+        maps.append(np.concatenate(coord_map, axis=0)[None])
+
+    # still need to close the slice_file
+    slice_file.close()
+
+    # unsort the maps
+    maps = np.concatenate(maps, axis=0)[sort_ids.argsort()]
     return maps
 
 
 def save_maps(
-        coords, slice_dir, snapshot, slice_axes, slice_size, box_size,
+        centers, slice_dir, snapshot, slice_axes, slice_size, box_size,
         map_size, map_res, map_thickness, map_types, save_dir=None, coords_name=""):
     """Save projected maps around coords in a box of (map_size, map_size,
     slice_size) in a map of map_res for given map_types.
 
     Parameters
     ----------
-    coords : (3, N) array
+    centers : (N, 3) array
         (x, y, z) coordinates to slice around
     slice_dir : str
         directory of the saved simulation slices
@@ -255,16 +271,14 @@ def save_maps(
 
     for slice_axis in slice_axes:
         maps = []
-        for coord in coords:
-            maps.append(
-                get_map(
-                    coord=coord, slice_dir=slice_dir, snapshot=snapshot,
-                    slice_axis=slice_axis, slice_size=slice_size, box_size=box_size,
-                    map_size=map_size, map_res=map_res, map_thickness=map_thickness,
-                    map_types=map_types, verbose=False)[None, ...]
+        maps.append(
+            get_maps(
+                centers=centers, slice_dir=slice_dir, snapshot=snapshot,
+                slice_axis=slice_axis, slice_size=slice_size, box_size=box_size,
+                map_size=map_size, map_res=map_res, map_thickness=map_thickness,
+                map_types=map_types, verbose=False)
             )
 
-        maps = np.concatenate(maps, axis=0)
         for i, map_type in enumerate(map_types):
             np.savez(
                 f'{save_dir}/{slice_axis}_map_{map_type}_{coords_name}.hdf5',

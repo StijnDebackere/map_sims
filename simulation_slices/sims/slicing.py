@@ -44,8 +44,19 @@ def create_slice_file(
     )
 
 
+def open_slice_file(save_dir, snapshot, slice_axis, slice_size, mode='r'):
+    """Return the slice file with given specifications."""
+    fname = slice_file_name(
+        save_dir=save_dir, snapshot=snapshot,
+        slice_axis=slice_axis, slice_size=slice_size,
+    )
+    h5file = h5py.File(fname, mode=mode)
+    return h5file
+
+
 def read_slice_file_properties(
-        slice_nums, properties, save_dir, snapshot, num_slices, slice_axis, slice_size):
+        slice_nums, properties, slice_file=None,
+        save_dir=None, snapshot=None, slice_size=None, slice_axis=None):
     """Read the given properties into a dict for slice_file.
 
     Parameters
@@ -61,24 +72,30 @@ def read_slice_file_properties(
     properties : dict with loaded dset for each ptype and slice_num in properties
 
     """
-    fname = slice_file_name(
-        save_dir=save_dir, snapshot=snapshot,
-        slice_axis=slice_axis, slice_size=slice_size,
-    )
-
     results = {}
-    with h5py.File(fname, 'r') as h5file:
+    if slice_file is None:
+        fname = slice_file_name(
+            save_dir=save_dir, snapshot=snapshot,
+            slice_axis=slice_axis, slice_size=slice_size,
+        )
+        slice_file = h5py.File(fname)
+    else:
         for ptype, dsets in properties.items():
             results[ptype] = {}
             for dset in dsets:
                 res_dset = []
                 for slice_idx in slice_nums:
-                    h5_dset = h5file[f'{slice_idx}/{ptype}/{dset}']
+                    try:
+                        key = f'{slice_idx}/{ptype}/{dset}'
+                        h5_dset = slice_file[key]
+                    except KeyError:
+                        breakpoint()
+                        raise KeyError(f'key {key} not found in {slice_file.filename}')
                     if h5_dset.attrs['single_value']:
-                        res_dset.append(h5file[f'{slice_nums[0]}/{ptype}/{dset}'][:])
+                        res_dset.append(slice_file[f'{slice_nums[0]}/{ptype}/{dset}'][:])
                         break
                     else:
-                        res_dset.append(h5file[f'{slice_idx}/{ptype}/{dset}'][:])
+                        res_dset.append(slice_file[f'{slice_idx}/{ptype}/{dset}'][:])
 
                 results[ptype][dset] = np.concatenate(res_dset, axis=-1)
 
