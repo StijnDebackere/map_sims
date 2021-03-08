@@ -270,14 +270,12 @@ def save_maps(
         save_dir = util.check_path(save_dir)
 
     for slice_axis in slice_axes:
-        maps = []
-        maps.append(
-            get_maps(
+        maps = get_maps(
                 centers=centers, slice_dir=slice_dir, snapshot=snapshot,
                 slice_axis=slice_axis, slice_size=slice_size, box_size=box_size,
                 map_size=map_size, map_res=map_res, map_thickness=map_thickness,
-                map_types=map_types, verbose=False)
-            )
+                map_types=map_types, verbose=False
+        )
 
         for i, map_type in enumerate(map_types):
             np.savez(
