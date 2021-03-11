@@ -58,35 +58,6 @@ def time_this(func, pid=False):
     return wrapper
 
 
-def check_coords(coords):
-    """Check whether coordinates has shape (3, N)."""
-    coords = np.atleast_2d(coords)
-    if len(coords.shape) != 2:
-        raise ValueError('coords needs to be 2D array')
-    if coords.shape[0] != 3:
-        raise ValueError('coords needs to have 3 spatial dimensions along axis 0')
-    return coords
-
-
-def check_properties(properties, N):
-    """Check whether the properties kwargs are all either (..., N) or (1,)."""
-    invalid_properties = []
-    valid_properties = {}
-    for k, v in properties.items():
-        v_arr = np.atleast_1d(v)
-        if v_arr.shape[-1] == N:
-            valid_properties[k] = v_arr
-        elif len(v_arr.shape) == 1:
-            valid_properties[k] = v_arr
-        else:
-            invalid_properties.append(k)
-
-    if invalid_properties:
-        print(f'Dropped invalid properties {invalid_properties}')
-
-    return valid_properties
-
-
 def check_slice_axis(slice_axis):
     """Check whether slice_axis is either 0, 1, or 2."""
     if slice_axis not in [0, 1, 2]:

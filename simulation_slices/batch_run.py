@@ -13,40 +13,6 @@ import simulation_slices.maps.generation as map_gen
 import simulation_slices.sims.bahamas as bahamas
 import simulation_slices.utilities as util
 
-import pdb
-
-
-def order_coords(coords, map_thickness, box_size, slice_axis):
-    """Order the list of coords such that each cpu accesses independent
-    slice_files.
-
-    Parameters
-    ----------
-    coords : (3, N) array
-        coordinates to order
-    map_thickness : float
-        thickness of the map matching units of box_size
-    box_size : float
-        size of the box
-    slice_axis : int
-        coordinate to slice along
-
-    Returns
-    -------
-    coords_split : list of coords
-        coordinates split up in box_size / map_thickness bins
-    """
-    # divide the box up in independent regions of map_thickness
-    bin_edges = np.arange(0, box_size, map_thickness)
-
-    # sort the coords according to slice_axis
-    coords_sorted = coords[:, coords[slice_axis].argsort()]
-    bin_ids = np.digitize(coords[slice_axis], bin_edges)
-    in_bins = np.unique(bin_ids)
-
-    coords_split = [coords[:, bin_ids == idx] for idx in in_bins]
-    return coords_split
-
 
 def save_coords(
         sim_dir, snapshots, sim_suite,

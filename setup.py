@@ -1,7 +1,7 @@
 import setuptools
 
-# with open("readme.md", "r") as fh:
-#     long_description = fh.read()
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
 setuptools.setup(
     name="simulation_slices",
@@ -9,15 +9,18 @@ setuptools.setup(
     author="Stijn Debackere",
     author_email="debackere@strw.leidenuniv.nl",
     description="A package to slice simulation particle data.",
-    # long_description=long_description,
-    # long_description_content_type="text/markdown",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     url="",
     packages=['simulation_slices'],
-    # package_dir={'':'src'},
     install_requires=[
+        "astropy",
         "h5py",
+        "gadget @ https://github.com/StijnDebackere/gadget",
+        "numba",
         "numpy",
-        "mira_titan",
+        "scipy",
+        "toml",
         "tqdm",
     ],
     classifiers=[

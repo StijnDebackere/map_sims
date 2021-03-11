@@ -1,7 +1,6 @@
-import h5py
 import sys
 
-import pdb
+import h5py
 
 
 def create_hdf5(fname, layout, close=False):
@@ -68,7 +67,7 @@ def add_to_hdf5(h5file, dataset, vals, axis):
     try:
         dset = h5file[dataset]
     except KeyError:
-        pdb.set_trace()
+        breakpoint()
         raise KeyError(f'{dataset} not found in {h5file.filename}')
     dset.resize(
         dset.shape[axis] + vals.shape[axis], axis=axis

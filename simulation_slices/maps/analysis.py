@@ -3,7 +3,6 @@ import numpy as np
 import simulation_slices.maps.tools as tools
 import simulation_slices.utilities as util
 
-import pdb
 
 PI = np.pi
 PI_INV = 1. / np.pi
