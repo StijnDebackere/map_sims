@@ -54,6 +54,6 @@ coords_name = "clusters_m200m"
 observable_types = ""
 save_dir = "/hpcdata0/simulations/BAHAMAS/extsdeba/observables/"
 
-# [DIRECTORIES]
-# FIGURE_DIR = /Users/stijn/Documents/PhD/projects/aperture_masses/figures/
-# DATA_DIR = /Users/stijn/Documents/PhD/projects/aperture_masses/data/
+[DIRECTORIES]
+FIGURE_DIR = /Users/stijn/Documents/PhD/projects/aperture_masses/figures/
+DATA_DIR = /Users/stijn/Documents/PhD/projects/aperture_masses/data/

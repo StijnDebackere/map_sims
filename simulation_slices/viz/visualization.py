@@ -4,11 +4,10 @@ from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 import numpy as np
 from plotting_tools.axes import set_spines_labels
 
-from simulation_slices import CONFIG
+from simulation_slices import Config
 
-import pdb
 
-FIGURE_DIR = CONFIG['DIRECTORIES']['FIGURE_DIR']
+FIGURE_DIR = Config().figure_dir
 mpl.use('pdf')
 
 
