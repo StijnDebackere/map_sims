@@ -12,6 +12,7 @@ from simulation_slices import Config
 import simulation_slices.batch_run as batch
 
 
+# inspired by https://stackoverflow.com/q/61330816/
 def slice_sim_solid_factory(sim_idx, cfg):
     @solid(name=str(f'slice_sim_{sim_idx}'))
     def _slice_sim(context):

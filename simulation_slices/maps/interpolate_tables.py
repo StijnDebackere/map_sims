@@ -7,11 +7,9 @@ from numba import jit
 import numpy as np
 import scipy.interpolate as interp
 
-import pdb
 
-
-NE_FILE = Path(__file__).parent / 'electron_densities.hdf5'
-XRAY_FILE = Path(__file__).parent / 'x_ray_table.hdf5'
+NE_FILE = Path(__file__).parent / 'tables/electron_densities.hdf5'
+XRAY_FILE = Path(__file__).parent / 'tables/x_ray_table.hdf5'
 
 
 def args_to_arrays(func):
@@ -57,7 +55,7 @@ def coords_within_range(*args):
 
 
 @args_to_arrays
-def n_e(z, T, rho, X, Y, m_H=1.6726e-24):
+def n_e(z, T, rho, X, Y, h, m_H=1.6726e-24 * u.g):
     """Get the electron number density for a gas at given redshift z,
     temperature T and with Hydrogen/Helium mass fractions of X/Y.
 
@@ -73,16 +71,20 @@ def n_e(z, T, rho, X, Y, m_H=1.6726e-24):
         mass fraction in Hydrogen
     Y : array-like
         mass fraction in Helium
+    h : float
+        little h, dimensionless Hubble parameter
     m_H : float
         Hydrogen mass [Default: 1.6726e-24 g]
 
     Returns
     -------
     ne : array-like
-        electron number density [Mpc^-3]
+        electron number density [h^2 Mpc^-3]
     """
-    T *= u.K
-    n_H = (X * rho / m_H * u.M_sun / (u.Mpc**3 * u.g)).to(u.cm**-3)
+    n_H = (X * rho / m_H).to(
+        u.cm**-3, equivalencies=u.with_H0(100 * h * (u.km / (u.s * u.Mpc)))
+    )
+
     # get ratio of Helium to Hydrogen for given mass abundances
     n_He_n_H = Y / (3.971 * X)
     z = np.tile(z, (n_H.shape[0]))
@@ -106,8 +108,8 @@ def n_e(z, T, rho, X, Y, m_H=1.6726e-24):
         coords = coords_within_range(
             (z, z_interp),
             (n_He_n_H, n_He_n_H_interp),
-            (T.value, T_interp.value),
-            (n_H.value, n_H_interp.value)
+            (T.to(u.K).value, T_interp.to(u.K).value),
+            (n_H.to(u.cm**-3).value, n_H_interp.to(u.cm**-3).value)
             # (np.log10(n_He_n_H), np.log10(n_He_n_H_interp)),
             # (np.log10(T.value), np.log10(T_interp.value)),
             # (np.log10(n_H.value), np.log10(n_H_interp.value))
@@ -118,7 +120,7 @@ def n_e(z, T, rho, X, Y, m_H=1.6726e-24):
             xi=coords
         ) * n_H
 
-    return ne.to(u.Mpc**-3).value
+    return ne.to(u.littleh**2 * u.Mpc**-3)
 
 
 class interpolate:
@@ -148,7 +150,7 @@ def find_dx(subdata, bins, idx_0):
     return dx_p
 
 
-# @jit(nopython = True)
+# @jit(nopython=True)
 def find_idx(subdata, bins, dbins):
     idx_p = np.zeros((len(subdata), 2))
     for i in range(len(subdata)):
@@ -161,9 +163,15 @@ def find_idx(subdata, bins, dbins):
 
 @jit(nopython=True)
 def find_idx_he(subdata, bins):
+    num_bins = len(bins)
     idx_p = np.zeros((len(subdata), 2))
     for i in range(len(subdata)):
-        idx_p[i, :] = np.sort(np.argsort(np.abs(bins - subdata[i]))[:2])
+        # idx_p[i, :] = np.sort(np.argsort(np.abs(bins - subdata[i]))[:2])
+
+        # When closest to the highest bin, or above the highest bin, return the one but highest bin,
+        # otherwise we will select a second bin which is outside the binrange
+        bin_below = min(np.argsort(np.abs(bins[bins <= subdata[i]] - subdata[i]))[0], num_bins - 2)
+        idx_p[i, :] = np.array([bin_below, bin_below + 1])
 
     return idx_p
 
@@ -217,7 +225,7 @@ def get_table_interp(dn, dT, dx_T, dx_n, idx_T, idx_n, idx_he, dx_he, x_ray, abu
 
 def x_ray_luminosity(
         z, rho, T, masses, hydrogen_mf, helium_mf, carbon_mf, nitrogen_mf,
-        oxygen_mf, neon_mf, magnesium_mf, silicon_mf, iron_mf,
+        oxygen_mf, neon_mf, magnesium_mf, silicon_mf, iron_mf, h,
         m_H=1.6726e-24 * u.g, fill_value=None):
     """Compute the X-ray luminosity for the given particle data.
 
@@ -249,6 +257,8 @@ def x_ray_luminosity(
         mass fraction in Silicon
     iron_mf : array-like
         mass fraction in Iron
+    h : float
+        little h, dimensionless Hubble parameter
     m_H : float
         Hydrogen mass [Default: 1.6726e-24 g]
     fill_value : optional
@@ -257,7 +267,7 @@ def x_ray_luminosity(
     Returns
     -------
     luminosities : array-like
-        particle X-ray luminosities in L_sun with possible h^-3 scaling
+        particle X-ray luminosities in L_sun
 
     """
     #Initialise interpolation class
@@ -265,11 +275,13 @@ def x_ray_luminosity(
     interp.load_table()
 
     # check bounds for nH and T
-    n_H = (hydrogen_mf * rho * u.M_sun / u.Mpc**3 / m_H).to(u.cm**-3)
+    n_H = (hydrogen_mf * rho / m_H).to(
+        u.cm**-3, equivalencies=u.with_H0(100 * h * (u.km / (u.s * u.Mpc)))
+    )
 
     log10_n_H, log10_T = coords_within_range(
         (np.log10(n_H.value), np.round(interp.density_bins, 1)),
-        (np.log10(T), np.round(interp.temperature_bins, 1))
+        (np.log10(T.to(u.K).value), np.round(interp.temperature_bins, 1))
     ).T
     #Initialise the emissivity array which will be returned
     emissivities = np.zeros_like(log10_n_H, dtype = float)
@@ -337,8 +349,7 @@ def x_ray_luminosity(
         dx_he, interp.x_ray, abundance_to_solar[:, 2:]
     )
     luminosities = (
-        10**emissivities * u.erg * u.cm**-3 * u.s**-1
-        * masses * u.Msun / (rho * u.Msun / u.Mpc**3)
+        10**emissivities * u.erg * u.cm**-3 * u.s**-1 * masses  / rho
     )
 
-    return luminosities.to(u.Lsun).value
+    return luminosities.to(u.Lsun, equivalencies=u.with_H0(h * 100 * u.km / (u.s * u.Mpc)))
