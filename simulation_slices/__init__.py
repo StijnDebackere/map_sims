@@ -3,15 +3,16 @@ from pathlib import Path
 import numpy as np
 import toml
 
-import pdb
+
+CONFIG_FILE = Path(__file__).parent / 'batch.toml'
 
 
 class Config(object):
-    def __init__(self, config_file):
+    def __init__(self, config_file=CONFIG_FILE):
         config = toml.load(config_file)
         self.base_dir = config['sims']['base_dir']
         self.sim_dirs = config['sims']['sim_dirs']
-        self.sim_type = config['sims']['sim_type']
+        self.sim_suite = config['sims']['sim_suite']
         self.snapshots = config['sims']['snapshots']
         self.ptypes = config['sims']['ptypes']
         self.box_sizes = config['sims']['box_sizes']
@@ -40,6 +41,13 @@ class Config(object):
             self.coords_name = config['maps']['coords_name']
 
         self.obs_dir = config['observables']['save_dir']
+        self.obs_types = config['observables'].keys() - ['save_dir']
+        self.obs_kwargs = {
+            key: config['observables'][key] for key in self.obs_types
+        }
+
+        self.figure_dir = config['DIRECTORIES']['FIGURE_DIR']
+        self.data_dir = config['DIRECTORIES']['DATA_DIR']
 
         self.build_config()
 
@@ -113,15 +121,15 @@ class Config(object):
         self.obs_paths = [self._obs_dir / sd for sd in self.sim_dirs]
 
     @property
-    def sim_type(self):
-        return self._sim_type
+    def sim_suite(self):
+        return self._sim_suite
 
-    @sim_type.setter
-    def sim_type(self, val):
+    @sim_suite.setter
+    def sim_suite(self, val):
         if val == 'BAHAMAS':
-            self._sim_type = val
+            self._sim_suite = val
         else:
-            raise ValueError(f'{val} is not a valid sim_type')
+            raise ValueError(f'{val} is not a valid sim_suite')
 
     @property
     def snapshots(self):

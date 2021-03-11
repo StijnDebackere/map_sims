@@ -49,9 +49,11 @@ def order_coords(coords, map_thickness, box_size, slice_axis):
 
 
 def save_coords(
-        sim_dir, sim_type, snapshots, group_dset, coord_dset, group_range, extra_dsets,
+        sim_dir, snapshots, sim_suite,
+        group_dset, coord_dset, group_range, extra_dsets,
         save_dir, coords_fname):
-    if sim_type == 'BAHAMAS':
+    """Save a set of halo centers to generate maps around."""
+    if sim_suite == 'BAHAMAS':
         for snap in np.atleast_1d(snapshots):
             bahamas.save_coords_file(
                 base_dir=str(sim_dir), snapshot=snap, group_dset=group_dset,
@@ -62,8 +64,9 @@ def save_coords(
     return (os.getpid(), f'{save_dir} coords saved')
 
 
-def slice_sim(sim_dir, sim_type, snapshots, ptypes, slice_axes, slice_size, save_dir):
-    if sim_type == 'BAHAMAS':
+def slice_sim(sim_dir, sim_suite, snapshots, ptypes, slice_axes, slice_size, save_dir):
+    """Save a set of slices for specified simulation."""
+    if sim_suite == 'BAHAMAS':
         for snap in np.atleast_1d(snapshots):
             bahamas.save_slice_data(
                 base_dir=str(sim_dir), snapshot=snap, ptypes=ptypes,
@@ -75,15 +78,16 @@ def slice_sim(sim_dir, sim_type, snapshots, ptypes, slice_axes, slice_size, save
 
 
 def slice_sim_dag(sim_idx, config):
+    """Save a set of slices for sim_idx in config.sim_paths."""
     sim_dir = config.sim_paths[sim_idx]
-    sim_type = config.sim_type
+    sim_suite = config.sim_suite
     snapshots = config.snapshots[sim_idx]
     ptypes = config.ptypes[sim_idx]
     save_dir = config.slice_paths[sim_idx]
 
     slice_axes = config.slice_axes
     slice_size = config.slice_size
-    if sim_type == 'BAHAMAS':
+    if sim_suite == 'BAHAMAS':
         for snap in np.atleast_1d(snapshots):
             bahamas.save_slice_data(
                 base_dir=str(sim_dir), snapshot=snap, ptypes=ptypes,
@@ -98,6 +102,7 @@ def map_coords(
         snapshots, box_size, coords_file, coords_name,
         slice_dir, slice_axes, slice_size,
         map_types, map_size, map_res, map_thickness, save_dir):
+    """Save a set of maps for specified simulation."""
     with h5py.File(str(coords_file), 'r') as h5file:
         centers = h5file['coordinates'][:]
 
@@ -114,8 +119,9 @@ def map_coords(
 
 
 def map_coords_dag(sim_idx, config):
+    """Save a set of maps for sim_idx in config.sim_paths."""
     sim_dir = config.sim_paths[sim_idx]
-    sim_type = config.sim_type
+    sim_suite = config.sim_suite
     snapshots = config.snapshots[sim_idx]
     box_size = config.box_sizes[sim_idx]
     ptypes = config.ptypes[sim_idx]
@@ -126,7 +132,7 @@ def map_coords_dag(sim_idx, config):
         coords_dir = config.coords_paths[sim_idx]
         save_coords(
             sim_dir=sim_dir,
-            sim_type=sim_type,
+            sim_suite=sim_suite,
             snapshots=snapshots,
             group_dset=config.group_dset,
             coord_dset=config.coord_dset,
@@ -173,7 +179,7 @@ def slice_sims(config, n_workers):
             config.ptypes, config.slice_paths):
         kwargs_list.append(dict(
             sim_dir=sim_dir,
-            sim_type=config.sim_type,
+            sim_suite=config.sim_suite,
             ptypes=ptypes,
             snapshots=snaps,
             slice_axes=config.slice_axes,
@@ -190,7 +196,7 @@ def compute_maps(config, n_workers):
         for sim_dir, save_dir in zip(config.sim_paths, config.coords_paths):
             kwargs_list.append(dict(
                 sim_dir=sim_dir,
-                sim_type=config.sim_type,
+                sim_suite=config.sim_suite,
                 snapshots=config.snapshots,
                 group_dset=config.group_dset,
                 coord_dset=config.coord_dset,

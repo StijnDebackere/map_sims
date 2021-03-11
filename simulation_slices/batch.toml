@@ -6,7 +6,7 @@ sim_dirs = [
      "AGN_TUNED_nu0_L400N1024_WMAP9",
      # "AGN_TUNED_nu0_L400N1024_Planck"
 ]
-sim_type = "BAHAMAS"
+sim_suite = 'BAHAMAS'
 # scalar or list of lists for each sim_dir
 #
 snapshots = 32
