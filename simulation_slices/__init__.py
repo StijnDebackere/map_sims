@@ -4,7 +4,7 @@ import numpy as np
 import toml
 
 
-CONFIG_FILE = Path(__file__).parent / 'batch.toml'
+CONFIG_FILE = str(Path(__file__).parent / 'batch.toml')
 
 
 class Config(object):

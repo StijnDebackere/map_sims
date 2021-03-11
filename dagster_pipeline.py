@@ -46,7 +46,7 @@ def summary_report(context, statuses):
         resource_defs={"io_manager": fs_io_manager}
     )]
 )
-def pipeline():
+def process_simulations():
     solid_output_handles = []
     cfg = Config(str(Path(__file__).parent / 'simulation_slices/batch.toml'))
 

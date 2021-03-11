@@ -120,7 +120,7 @@ def n_e(z, T, rho, X, Y, h, m_H=1.6726e-24 * u.g):
             xi=coords
         ) * n_H
 
-    return ne.to(u.littleh**2 * u.Mpc**-3)
+    return ne.to(u.littleh**2 * u.Mpc**-3, equivalencies=u.with_H0(h * 100 * u.km / (u.s * u.Mpc)))
 
 
 class interpolate:
