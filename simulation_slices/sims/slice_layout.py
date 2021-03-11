@@ -1,11 +1,18 @@
-def attrs(num_slices, slice_axis, slice_size, box_size, snapshot):
+def attrs(
+        num_slices: int,
+        slice_axis: int,
+        slice_size: int,
+        box_size,
+        snapshot, z, a):
     """Return the required hdf5 attributes for all slices."""
     return {
         'num_slices': num_slices,
         'slice_axis': slice_axis,
         'slice_size': slice_size,
         'box_size': box_size,
-        'snapshot': snapshot
+        'snapshot': snapshot,
+        'a': a,
+        'z': z,
     }
 
 
@@ -18,7 +25,8 @@ def properties(maxshape):
             'dtype': float,
             'attrs': {
                 'description': 'Particle coordinates in cMpc / h',
-                'single_value': False
+                'single_value': False,
+                'units': 'Mpc / littleh'
             },
         },
         'masses': {
@@ -27,7 +35,8 @@ def properties(maxshape):
             'dtype': float,
             'attrs': {
                 'description': 'Particle masses M_sun / h',
-                'single_value': False
+                'single_value': False,
+                'units': 'solMass / littleh',
             },
         }
     }
@@ -39,7 +48,8 @@ def properties(maxshape):
                 'dtype': float,
                 'attrs': {
                     'description': 'Particle temperatures in K',
-                    'single_value': False
+                    'single_value': False,
+                    'units': 'K',
                 }
             },
             'densities': {
@@ -48,7 +58,8 @@ def properties(maxshape):
                 'dtype': float,
                 'attrs': {
                     'description': 'Particle mass density in h^2 M_sun/Mpc^3',
-                    'single_value': False
+                    'single_value': False,
+                    'units': 'littleh2 solMass / Mpc3',
                 }
             },
             'electron_number_densities': {
@@ -57,7 +68,8 @@ def properties(maxshape):
                 'dtype': float,
                 'attrs': {
                     'description': 'Particle electron number density',
-                    'single_value': False
+                    'single_value': False,
+                    'units': 'littleh2 / Mpc3',
                 }
             },
             'luminosities': {
@@ -65,8 +77,9 @@ def properties(maxshape):
                 'maxshape': (maxshape,),
                 'dtype': float,
                 'attrs': {
-                    'description': 'Particle X-ray luminosity in h^-3 L_sun',
-                    'single_value': False
+                    'description': 'Particle X-ray luminosity in L_sun',
+                    'single_value': False,
+                    'units': 'solLum',
                 }
             },
             **joint,
@@ -79,7 +92,8 @@ def properties(maxshape):
                 'dtype': float,
                 'attrs': {
                     'description': 'Particle masses M_sun / h',
-                    'single_value': True
+                    'single_value': True,
+                    'units': 'solMass / littleh',
                 },
             },
         },
@@ -91,7 +105,7 @@ def properties(maxshape):
 
 def get_slice_layout(
         num_slices, slice_axis, slice_size, maxshape,
-        box_size, snapshot, ptypes):
+        box_size, snapshot, z, a, ptypes):
     """Generate the standard layout for our slice hdf5 files.
 
     Parameters
@@ -108,6 +122,10 @@ def get_slice_layout(
         box size
     snapshot : int
         snapshot of the simulation
+    z : float
+        redshift
+    a : float
+        expansion factor
     ptypes : ['gas', 'dm', 'stars', 'bh']
         particle types to include
 
@@ -121,7 +139,7 @@ def get_slice_layout(
 
     layout = {'dsets': {}}
     layout['attrs'] = attrs(
-        num_slices=num_slices, slice_axis=slice_axis,
+        num_slices=num_slices, slice_axis=slice_axis, z=z, a=a,
         slice_size=slice_size, box_size=box_size, snapshot=snapshot
     )
 

@@ -66,32 +66,6 @@ PROPS_PTYPES[0] = {
     **PROPS_PTYPES[0]
 }
 
-# enforce consistent units
-# we want M_sun / h and cMpc / h
-M_UNIT = 1e10
-R_UNIT = 1
-
-# and h^2 M_sun / Mpc^3
-RHO_UNIT = M_UNIT / R_UNIT**3
-
-DSET_UNITS = {
-    'FOF/GroupMass': M_UNIT,
-    'FOF/Group_M_TopHat200': M_UNIT,
-    'FOF/Group_M_Mean200': M_UNIT,
-    'FOF/Group_M_Crit200': M_UNIT,
-    'FOF/Group_M_Mean500': M_UNIT,
-    'FOF/Group_M_Crit500': M_UNIT,
-    'FOF/Group_M_Mean2500': M_UNIT,
-    'FOF/Group_M_Crit2500': M_UNIT,
-    'FOF/Group_R_Mean200': R_UNIT,
-    'FOF/Group_R_Crit200': R_UNIT,
-    'FOF/Group_R_Mean500': R_UNIT,
-    'FOF/Group_R_Crit500': R_UNIT,
-    'FOF/Group_R_Mean2500': R_UNIT,
-    'FOF/Group_R_Crit2500': R_UNIT,
-    'FOF/GroupCentreOfPotential': R_UNIT,
-}
-
 
 def save_coords_file(
         base_dir, snapshot, group_dset, coord_dset, group_range, extra_dsets,
@@ -125,7 +99,7 @@ def save_coords_file(
     """
     group_info = Gadget(
         model_dir=base_dir, file_type='subh', snapnum=snapshot, sim='BAHAMAS',
-        gadgetunits=True
+        units=True, comoving=True
     )
 
     if 'FOF' not in group_dset:
@@ -143,14 +117,18 @@ def save_coords_file(
 
     fname = (save_dir / coords_fname).with_suffix('.hdf5')
 
-    group_data = group_info.read_var(group_dset, verbose=verbose) * DSET_UNITS.get(group_dset, 1.)
+    group_data = group_info.read_var(group_dset, verbose=verbose)
     group_ids = np.arange(len(group_data))
     selection = (group_data > np.min(group_range)) & (group_data < np.max(group_range))
-    coordinates = group_info.read_var(coord_dset, verbose=verbose)[selection] * DSET_UNITS.get(coord_dset, 1.)
+    coordinates = group_info.read_var(coord_dset, verbose=verbose)[selection]
 
     extra = {
         extra_dset: {
-            'data': group_info.read_var(extra_dset, verbose=verbose)[selection] * DSET_UNITS.get(extra_dset, 1.),
+            'data': group_info.read_var(extra_dset, verbose=verbose).value[selection],
+            'attrs': {
+                'units': str(group_info.get_units(extra_dset, 0, verbose=verbose).unit),
+                **group_info.read_attrs(extra_dset, ids=0, dtype=object)
+            },
         }
         for extra_dset in extra_dsets
     }
@@ -160,12 +138,12 @@ def save_coords_file(
         },
         'dsets': {
             'coordinates': {
-                'data': coordinates,
+                'data': coordinates.value,
                 'attrs': {
                     'description': 'Coordinates in cMpc/h',
+                    'units': str(coordinates.unit),
                     'group_dset': group_dset,
                     'group_range': group_range,
-
                 },
             },
             'group_ids': {
@@ -217,8 +195,8 @@ def save_slice_data(
     """
     slice_axes = np.atleast_1d(slice_axes)
     snap_info = Gadget(
-        model_dir=base_dir, file_type='snap', snapnum=snapshot, sim='BAHAMAS',
-        gadgetunits=True
+        model_dir=base_dir, file_type='snap', snapnum=snapshot,
+        units=True, comoving=True,
     )
 
     # ensure that save_dir exists
@@ -235,18 +213,19 @@ def save_slice_data(
     N_tot = sum(snap_info.num_part_tot)
     maxshape = int(2 * N_tot / num_slices)
 
+    a = snap_info.a
+    z = 1 / a - 1
+    h = snap_info.h
+
     for slice_axis in slice_axes:
         # create the hdf5 file to fill up
         slicing.create_slice_file(
-            save_dir=save_dir, snapshot=snapshot, box_size=box_size,
-            ptypes=[BAHAMAS_TO_PTYPES[p] for p in ptypes],
+            save_dir=save_dir, snapshot=snapshot, box_size=box_size.value,
+            z=z, a=a, ptypes=[BAHAMAS_TO_PTYPES[p] for p in ptypes],
             num_slices=num_slices, slice_axis=slice_axis,
-            slice_size=slice_size, maxshape=maxshape
+            slice_size=slice_size.value, maxshape=maxshape
         )
 
-    # set unit conversions
-    a = snap_info.a
-    z = 1 / a - 1
 
     # now loop over all snapshot files and add their particle info
     # to the correct slice
@@ -266,7 +245,7 @@ def save_slice_data(
             coords = snap_info.read_single_file(
                 i=file_num, var=PROPS_TO_BAHAMAS[ptype]['coordinates'],
                 verbose=False, reshape=True,
-            ).T * R_UNIT
+            ).T
 
             # dark matter does not have the Mass variable
             # read in M_sun / h
@@ -277,8 +256,6 @@ def save_slice_data(
                 )
             else:
                 masses = np.atleast_1d(snap_info.masses[ptype])
-
-            masses *= M_UNIT
 
             properties = {
                 'coordinates': coords,
@@ -295,8 +272,6 @@ def save_slice_data(
                     i=file_num, var=PROPS_TO_BAHAMAS[ptype]['densities'],
                     verbose=False, reshape=True,
                 )
-                densities *= RHO_UNIT
-
                 smoothed_hydrogen = snap_info.read_single_file(
                     i=file_num, var=PROPS_TO_BAHAMAS[ptype]['smoothed_hydrogen'],
                     verbose=False, reshape=True,
@@ -333,9 +308,8 @@ def save_slice_data(
                     i=file_num, var=PROPS_TO_BAHAMAS[ptype]['smoothed_iron'],
                     verbose=False, reshape=True,
                 )
-
                 electron_number_densities = interp_tables.n_e(
-                    z=z, T=temperatures, rho=densities,
+                    z=z, T=temperatures, rho=densities, h=h,
                     X=smoothed_hydrogen, Y=smoothed_helium,
                 )
                 luminosities = interp_tables.x_ray_luminosity(
@@ -363,12 +337,12 @@ def save_slice_data(
                     box_size=box_size,
                     slice_size=slice_size,
                     slice_axis=slice_axis,
-                    properties=properties
+                    properties=properties,
                 )
 
                 fname = slicing.slice_file_name(
                     save_dir=save_dir, slice_axis=slice_axis,
-                    slice_size=slice_size, snapshot=snapshot
+                    slice_size=slice_size.value, snapshot=snapshot
                 )
                 h5file = h5py.File(fname, 'r+')
 

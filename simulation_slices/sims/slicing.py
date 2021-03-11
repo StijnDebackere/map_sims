@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import astropy.units as u
 import h5py
 import numpy as np
 
@@ -9,9 +10,9 @@ import simulation_slices.utilities as util
 
 
 def slice_file_name(
-        save_dir, slice_axis, slice_size, snapshot):
+        save_dir: str, slice_axis: int, slice_size: float, snapshot: int) -> str:
     """Return the formatted base filename for the given slice."""
-    fname = f'axis_{slice_axis}_size_{slice_size}_{int(snapshot):03d}'
+    fname = f'axis_{slice_axis}_size_{slice_size}_{snapshot:03d}'
     fname = f'{save_dir}/{fname}.hdf5'
 
     return fname
@@ -29,6 +30,7 @@ def create_slice_file(
     hdf_layout = slice_layout.get_slice_layout(
         num_slices=num_slices, slice_axis=slice_axis, slice_size=slice_size,
         maxshape=maxshape, box_size=box_size, snapshot=snapshot, ptypes=ptypes,
+        z=z, a=a,
     )
 
     # ensure start with clean slate
@@ -44,7 +46,9 @@ def create_slice_file(
     )
 
 
-def open_slice_file(save_dir, snapshot, slice_axis, slice_size, mode='r'):
+def open_slice_file(
+        save_dir: str, snapshot: int, slice_axis: int, slice_size: int,
+        mode: str='r'):
     """Return the slice file with given specifications."""
     fname = slice_file_name(
         save_dir=save_dir, snapshot=snapshot,
@@ -102,7 +106,8 @@ def read_slice_file_properties(
     return results
 
 
-def get_coords_slices(coords, slice_size, slice_axis):
+def get_coords_slices(
+        coords: np.ndarray, slice_size: float, slice_axis: int) -> np.ndarray:
     """For the list of periodic coords recover the slice_idx for the given
     slice_size and slice_axis.
 
@@ -128,17 +133,18 @@ def get_coords_slices(coords, slice_size, slice_axis):
 
 
 def slice_particle_list(
-        box_size, slice_size, slice_axis, properties):
+        box_size: u.Quantity, slice_size: u.Quantity, slice_axis: int,
+        properties: dict) -> dict:
     """Slice the given list of (x, y, z) coordinates in slices of
     specified size along axis. Save the properties particle
     information as well.
 
     Parameters
     ----------
-    box_size : float
+    box_size : astropy.units.Quantity
         box size
-    slice_size : float
-        thickness of the slices in same units as box_size
+    slice_size : astropy.units.Quantity
+        thickness of the slices
     slice_axis : int
         axis to slice along [x=0, y=1, z=2]
     properties : dict of (..., N) array-like
@@ -178,7 +184,5 @@ def slice_particle_list(
             elif value.shape[-1] == 1:
                 if not slice_dict[prop][idx]:
                     slice_dict[prop][idx].append(value)
-
-                    
 
     return slice_dict
