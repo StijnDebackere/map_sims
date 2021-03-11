@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List, Union, Optional
 
 import astropy.units as u
 import h5py
@@ -19,8 +20,13 @@ def slice_file_name(
 
 
 def create_slice_file(
-        save_dir, snapshot, box_size, ptypes,
-        num_slices, slice_axis, slice_size, maxshape):
+        save_dir: str,
+        snapshot: int,
+        box_size: int,
+        z: float, a: float, ptypes: List[int],
+        num_slices: int, slice_axis: int,
+        slice_size: float,
+        maxshape: int) -> None:
     """Create the hdf5 file in save_dir for given slice."""
     fname = slice_file_name(
         save_dir=save_dir, slice_axis=slice_axis, slice_size=slice_size,
@@ -59,8 +65,13 @@ def open_slice_file(
 
 
 def read_slice_file_properties(
-        slice_nums, properties, slice_file=None,
-        save_dir=None, snapshot=None, slice_size=None, slice_axis=None):
+        slice_nums: List[int],
+        properties: dict,
+        slice_file: Optional[str]=None,
+        save_dir: Optional[str]=None,
+        snapshot: Optional[int]=None,
+        slice_size: Optional[int]=None,
+        slice_axis: Optional[int]=None) -> dict:
     """Read the given properties into a dict for slice_file.
 
     Parameters

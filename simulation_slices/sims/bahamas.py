@@ -1,3 +1,5 @@
+from typing import List, Optional, Tuple
+
 from gadget import Gadget
 import h5py
 import numpy as np
@@ -68,8 +70,13 @@ PROPS_PTYPES[0] = {
 
 
 def save_coords_file(
-        base_dir, snapshot, group_dset, coord_dset, group_range, extra_dsets,
-        save_dir=None, coords_fname='', verbose=False):
+        base_dir: str, snapshot: int,
+        group_dset: str, coord_dset: str,
+        group_range: Tuple[float, float],
+        extra_dsets: List[str],
+        save_dir: Optional[str]=None,
+        coords_fname: Optional[str]='',
+        verbose: Optional[bool]=False) -> None:
     """For snapshot of simulation in base_dir, save the coord_dset for
     given group_dset and group_range.
 
@@ -162,8 +169,10 @@ def save_coords_file(
 
 
 def save_slice_data(
-        base_dir, snapshot, ptypes, slice_axes, slice_size,
-        save_dir=None, verbose=False):
+        base_dir: str, snapshot: int, ptypes: List[int],
+        slice_axes: List[int], slice_size: int,
+        save_dir: Optional[str]=None,
+        verbose: Optional[bool]=False) -> None:
     """For snapshot of simulation in base_dir, slice the particle data for
     all ptypes along the x, y, and z directions. Slices are saved
     in the Snapshots directory by default.
