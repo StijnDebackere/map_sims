@@ -18,7 +18,7 @@ def slice_sim_solid_factory(sim_idx, cfg):
     @solid(name=str(f"slice_sim_{sim_idx}"))
     def _slice_sim(context):
         context.log.info(f"Start slicing simulation {cfg.sim_dirs[sim_idx]}")
-        batch.slice_sim_dag(sim_idx=sim_idx, config=cfg)
+        batch.slice_sim(sim_idx=sim_idx, config=cfg)
         context.log.info(f"Finished slicing simulation {cfg.sim_dirs[sim_idx]}")
         return "Success"
 
@@ -29,7 +29,7 @@ def map_sim_solid_factory(sim_idx, cfg):
     @solid(name=str(f"map_sim_{sim_idx}"))
     def _map_sim(context, result):
         context.log.info(f"Start mapping simulation {cfg.sim_dirs[sim_idx]}")
-        batch.map_coords_dag(sim_idx=sim_idx, config=cfg)
+        batch.map_coords(sim_idx=sim_idx, config=cfg)
         context.log.info(f"Finished mapping simulation {cfg.sim_dirs[sim_idx]}")
         return "Success"
 

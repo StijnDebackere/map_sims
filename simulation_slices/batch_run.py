@@ -54,46 +54,7 @@ def save_coords(
     return (os.getpid(), f"{save_dir} coords saved")
 
 
-def slice_sim(
-    base_dir,
-    sim_dir,
-    sim_suite,
-    box_size,
-    snapshots,
-    ptypes,
-    slice_axes,
-    slice_size,
-    save_dir,
-):
-    """Save a set of slices for specified simulation."""
-    if sim_suite.lower() == "bahamas":
-        for snap in np.atleast_1d(snapshots):
-            bahamas.save_slice_data(
-                sim_dir=str(sim_dir),
-                snapshot=snap,
-                ptypes=ptypes,
-                slice_axes=slice_axes,
-                slice_size=slice_size,
-                save_dir=save_dir,
-                verbose=False,
-            )
-    elif sim_suite.lower() == "miratitan":
-        for snap in np.atleast_1d(snapshots):
-            mira_titan.save_slice_data(
-                base_dir=str(base_dir),
-                sim_dir=str(sim_dir),
-                box_size=box_size,
-                snapshot=snap,
-                slice_axes=slice_axes,
-                slice_size=slice_size,
-                save_dir=save_dir,
-                verbose=False,
-            )
-
-    return (os.getpid(), f"{sim_dir} sliced")
-
-
-def slice_sim_dag(sim_idx, config):
+def slice_sim(sim_idx, config):
     """Save a set of slices for sim_idx in config.sim_paths."""
     base_dir = config.base_dir
     sim_dir = config.sim_paths[sim_idx]
@@ -131,44 +92,7 @@ def slice_sim_dag(sim_idx, config):
     return (os.getpid(), f"{sim_dir} sliced")
 
 
-def map_coords(
-    snapshots,
-    box_size,
-    coords_file,
-    coords_name,
-    slice_dir,
-    slice_axes,
-    slice_size,
-    map_types,
-    map_size,
-    map_res,
-    map_thickness,
-    save_dir,
-):
-    """Save a set of maps for specified simulation."""
-    with h5py.File(str(coords_file), "r") as h5file:
-        centers = h5file["coordinates"][:]
-
-    for snap in np.atleast_1d(snapshots):
-        map_gen.save_maps(
-            centers=centers,
-            slice_dir=slice_dir,
-            snapshot=snap,
-            slice_axes=slice_axes,
-            slice_size=slice_size,
-            box_size=box_size,
-            map_size=map_size,
-            map_res=map_res,
-            map_thickness=map_thickness,
-            map_types=map_types,
-            save_dir=save_dir,
-            coords_name=coords_name,
-        )
-
-    return (os.getpid(), f"{save_dir} maps saved")
-
-
-def map_coords_dag(sim_idx, config):
+def map_coords(sim_idx, config):
     """Save a set of maps for sim_idx in config.sim_paths."""
     base_dir = config.base_dir
     sim_dir = config.sim_paths[sim_idx]
