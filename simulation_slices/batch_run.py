@@ -132,27 +132,45 @@ def slice_sim_dag(sim_idx, config):
 
 
 def map_coords(
-        snapshots, box_size, coords_file, coords_name,
-        slice_dir, slice_axes, slice_size,
-        map_types, map_size, map_res, map_thickness, save_dir):
+    snapshots,
+    box_size,
+    coords_file,
+    coords_name,
+    slice_dir,
+    slice_axes,
+    slice_size,
+    map_types,
+    map_size,
+    map_res,
+    map_thickness,
+    save_dir,
+):
     """Save a set of maps for specified simulation."""
-    with h5py.File(str(coords_file), 'r') as h5file:
-        centers = h5file['coordinates'][:]
+    with h5py.File(str(coords_file), "r") as h5file:
+        centers = h5file["coordinates"][:]
 
     for snap in np.atleast_1d(snapshots):
         map_gen.save_maps(
-            centers=centers, slice_dir=slice_dir, snapshot=snap,
-            slice_axes=slice_axes, slice_size=slice_size, box_size=box_size,
-            map_size=map_size, map_res=map_res, map_thickness=map_thickness,
-            map_types=map_types, save_dir=save_dir, coords_name=coords_name,
-
+            centers=centers,
+            slice_dir=slice_dir,
+            snapshot=snap,
+            slice_axes=slice_axes,
+            slice_size=slice_size,
+            box_size=box_size,
+            map_size=map_size,
+            map_res=map_res,
+            map_thickness=map_thickness,
+            map_types=map_types,
+            save_dir=save_dir,
+            coords_name=coords_name,
         )
 
-    return (os.getpid(), f'{save_dir} maps saved')
+    return (os.getpid(), f"{save_dir} maps saved")
 
 
 def map_coords_dag(sim_idx, config):
     """Save a set of maps for sim_idx in config.sim_paths."""
+    base_dir = config.base_dir
     sim_dir = config.sim_paths[sim_idx]
     sim_suite = config.sim_suite
     snapshots = config.snapshots[sim_idx]
@@ -186,97 +204,38 @@ def map_coords_dag(sim_idx, config):
     map_size = config.map_size
     map_res = config.map_res
     map_thickness = config.map_thickness
-    with h5py.File(str(coords_file), 'r') as h5file:
-        centers = h5file['coordinates'][:]
+    with h5py.File(str(coords_file), "r") as h5file:
+        centers = h5file["coordinates"][:]
 
     for snap in np.atleast_1d(snapshots):
         map_gen.save_maps(
-            centers=centers, slice_dir=slice_dir, snapshot=snap,
-            slice_axes=slice_axes, slice_size=slice_size, box_size=box_size,
-            map_size=map_size, map_res=map_res, map_thickness=map_thickness,
-            map_types=map_types, save_dir=save_dir, coords_name=coords_name,
+            centers=centers,
+            slice_dir=slice_dir,
+            snapshot=snap,
+            slice_axes=slice_axes,
+            slice_size=slice_size,
+            box_size=box_size,
+            map_size=map_size,
+            map_res=map_res,
+            map_thickness=map_thickness,
+            map_types=map_types,
+            save_dir=save_dir,
+            coords_name=coords_name,
         )
 
-    return (os.getpid(), f'{save_dir} maps saved')
+    return (os.getpid(), f"{save_dir} maps saved")
 
 
-def analyze_map():
-    pass
-
-
-def slice_sims(config, n_workers):
-    for p in config.slice_paths:
-        p.mkdir(parents=True, exist_ok=True)
-
-    kwargs_list = []
-    for sim_dir, snaps, ptypes, save_dir in zip(
-            config.sim_paths, config.snapshots,
-            config.ptypes, config.slice_paths):
-        kwargs_list.append(dict(
-            sim_dir=sim_dir,
-            sim_suite=config.sim_suite,
-            ptypes=ptypes,
-            snapshots=snaps,
-            slice_axes=config.slice_axes,
-            slice_size=config.slice_size,
-            save_dir=save_dir
-        ))
-
-    result_slices = compute_tasks(slice_sim, n_workers, kwargs_list)
-
-
-def compute_maps(config, n_workers):
-    if config.compute_coords:
-        kwargs_list = []
-        for sim_dir, save_dir in zip(config.sim_paths, config.coords_paths):
-            kwargs_list.append(dict(
-                sim_dir=sim_dir,
-                sim_suite=config.sim_suite,
-                snapshots=config.snapshots,
-                group_dset=config.group_dset,
-                coord_dset=config.coord_dset,
-                group_range=config.group_range,
-                extra_dsets=config.extra_dsets,
-                save_dir=save_dir,
-                coords_fname=config.coords_name,
-            ))
-
-        result_coords = compute_tasks(save_coords, n_workers, kwargs_list)
-
-    kwargs_list = []
-    for map_dir, slice_dir, coords_file, map_types, box_size in zip(
-            config.map_paths, config.slice_paths, config.coords_files,
-            config.map_types, config.box_sizes):
-        kwargs_list.append(dict(
-            snapshots=config.snapshots,
-            box_size=box_size,
-            coords_file=coords_file,
-            coords_name=config.coords_name,
-            slice_dir=slice_dir,
-            slice_axes=config.slice_axes,
-            slice_size=config.slice_size,
-            map_types=map_types,
-            map_size=config.map_size,
-            map_res=config.map_res,
-            map_thickness=config.map_thickness,
-            save_dir=map_dir,
-        ))
-
-    result_maps = compute_tasks(map_coords, n_workers, kwargs_list)
-
-
-def run_pipeline(
-        config_file, n_workers=None,
-        sims=True, maps=True, observables=True):
-    config = Config(config_file)
-    if n_workers is None:
-        n_workers = min(config._n_sims, 16)
-
-    if sims:
-        slice_sims(config, n_workers)
-
-    if maps:
-        compute_maps(config, n_workers)
-
-    if observables:
-        pass
+def analyze_map(
+    snapshots,
+    box_size,
+    coords_name,
+    slice_dir,
+    slice_axes,
+    slice_size,
+    obs_info,
+    save_dir,
+):
+    for obs_type in obs_info["obs_types"]:
+        for map_type in obs_info[obs_type]["map_types"]:
+            analysis.save_observable()
