@@ -76,19 +76,19 @@ PROPS_PTYPES['gas'] = {
 
 
 def save_coords_file(
-        base_dir: str, snapshot: int,
+        sim_dir: str, snapshot: int,
         group_dset: str, coord_dset: str,
         group_range: Tuple[float, float],
         extra_dsets: List[str],
         save_dir: Optional[str]=None,
         coords_fname: Optional[str]='',
         verbose: Optional[bool]=False) -> None:
-    """For snapshot of simulation in base_dir, save the coord_dset for
+    """For snapshot of simulation in sim_dir, save the coord_dset for
     given group_dset and group_range.
 
     Parameters
     ----------
-    base_dir : str
+    sim_dir : str
         path of the MiraTitanU directory
     snapshot : int
         snapshot to look at
@@ -111,7 +111,7 @@ def save_coords_file(
 
     """
     group_info = Gadget(
-        model_dir=base_dir, file_type='subh', snapnum=snapshot, sim='BAHAMAS',
+        model_dir=sim_dir, file_type='subh', snapnum=snapshot, sim='BAHAMAS',
         units=True, comoving=True
     )
 
@@ -175,17 +175,17 @@ def save_coords_file(
 
 
 def save_slice_data(
-        base_dir: str, snapshot: int, ptypes: List[int],
+        sim_dir: str, snapshot: int, ptypes: List[str],
         slice_axes: List[int], slice_size: int,
         save_dir: Optional[str]=None,
         verbose: Optional[bool]=False) -> None:
-    """For snapshot of simulation in base_dir, slice the particle data for
+    """For snapshot of simulation in sim_dir, slice the particle data for
     all ptypes along the x, y, and z directions. Slices are saved
     in the Snapshots directory by default.
 
     Parameters
     ----------
-    base_dir : str
+    sim_dir : str
         path of the MiraTitanU directory
     datatype : str
         particles or snap, particle data to slice
@@ -210,7 +210,7 @@ def save_slice_data(
     """
     slice_axes = np.atleast_1d(slice_axes)
     snap_info = Gadget(
-        model_dir=base_dir, file_type='snap', snapnum=snapshot,
+        model_dir=sim_dir, file_type='snap', snapnum=snapshot,
         units=True, comoving=True,
     )
 

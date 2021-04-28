@@ -15,53 +15,91 @@ import simulation_slices.utilities as util
 
 
 def save_coords(
-        sim_dir, snapshots, sim_suite,
-        group_dset, coord_dset, group_range, extra_dsets,
-        save_dir, coords_fname):
+    base_dir,
+    sim_dir,
+    snapshots,
+    sim_suite,
+    box_size,
+    group_dset,
+    coord_dset,
+    group_range,
+    extra_dsets,
+    save_dir,
+    coords_fname,
+):
     """Save a set of halo centers to generate maps around."""
-    if sim_suite == 'BAHAMAS':
+    if sim_suite.lower() == "bahamas":
         for snap in np.atleast_1d(snapshots):
             bahamas.save_coords_file(
-                base_dir=str(sim_dir), snapshot=snap, group_dset=group_dset,
-                coord_dset=coord_dset, group_range=group_range, extra_dsets=extra_dsets,
-                save_dir=save_dir, coords_fname=coords_fname, verbose=False
+                sim_dir=str(sim_dir),
+                snapshot=snap,
+                group_dset=group_dset,
+                coord_dset=coord_dset,
+                group_range=group_range,
+                extra_dsets=extra_dsets,
+                save_dir=save_dir,
+                coords_fname=coords_fname,
+                verbose=False,
+            )
             )
 
-    return (os.getpid(), f'{save_dir} coords saved')
+    return (os.getpid(), f"{save_dir} coords saved")
 
 
-def slice_sim(sim_dir, sim_suite, snapshots, ptypes, slice_axes, slice_size, save_dir):
+def slice_sim(
+    base_dir,
+    sim_dir,
+    sim_suite,
+    box_size,
+    snapshots,
+    ptypes,
+    slice_axes,
+    slice_size,
+    save_dir,
+):
     """Save a set of slices for specified simulation."""
-    if sim_suite == 'BAHAMAS':
+    if sim_suite.lower() == "bahamas":
         for snap in np.atleast_1d(snapshots):
             bahamas.save_slice_data(
-                base_dir=str(sim_dir), snapshot=snap, ptypes=ptypes,
-                slice_axes=slice_axes, slice_size=slice_size,
-                save_dir=save_dir, verbose=False
+                sim_dir=str(sim_dir),
+                snapshot=snap,
+                ptypes=ptypes,
+                slice_axes=slice_axes,
+                slice_size=slice_size,
+                save_dir=save_dir,
+                verbose=False,
+            )
             )
 
-    return (os.getpid(), f'{sim_dir} sliced')
+    return (os.getpid(), f"{sim_dir} sliced")
 
 
 def slice_sim_dag(sim_idx, config):
     """Save a set of slices for sim_idx in config.sim_paths."""
+    base_dir = config.base_dir
     sim_dir = config.sim_paths[sim_idx]
     sim_suite = config.sim_suite
     snapshots = config.snapshots[sim_idx]
+    box_size = config.box_sizes[sim_idx]
     ptypes = config.ptypes[sim_idx]
     save_dir = config.slice_paths[sim_idx]
 
     slice_axes = config.slice_axes
     slice_size = config.slice_size
-    if sim_suite == 'BAHAMAS':
+    if sim_suite.lower() == "bahamas":
         for snap in np.atleast_1d(snapshots):
             bahamas.save_slice_data(
-                base_dir=str(sim_dir), snapshot=snap, ptypes=ptypes,
-                slice_axes=slice_axes, slice_size=slice_size,
-                save_dir=save_dir, verbose=False
+                sim_dir=str(sim_dir),
+                snapshot=snap,
+                ptypes=ptypes,
+                slice_axes=slice_axes,
+                slice_size=slice_size,
+                save_dir=save_dir,
+                verbose=False,
+            )
             )
 
-    return (os.getpid(), f'{sim_dir} sliced')
+    return (os.getpid(), f"{sim_dir} sliced")
 
 
 def map_coords(
@@ -97,9 +135,11 @@ def map_coords_dag(sim_idx, config):
     if config.compute_coords:
         coords_dir = config.coords_paths[sim_idx]
         save_coords(
+            base_dir=base_dir,
             sim_dir=sim_dir,
             sim_suite=sim_suite,
             snapshots=snapshots,
+            box_size=box_size,
             group_dset=config.group_dset,
             coord_dset=config.coord_dset,
             group_range=config.group_range,
