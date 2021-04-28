@@ -23,7 +23,7 @@ def create_slice_file(
         save_dir: str,
         snapshot: int,
         box_size: int,
-        z: float, a: float, ptypes: List[int],
+        z: float, a: float, ptypes: List[str],
         num_slices: int, slice_axis: int,
         slice_size: float,
         maxshape: int) -> None:

@@ -21,15 +21,21 @@ BAHAMAS_TO_PTYPES = {
     4: 'stars',
     5: 'bh'
 }
+PTYPES_TO_BAHAMAS = {
+    'gas': 0,
+    'dm': 1,
+    'stars': 4,
+    'bh': 5
+}
 
 # conversion between expected properties and BAHAMAS hdf5 datasets
 PROPS_TO_BAHAMAS = {
-    i: {
-        'coordinates': f'PartType{i}/Coordinates',
-        'masses': f'PartType{i}/Mass'
-    } for i in [0, 1, 4, 5]
+    ptype: {
+        'coordinates': f'PartType{PTYPES_TO_BAHAMAS[ptype]}/Coordinates',
+        'masses': f'PartType{PTYPES_TO_BAHAMAS[ptype]}/Mass'
+    } for ptype in ['gas', 'dm', 'stars', 'bh']
 }
-PROPS_TO_BAHAMAS[0] = {
+PROPS_TO_BAHAMAS['gas'] = {
     'temperatures': f'PartType0/Temperature',
     'densities': f'PartType0/Density',
     'smoothed_hydrogen': f'PartType0/SmoothedElementAbundance/Hydrogen',
@@ -41,17 +47,17 @@ PROPS_TO_BAHAMAS[0] = {
     'smoothed_magnesium': f'PartType0/SmoothedElementAbundance/Magnesium',
     'smoothed_silicon': f'PartType0/SmoothedElementAbundance/Silicon',
     'smoothed_iron': f'PartType0/SmoothedElementAbundance/Iron',
-    **PROPS_TO_BAHAMAS[0]
+    **PROPS_TO_BAHAMAS['gas']
 }
 
 # get correct properties from BAHAMAS ptypes
 PROPS_PTYPES = {
-    i: {
-        'coordinates': f'{BAHAMAS_TO_PTYPES[i]}/coordinates',
-        'masses': f'{BAHAMAS_TO_PTYPES[i]}/masses'
-    } for i in [0, 1, 4, 5]
+    ptype: {
+        'coordinates': f'{ptype}/coordinates',
+        'masses': f'{ptype}/masses'
+    } for ptype in ['gas', 'dm', 'stars', 'bh']
 }
-PROPS_PTYPES[0] = {
+PROPS_PTYPES['gas'] = {
     'temperatures': f'gas/temperatures',
     'densities': f'gas/densities',
     'electron_number_densities': f'gas/electron_number_densities',
@@ -65,7 +71,7 @@ PROPS_PTYPES[0] = {
     'smoothed_magnesium': f'gas/smoothed_magnesium',
     'smoothed_silicon': f'gas/smoothed_silicon',
     'smoothed_iron': f'gas/smoothed_iron',
-    **PROPS_PTYPES[0]
+    **PROPS_PTYPES['gas']
 }
 
 
@@ -185,7 +191,7 @@ def save_slice_data(
         particles or snap, particle data to slice
     snapshot : int
         snapshot to look at
-    ptypes : iterable of ints
+    ptypes : iterable of ['gas', 'dm', 'bh', 'stars']
         particle types to read in
     slice_axis : int
         axis to slice along [x=0, y=1, z=2]
@@ -230,7 +236,7 @@ def save_slice_data(
         # create the hdf5 file to fill up
         slicing.create_slice_file(
             save_dir=save_dir, snapshot=snapshot, box_size=box_size.value,
-            z=z, a=a, ptypes=[BAHAMAS_TO_PTYPES[p] for p in ptypes],
+            z=z, a=a, ptypes=ptypes,
             num_slices=num_slices, slice_axis=slice_axis,
             slice_size=slice_size.value, maxshape=maxshape
         )
@@ -258,20 +264,20 @@ def save_slice_data(
 
             # dark matter does not have the Mass variable
             # read in M_sun / h
-            if ptype != 1:
+            if ptype != 'dm':
                 masses = snap_info.read_single_file(
                     i=file_num, var=PROPS_TO_BAHAMAS[ptype]['masses'],
                     verbose=False, reshape=True,
                 )
             else:
-                masses = np.atleast_1d(snap_info.masses[ptype])
+                masses = np.atleast_1d(snap_info.masses[PTYPES_TO_BAHAMAS[ptype]])
 
             properties = {
                 'coordinates': coords,
                 'masses': masses
             }
             # only gas particles have extra properties saved
-            if ptype == 0:
+            if ptype == 'gas':
                 # load in particledata for SZ & X-ray
                 temperatures = snap_info.read_single_file(
                     i=file_num, var=PROPS_TO_BAHAMAS[ptype]['temperatures'],
@@ -368,7 +374,7 @@ def save_slice_data(
                     )
 
                     # add masses
-                    if ptype == 1:
+                    if ptype == 'dm':
                         # only want to add single value for dm mass
                         if h5file[f'{idx}/{PROPS_PTYPES[ptype]["masses"]}'].shape[0] == 0:
                             io.add_to_hdf5(
@@ -382,7 +388,7 @@ def save_slice_data(
                         )
 
                     # add extra gas properties
-                    if ptype == 0:
+                    if ptype == 'gas':
                         # get gas properties, list of array
                         temps = slice_dict['temperatures'][idx]
                         dens = slice_dict['densities'][idx]

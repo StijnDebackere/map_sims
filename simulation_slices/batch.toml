@@ -11,7 +11,8 @@ sim_suite = 'BAHAMAS'
 #
 snapshots = 32
 box_sizes = 400
-ptypes = [0, 1, 4, 5]
+# any list of 'gas', 'dm', 'stars', 'bh'
+ptypes = ['dm']
 
   # # only provide this if no coords files saved manually
   # [sims.coords]

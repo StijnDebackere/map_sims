@@ -164,10 +164,12 @@ class Config(object):
             else:
                 self._ptypes = np.tile(np.atleast_1d(val)[None], (self._n_sims, 1))
 
-        elif type(val) is int:
-            self._ptypes = np.ones((self._n_sims, 1), dtype=int) * val
+        elif type(val) is str:
+            self._ptypes = np.chararray((self._n_sims, 1), itemsize=len(val), unicode=True)
+            self._ptypes[:] = val
+
         else:
-            raise ValueError('ptypes should be list or int')
+            raise ValueError('ptypes should be list or str')
 
     @property
     def box_sizes(self):
