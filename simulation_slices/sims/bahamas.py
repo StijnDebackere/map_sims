@@ -333,7 +333,7 @@ def save_slice_data(
                     carbon_mf=smoothed_carbon, nitrogen_mf=smoothed_nitrogen,
                     oxygen_mf=smoothed_oxygen, neon_mf=smoothed_neon,
                     magnesium_mf=smoothed_magnesium, silicon_mf=smoothed_silicon,
-                    iron_mf=smoothed_iron,
+                    iron_mf=smoothed_iron, h=h
                 )
 
                 # load in remaining data for X-ray luminosities

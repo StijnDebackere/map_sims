@@ -49,7 +49,7 @@ def summary_report(context, statuses):
         )
     ]
 )
-def pipeline():
+def process_simulations():
     solid_output_handles = []
     cfg = Config(str(Path(__file__).parent / "simulation_slices/batch.toml"))
 
