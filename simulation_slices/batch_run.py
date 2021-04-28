@@ -1,17 +1,14 @@
 import os
-from pathlib import Path
 
-from gadget import Gadget
 import h5py
 import numpy as np
-import toml
 
 from simulation_slices import Config
 from simulation_slices.parallel import compute_tasks
 import simulation_slices.maps.analysis as analysis
 import simulation_slices.maps.generation as map_gen
 import simulation_slices.sims.bahamas as bahamas
-import simulation_slices.utilities as util
+import simulation_slices.sims.mira_titan as mira_titan
 
 
 def save_coords(
@@ -41,6 +38,17 @@ def save_coords(
                 coords_fname=coords_fname,
                 verbose=False,
             )
+
+    elif sim_suite.lower() == "miratitan":
+        for snap in np.atleast_1d(snapshots):
+            mira_titan.save_coords_file(
+                base_dir=str(base_dir),
+                sim_dir=str(sim_dir),
+                box_size=box_size,
+                snapshot=snap,
+                group_range=group_range,
+                save_dir=save_dir,
+                coords_fname=coords_fname,
             )
 
     return (os.getpid(), f"{save_dir} coords saved")
@@ -69,6 +77,17 @@ def slice_sim(
                 save_dir=save_dir,
                 verbose=False,
             )
+    elif sim_suite.lower() == "miratitan":
+        for snap in np.atleast_1d(snapshots):
+            mira_titan.save_slice_data(
+                base_dir=str(base_dir),
+                sim_dir=str(sim_dir),
+                box_size=box_size,
+                snapshot=snap,
+                slice_axes=slice_axes,
+                slice_size=slice_size,
+                save_dir=save_dir,
+                verbose=False,
             )
 
     return (os.getpid(), f"{sim_dir} sliced")
@@ -97,6 +116,16 @@ def slice_sim_dag(sim_idx, config):
                 save_dir=save_dir,
                 verbose=False,
             )
+    elif sim_suite.lower() == "miratitan":
+        for snap in np.atleast_1d(snapshots):
+            mira_titan.save_slice_data(
+                base_dir=str(sim_dir),
+                snapshot=snap,
+                box_size=box_size,
+                slice_axes=slice_axes,
+                slice_size=slice_size,
+                save_dir=save_dir,
+                verbose=False,
             )
 
     return (os.getpid(), f"{sim_dir} sliced")
