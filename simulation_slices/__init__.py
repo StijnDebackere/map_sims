@@ -126,7 +126,7 @@ class Config(object):
 
     @sim_suite.setter
     def sim_suite(self, val):
-        if val == 'BAHAMAS':
+        if val.lower() == 'bahamas' or val.lower() == 'miratitan':
             self._sim_suite = val
         else:
             raise ValueError(f'{val} is not a valid sim_suite')
