@@ -1,3 +1,5 @@
+from typing import List
+
 import astropy.constants as c
 import astropy.units as u
 
@@ -70,7 +72,7 @@ MAP_TYPES_OPTIONS = {
 }
 
 
-def map_types_to_properties(map_types):
+def map_types_to_properties(map_types: List[str]) -> dict:
     """Return the properties necessary for each map_type.
 
     Parameters

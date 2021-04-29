@@ -237,10 +237,10 @@ class Config(object):
 
             # multiple map_types for each sim
             else:
-                self._map_types = np.tile(np.atleast_1d(val)[None], (self._n_sims, 1))
+                self._map_types = np.tile(np.atleast_1d(val)[None], (self._n_sims, 1)).tolist()
 
         elif type(val) is str:
-            self._map_types = np.asarray([val] * self._n_sims)
+            self._map_types = np.asarray([val] * self._n_sims).tolist()
         else:
             raise ValueError('map_types should be list or string')
 
