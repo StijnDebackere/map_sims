@@ -26,7 +26,7 @@ def save_coords_file(
     save_dir: Optional[str] = None,
     coords_fname: Optional[str] = "",
     **kwargs
-) -> None:
+) -> str:
     """For snapshot of simulation in base_dir, save the coord_dset for
     given group_dset and group_range.
 
@@ -49,6 +49,8 @@ def save_coords_file(
 
     Returns
     -------
+    fname : str
+        filename of coords file
     saves a set of coordinates to save_dir
 
     """
@@ -111,6 +113,7 @@ def save_coords_file(
     }
 
     io.create_hdf5(fname=fname, layout=layout, close=True)
+    return str(fname)
 
 
 def save_slice_data(
@@ -122,7 +125,7 @@ def save_slice_data(
     slice_size: int = 20,
     save_dir: Optional[str] = None,
     verbose: Optional[bool] = False,
-) -> None:
+) -> List[str]:
     """For snapshot of simulation in base_dir, slice the particle data for
     all ptypes along the x, y, and z directions. Slices are saved
     in the Snapshots directory by default.
@@ -148,6 +151,7 @@ def save_slice_data(
 
     Returns
     -------
+    fnames : list of str
     saves particles for each slice in the snapshot_xxx/slices/
     directory
 
@@ -174,9 +178,10 @@ def save_slice_data(
     N_tot = sum(sim_info.num_part_tot)
     maxshape = int(2 * N_tot / num_slices)
 
+    fnames = []
     for slice_axis in slice_axes:
         # create the hdf5 file to fill up
-        slicing.create_slice_file(
+        fname = slicing.create_slice_file(
             save_dir=save_dir,
             snapshot=snapshot,
             box_size=sim_info.box_size.value,
@@ -188,6 +193,7 @@ def save_slice_data(
             slice_size=slice_size.value,
             maxshape=maxshape,
         )
+        fnames.append(fname)
 
     # now loop over all snapshot files and add their particle info
     # to the correct slice
@@ -247,3 +253,5 @@ def save_slice_data(
                 )
 
             h5file.close()
+
+    return fnames

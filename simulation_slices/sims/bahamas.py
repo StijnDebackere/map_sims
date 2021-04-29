@@ -82,7 +82,7 @@ def save_coords_file(
         extra_dsets: List[str],
         save_dir: Optional[str]=None,
         coords_fname: Optional[str]='',
-        verbose: Optional[bool]=False) -> None:
+        verbose: Optional[bool]=False) -> str:
     """For snapshot of simulation in sim_dir, save the coord_dset for
     given group_dset and group_range.
 
@@ -107,7 +107,8 @@ def save_coords_file(
 
     Returns
     -------
-    saves a set of coordinates to save_dir
+    fname : str
+        fname of saved coordinates
 
     """
     group_info = Gadget(
@@ -172,13 +173,14 @@ def save_coords_file(
     io.create_hdf5(
         fname=fname, layout=layout, close=True
     )
+    return str(fname)
 
 
 def save_slice_data(
         sim_dir: str, snapshot: int, ptypes: List[str],
         slice_axes: List[int], slice_size: int,
         save_dir: Optional[str]=None,
-        verbose: Optional[bool]=False) -> None:
+        verbose: Optional[bool]=False) -> List[str]:
     """For snapshot of simulation in sim_dir, slice the particle data for
     all ptypes along the x, y, and z directions. Slices are saved
     in the Snapshots directory by default.
@@ -204,6 +206,7 @@ def save_slice_data(
 
     Returns
     -------
+    fnames : list of saved filenames
     saves particles for each slice in the snapshot_xxx/slices/
     directory
 
@@ -232,14 +235,16 @@ def save_slice_data(
     z = 1 / a - 1
     h = snap_info.h
 
+    fnames = []
     for slice_axis in slice_axes:
         # create the hdf5 file to fill up
-        slicing.create_slice_file(
+        fname = slicing.create_slice_file(
             save_dir=save_dir, snapshot=snapshot, box_size=box_size.value,
             z=z, a=a, ptypes=ptypes,
             num_slices=num_slices, slice_axis=slice_axis,
             slice_size=slice_size.value, maxshape=maxshape
         )
+        fnames.append(fname)
 
 
     # now loop over all snapshot files and add their particle info
@@ -415,3 +420,5 @@ def save_slice_data(
                         )
 
                 h5file.close()
+
+    return fnames

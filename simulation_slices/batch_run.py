@@ -25,9 +25,10 @@ def save_coords(
     coords_fname,
 ):
     """Save a set of halo centers to generate maps around."""
+    all_fnames = []
     if sim_suite.lower() == "bahamas":
         for snap in np.atleast_1d(snapshots):
-            bahamas.save_coords_file(
+            fname = bahamas.save_coords_file(
                 sim_dir=str(sim_dir),
                 snapshot=snap,
                 group_dset=group_dset,
@@ -38,10 +39,11 @@ def save_coords(
                 coords_fname=coords_fname,
                 verbose=False,
             )
+            all_fnames = [*all_fnames, fname]
 
     elif sim_suite.lower() == "miratitan":
         for snap in np.atleast_1d(snapshots):
-            mira_titan.save_coords_file(
+            fname = mira_titan.save_coords_file(
                 base_dir=str(base_dir),
                 sim_dir=str(sim_dir),
                 box_size=box_size,
@@ -50,8 +52,9 @@ def save_coords(
                 save_dir=save_dir,
                 coords_fname=coords_fname,
             )
+            all_fnames = [*all_fnames, fname]
 
-    return (os.getpid(), f"{save_dir} coords saved")
+    return all_fnames
 
 
 def slice_sim(sim_idx, config):
@@ -66,9 +69,11 @@ def slice_sim(sim_idx, config):
 
     slice_axes = config.slice_axes
     slice_size = config.slice_size
+
+    all_fnames = []
     if sim_suite.lower() == "bahamas":
         for snap in np.atleast_1d(snapshots):
-            bahamas.save_slice_data(
+            fnames = bahamas.save_slice_data(
                 sim_dir=str(sim_dir),
                 snapshot=snap,
                 ptypes=ptypes,
@@ -77,9 +82,11 @@ def slice_sim(sim_idx, config):
                 save_dir=save_dir,
                 verbose=False,
             )
+            all_fnames = [*all_fnames, *(fnames or [])]
+
     elif sim_suite.lower() == "miratitan":
         for snap in np.atleast_1d(snapshots):
-            mira_titan.save_slice_data(
+            fnames = mira_titan.save_slice_data(
                 base_dir=str(sim_dir),
                 snapshot=snap,
                 box_size=box_size,
@@ -88,8 +95,9 @@ def slice_sim(sim_idx, config):
                 save_dir=save_dir,
                 verbose=False,
             )
+            all_fnames = [*all_fnames, *(fnames or [])]
 
-    return (os.getpid(), f"{sim_dir} sliced")
+    return all_fnames
 
 
 def map_coords(sim_idx, config):
@@ -103,9 +111,11 @@ def map_coords(sim_idx, config):
 
     coords_file = config.coords_files[sim_idx]
     coords_name = config.coords_name
+    all_fnames = []
+
     if config.compute_coords:
         coords_dir = config.coords_paths[sim_idx]
-        save_coords(
+        fnames = save_coords(
             base_dir=base_dir,
             sim_dir=sim_dir,
             sim_suite=sim_suite,
@@ -118,6 +128,7 @@ def map_coords(sim_idx, config):
             save_dir=coords_dir,
             coords_fname=config.coords_name,
         )
+        all_fnames = [*all_fnames, *(fnames or [])]
 
     slice_dir = config.slice_paths[sim_idx]
     slice_axes = config.slice_axes
@@ -132,7 +143,7 @@ def map_coords(sim_idx, config):
         centers = h5file["coordinates"][:]
 
     for snap in np.atleast_1d(snapshots):
-        map_gen.save_maps(
+        fnames = map_gen.save_maps(
             centers=centers,
             slice_dir=slice_dir,
             snapshot=snap,
@@ -146,8 +157,9 @@ def map_coords(sim_idx, config):
             save_dir=save_dir,
             coords_name=coords_name,
         )
+        all_fnames = [*all_fnames, *(fnames or [])]
 
-    return (os.getpid(), f"{save_dir} maps saved")
+    return all_fnames
 
 
 def analyze_map(

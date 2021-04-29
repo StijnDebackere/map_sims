@@ -26,7 +26,7 @@ def create_slice_file(
         z: float, a: float, ptypes: List[str],
         num_slices: int, slice_axis: int,
         slice_size: float,
-        maxshape: int) -> None:
+        maxshape: int) -> str:
     """Create the hdf5 file in save_dir for given slice."""
     fname = slice_file_name(
         save_dir=save_dir, slice_axis=slice_axis, slice_size=slice_size,
@@ -50,6 +50,8 @@ def create_slice_file(
     io.create_hdf5(
         fname=filename, layout=hdf_layout, close=True
     )
+
+    return str(filename)
 
 
 def open_slice_file(

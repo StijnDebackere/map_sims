@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 from tqdm import tqdm
 
@@ -103,8 +105,17 @@ def coords_to_map(
 
 
 def get_maps(
-        centers, slice_dir, snapshot, slice_axis, slice_size, box_size,
-        map_size, map_res, map_thickness, map_types, verbose=False):
+        centers: np.ndarray,
+        slice_dir: str,
+        snapshot: int,
+        slice_axis: int,
+        slice_size: float,
+        box_size: float,
+        map_size: float,
+        map_res: float,
+        map_thickness: float,
+        map_types: List[str],
+        verbose: bool=False) -> np.ndarray:
     """Project map around coord in a box of (map_size, map_size, slice_size)
     in a map of map_res for given map_type.
 
@@ -159,7 +170,7 @@ def get_maps(
 
     slice_file = slicing.open_slice_file(
         save_dir=slice_dir, slice_axis=slice_axis,
-        slice_size=slice_size, snapshot=snapshot,
+        slice_size=float(slice_size), snapshot=snapshot,
     )
 
     maps = []
@@ -227,8 +238,19 @@ def get_maps(
 
 
 def save_maps(
-        centers, slice_dir, snapshot, slice_axes, slice_size, box_size,
-        map_size, map_res, map_thickness, map_types, save_dir=None, coords_name=""):
+        centers: np.ndarray,
+        slice_dir: str,
+        snapshot: int,
+        slice_axes: List[int],
+        slice_size: float,
+        box_size: float,
+        map_size: float,
+        map_res: float,
+        map_thickness: float,
+        map_types: List[str],
+        save_dir: bool=None,
+        coords_name: str="",
+        verbose: bool=False) -> List[str]:
     """Save projected maps around coords in a box of (map_size, map_size,
     slice_size) in a map of map_res for given map_types.
 
@@ -269,6 +291,7 @@ def save_maps(
     else:
         save_dir = util.check_path(save_dir)
 
+    all_fnames = []
     for slice_axis in slice_axes:
         maps = get_maps(
                 centers=centers, slice_dir=slice_dir, snapshot=snapshot,
@@ -278,8 +301,9 @@ def save_maps(
         )
 
         for i, map_type in enumerate(map_types):
+            fname = f'{save_dir}/{slice_axis}_map_{map_type}_{coords_name}.npz'
             np.savez(
-                f'{save_dir}/{slice_axis}_map_{map_type}_{coords_name}.npz',
+                fname,
                 maps=maps[:, i],
                 slice_size=slice_size,
                 map_size=map_size,
@@ -287,3 +311,6 @@ def save_maps(
                 map_thickness=map_thickness,
                 map_type=map_type,
             )
+            all_fnames.append(fname)
+
+    return all_fnames
