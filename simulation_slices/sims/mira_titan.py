@@ -77,7 +77,9 @@ def save_coords_file(
     )
     group_ids = group_data["fof_halo_tag"]
     masses = group_data["fof_halo_mass"]
-    selection = (masses > np.min(group_range)) & (masses < np.max(group_range))
+    selection = (masses > np.min(group_range) * masses.unit) & (
+        masses < np.max(group_range) * masses.unit
+    )
     coordinates = np.vstack(
         [
             group_data["fof_center_x"],
