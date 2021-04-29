@@ -55,7 +55,7 @@ def create_slice_file(
 
 
 def open_slice_file(
-        save_dir: str, snapshot: int, slice_axis: int, slice_size: int,
+        save_dir: str, snapshot: int, slice_axis: int, slice_size: float,
         mode: str='r'):
     """Return the slice file with given specifications."""
     fname = slice_file_name(
@@ -72,7 +72,7 @@ def read_slice_file_properties(
         slice_file: Optional[str]=None,
         save_dir: Optional[str]=None,
         snapshot: Optional[int]=None,
-        slice_size: Optional[int]=None,
+        slice_size: Optional[float]=None,
         slice_axis: Optional[int]=None) -> dict:
     """Read the given properties into a dict for slice_file.
 
