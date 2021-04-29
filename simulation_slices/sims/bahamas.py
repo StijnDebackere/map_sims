@@ -112,7 +112,7 @@ def save_coords_file(
 
     """
     group_info = Gadget(
-        model_dir=sim_dir, file_type='subh', snapnum=snapshot, sim='BAHAMAS',
+        model_dir=sim_dir, file_type='subh', snapnum=snapshot,
         units=True, comoving=True
     )
 
@@ -143,7 +143,7 @@ def save_coords_file(
             'data': group_info.read_var(extra_dset, verbose=verbose).value[selection],
             'attrs': {
                 'units': str(group_info.get_units(extra_dset, 0, verbose=verbose).unit),
-                **group_info.read_attrs(extra_dset, ids=0, dtype=object)
+                **group_info.read_attrs(extra_dset, ids=0, verbose=verbose, dtype=object)
             },
         }
         for extra_dset in extra_dsets
