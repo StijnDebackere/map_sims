@@ -69,12 +69,14 @@ def map_sim_solid_factory(sim_idx, cfg):
 
 
 @pipeline(
+    name='process_simulations',
     mode_defs=[
         ModeDefinition(
             executor_defs=[multiprocess_executor],
             resource_defs={"io_manager": fs_io_manager},
         )
-    ]
+    ],
+    description='Pipeline to generate observable maps from simulations.',
 )
 def process_simulations():
     solid_output_handles = []
