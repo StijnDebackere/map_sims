@@ -133,7 +133,9 @@ def save_coords_file(
 
     group_data = group_info.read_var(group_dset, verbose=verbose)
     group_ids = np.arange(len(group_data))
-    selection = (group_data > np.min(group_range)) & (group_data < np.max(group_range))
+    selection = (
+        (group_data > np.min(group_range) * group_data.unit)
+        & (group_data < np.max(group_range) * group_data.unit))
     coordinates = group_info.read_var(coord_dset, verbose=verbose)[selection]
 
     extra = {
