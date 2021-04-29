@@ -11,10 +11,7 @@ import simulation_slices.sims.slicing as slicing
 import simulation_slices.utilities as util
 
 
-PROPS_PTYPES = {
-    'coordinates': f'dm/coordinates',
-    'masses': f'dm/masses'
-}
+PROPS_PTYPES = {"coordinates": f"dm/coordinates", "masses": f"dm/masses"}
 
 
 def save_coords_file(
@@ -24,7 +21,7 @@ def save_coords_file(
     group_range: Tuple[float, float] = (1e14, 1e16),
     save_dir: Optional[str] = None,
     coords_fname: Optional[str] = "",
-    **kwargs
+    **kwargs,
 ) -> str:
     """For snapshot of simulation in sim_dir, save coordinates of haloes
     within group_range.
@@ -160,7 +157,7 @@ def save_slice_data(
 
     # ensure that save_dir exists
     if save_dir is None:
-        save_dir = util.check_path(sim_info.get_fname('snap')).parent / "slices"
+        save_dir = util.check_path(sim_info.get_fname("snap")).parent / "slices"
     else:
         save_dir = util.check_path(save_dir)
 
@@ -181,7 +178,7 @@ def save_slice_data(
             box_size=sim_info.box_size.value,
             z=sim_info.z,
             a=sim_info.a,
-            ptypes=['dm'],
+            ptypes=["dm"],
             num_slices=num_slices,
             slice_axis=slice_axis,
             slice_size=slice_size.value,
@@ -233,7 +230,7 @@ def save_slice_data(
 
                 io.add_to_hdf5(
                     h5file=h5file,
-                    dataset=f'{idx}/PROPS_PTYPES["coordinates"]',
+                    dataset=f'{idx}/{PROPS_PTYPES["coordinates"]}',
                     vals=coord[0],
                     axis=1,
                 )
