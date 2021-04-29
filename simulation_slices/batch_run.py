@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+from typing import List
 
 import h5py
 import numpy as np
@@ -11,20 +13,22 @@ import simulation_slices.sims.bahamas as bahamas
 import simulation_slices.sims.mira_titan as mira_titan
 
 
-def save_coords(
-    base_dir,
-    sim_dir,
-    snapshots,
-    sim_suite,
-    box_size,
-    group_dset,
-    coord_dset,
-    group_range,
-    extra_dsets,
-    save_dir,
-    coords_fname,
-):
+def save_coords(sim_idx: int, config: Config) -> List[str]:
     """Save a set of halo centers to generate maps around."""
+    base_dir = config.base_dir
+    sim_dir = config.sim_paths[sim_idx]
+    sim_suite = config.sim_suite
+    snapshots = config.snapshots[sim_idx]
+    box_size = config.box_sizes[sim_idx]
+    save_dir = config.slice_paths[sim_idx]
+
+    group_dset = config.group_dset
+    coord_dset = config.coord_dset
+    group_range = config.group_range
+    extra_dsets = config.extra_dsets
+    save_dir = config.coords_paths[sim_idx]
+    coords_fname = config.coords_name
+
     all_fnames = []
     if sim_suite.lower() == "bahamas":
         for snap in np.atleast_1d(snapshots):
@@ -57,7 +61,7 @@ def save_coords(
     return all_fnames
 
 
-def slice_sim(sim_idx, config):
+def slice_sim(sim_idx: int, config: Config) -> List[str]:
     """Save a set of slices for sim_idx in config.sim_paths."""
     base_dir = config.base_dir
     sim_dir = config.sim_paths[sim_idx]
@@ -100,7 +104,7 @@ def slice_sim(sim_idx, config):
     return all_fnames
 
 
-def map_coords(sim_idx, config):
+def map_coords(sim_idx: int, config: Config) -> List[str]:
     """Save a set of maps for sim_idx in config.sim_paths."""
     base_dir = config.base_dir
     sim_dir = config.sim_paths[sim_idx]
@@ -109,25 +113,11 @@ def map_coords(sim_idx, config):
     box_size = config.box_sizes[sim_idx]
     ptypes = config.ptypes[sim_idx]
 
-    coords_file = config.coords_files[sim_idx]
     coords_name = config.coords_name
     all_fnames = []
 
     if config.compute_coords:
-        coords_dir = config.coords_paths[sim_idx]
-        fnames = save_coords(
-            base_dir=base_dir,
-            sim_dir=sim_dir,
-            sim_suite=sim_suite,
-            snapshots=snapshots,
-            box_size=box_size,
-            group_dset=config.group_dset,
-            coord_dset=config.coord_dset,
-            group_range=config.group_range,
-            extra_dsets=config.extra_dsets,
-            save_dir=coords_dir,
-            coords_fname=config.coords_name,
-        )
+        fnames = save_coords(sim_idx=sim_idx, config=config)
         all_fnames = [*all_fnames, *(fnames or [])]
 
     slice_dir = config.slice_paths[sim_idx]
