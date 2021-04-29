@@ -79,9 +79,9 @@ def save_coords_file(
     )
     coordinates = np.vstack(
         [
-            group_data["fof_center_x"],
-            group_data["fof_center_y"],
-            group_data["fof_center_z"],
+            group_data["fof_halo_center_x"],
+            group_data["fof_halo_center_y"],
+            group_data["fof_halo_center_z"],
         ]
     ).T[selection]
 

@@ -110,6 +110,7 @@ def map_coords(sim_idx: int, config: Config) -> List[str]:
     ptypes = config.ptypes[sim_idx]
 
     coords_name = config.coords_name
+    coords_file = config.coords_files[sim_idx]
     all_fnames = []
 
     if config.compute_coords:
@@ -125,6 +126,7 @@ def map_coords(sim_idx: int, config: Config) -> List[str]:
     map_size = config.map_size
     map_res = config.map_res
     map_thickness = config.map_thickness
+
     with h5py.File(str(coords_file), "r") as h5file:
         centers = h5file["coordinates"][:]
 
