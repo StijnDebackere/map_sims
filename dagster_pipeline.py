@@ -68,11 +68,6 @@ def map_sim_solid_factory(sim_idx, cfg):
     return _map_sim
 
 
-@solid
-def summary_report(context, statuses):
-    context.log.info(" ".join(statuses))
-
-
 @pipeline(
     mode_defs=[
         ModeDefinition(
@@ -89,8 +84,6 @@ def process_simulations():
         slice_sim = slice_sim_solid_factory(idx, cfg)
         map_sim = map_sim_solid_factory(idx, cfg)
         solid_output_handles.append(map_sim(slice_sim()))
-
-    summary_report(solid_output_handles)
 
 
 if __name__ == "__main__":
