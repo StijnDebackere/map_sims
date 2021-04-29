@@ -236,12 +236,13 @@ def save_slice_data(
                 )
 
                 # only want to add single value for dm mass
-                io.add_to_hdf5(
-                    h5file=h5file,
-                    dataset=f'{idx}/{PROPS_PTYPES["masses"]}',
-                    vals=np.unique(masses[0]),
-                    axis=0,
-                )
+                if h5file[f'{idx}/{PROPS_PTYPES["masses"]}'].shape[0] == 0:
+                    io.add_to_hdf5(
+                        h5file=h5file,
+                        dataset=f'{idx}/{PROPS_PTYPES["masses"]}',
+                        vals=np.unique(masses[0]),
+                        axis=0,
+                    )
 
             h5file.close()
 
