@@ -6,7 +6,6 @@ import h5py
 import numpy as np
 
 from simulation_slices import Config
-from simulation_slices.parallel import compute_tasks
 import simulation_slices.maps.analysis as analysis
 import simulation_slices.maps.generation as map_gen
 import simulation_slices.sims.bahamas as bahamas
@@ -15,7 +14,6 @@ import simulation_slices.sims.mira_titan as mira_titan
 
 def save_coords(sim_idx: int, config: Config) -> List[str]:
     """Save a set of halo centers to generate maps around."""
-    base_dir = config.base_dir
     sim_dir = config.sim_paths[sim_idx]
     sim_suite = config.sim_suite
     snapshots = config.snapshots[sim_idx]
@@ -48,7 +46,6 @@ def save_coords(sim_idx: int, config: Config) -> List[str]:
     elif sim_suite.lower() == "miratitan":
         for snap in np.atleast_1d(snapshots):
             fname = mira_titan.save_coords_file(
-                base_dir=str(base_dir),
                 sim_dir=str(sim_dir),
                 box_size=box_size,
                 snapshot=snap,
@@ -63,7 +60,6 @@ def save_coords(sim_idx: int, config: Config) -> List[str]:
 
 def slice_sim(sim_idx: int, config: Config) -> List[str]:
     """Save a set of slices for sim_idx in config.sim_paths."""
-    base_dir = config.base_dir
     sim_dir = config.sim_paths[sim_idx]
     sim_suite = config.sim_suite
     snapshots = config.snapshots[sim_idx]
@@ -91,7 +87,7 @@ def slice_sim(sim_idx: int, config: Config) -> List[str]:
     elif sim_suite.lower() == "miratitan":
         for snap in np.atleast_1d(snapshots):
             fnames = mira_titan.save_slice_data(
-                base_dir=str(sim_dir),
+                sim_dir=str(sim_dir),
                 snapshot=snap,
                 box_size=box_size,
                 slice_axes=slice_axes,

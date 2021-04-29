@@ -18,8 +18,7 @@ PROPS_PTYPES = {
 
 
 def save_coords_file(
-    base_dir: str,
-    sim_dir: str = "M000",
+    sim_dir: str,
     box_size: int = 2100,
     snapshot: int = 499,
     group_range: Tuple[float, float] = (1e14, 1e16),
@@ -27,15 +26,13 @@ def save_coords_file(
     coords_fname: Optional[str] = "",
     **kwargs
 ) -> str:
-    """For snapshot of simulation in base_dir, save the coord_dset for
-    given group_dset and group_range.
+    """For snapshot of simulation in sim_dir, save coordinates of haloes
+    within group_range.
 
     Parameters
     ----------
-    base_dir : str
-        path of the MiraTitanU directory
     sim_dir : str
-        identifier of simulation
+        path of the simulation
     box_size : int
         size of simulation
     snapshot : int
@@ -55,7 +52,6 @@ def save_coords_file(
 
     """
     group_info = MiraTitan(
-        base_dir=base_dir,
         sim_dir=sim_dir,
         box_size=box_size,
         snapnum=snapshot,
@@ -117,8 +113,7 @@ def save_coords_file(
 
 
 def save_slice_data(
-    base_dir: str,
-    sim_dir: str = "M000",
+    sim_dir: str,
     box_size: int = 2100,
     snapshot: int = 499,
     slice_axes: List[int] = [0, 1, 2],
@@ -126,16 +121,14 @@ def save_slice_data(
     save_dir: Optional[str] = None,
     verbose: Optional[bool] = False,
 ) -> List[str]:
-    """For snapshot of simulation in base_dir, slice the particle data for
+    """For snapshot of simulation in sim_dir, slice the particle data for
     all ptypes along the x, y, and z directions. Slices are saved
     in the Snapshots directory by default.
 
     Parameters
     ----------
-    base_dir : str
-        path of the MiraTitanU directory
     sim_dir : str
-        identifier of simulation
+        path of simulation
     box_size : int
         size of simulation
     snapshot : int
@@ -158,7 +151,6 @@ def save_slice_data(
     """
     slice_axes = np.atleast_1d(slice_axes)
     sim_info = MiraTitan(
-        base_dir=base_dir,
         sim_dir=sim_dir,
         box_size=box_size,
         snapnum=snapshot,
@@ -175,7 +167,7 @@ def save_slice_data(
     num_slices = int(box_size // slice_size)
 
     # crude estimate of maximum number of particles in each slice
-    N_tot = sum(sim_info.num_part_tot)
+    N_tot = sim_info.num_part_tot
     maxshape = int(2 * N_tot / num_slices)
 
     fnames = []
