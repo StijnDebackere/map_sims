@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple
 from pathlib import Path
 
+import astropy.units as u
 import h5py
 from mira_titan import MiraTitan
 import numpy as np
@@ -130,10 +131,10 @@ def save_coords_file(
 
 def save_slice_data(
     sim_dir: str,
-    box_size: int = 2100,
-    snapshot: int = 499,
+    box_size: u.Quantity,
+    snapshot: int,
     slice_axes: List[int] = [0, 1, 2],
-    slice_size: int = 20,
+    num_slices: int = 1000,
     save_dir: Optional[str] = None,
     verbose: Optional[bool] = False,
 ) -> List[str]:
@@ -145,14 +146,14 @@ def save_slice_data(
     ----------
     sim_dir : str
         path of simulation
-    box_size : int
-        size of simulation
+    box_size : astropy.units.Quantity
+        size of simulation, in Mpc for MiraTitan
     snapshot : int
         snapshot to look at
     slice_axis : int
         axis to slice along [x=0, y=1, z=2]
-    slice_size : float
-        slice thickness in units of box_size
+    num_slices : int
+        total number of slices
     save_dir : str or None
         location to save to, defaults to snapshot_xxx/slices/
     verbose : bool
@@ -171,16 +172,15 @@ def save_slice_data(
         box_size=box_size,
         snapnum=snapshot,
     )
+    # read in the Mpc unit box_size
+    box_size = sim_info.L
+    h = sim_info.cosmo["h"]
 
     # ensure that save_dir exists
     if save_dir is None:
         save_dir = util.check_path(sim_info.get_fname("snap")).parent / "slices"
     else:
         save_dir = util.check_path(save_dir)
-
-    box_size = sim_info.box_size
-    slice_size = util.check_slice_size(slice_size=slice_size, box_size=box_size)
-    num_slices = int(box_size // slice_size)
 
     # crude estimate of maximum number of particles in each slice
     N_tot = sim_info.num_part_tot
@@ -192,13 +192,12 @@ def save_slice_data(
         fname = slicing.create_slice_file(
             save_dir=save_dir,
             snapshot=snapshot,
-            box_size=sim_info.box_size.value,
+            box_size=sim_info.box_size,
             z=sim_info.z,
             a=sim_info.a,
             ptypes=["dm"],
             num_slices=num_slices,
             slice_axis=slice_axis,
-            slice_size=slice_size.value,
             maxshape=maxshape,
         )
         fnames.append(fname)
@@ -217,15 +216,23 @@ def save_slice_data(
         properties = sim_info.read_properties(
             datatype="snap", props=["x", "y", "z"], num=file_num
         )
-        coords = np.vstack([properties["x"], properties["y"], properties["z"]])
-        masses = np.atleast_1d(sim_info.simulation_info["m_p"])
+
+        # MiraTitan box size is in Mpc, cannot be converted in Config
+        # need to enforce consistent units => get rid of all littleh factors
+        coords = np.vstack([properties["x"], properties["y"], properties["z"]]).to(
+            "Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+        )
+        # multiply particle masses by 10 => simulations are downsampled
+        masses = np.atleast_1d(sim_info.simulation_info["m_p"]).to(
+            "Msun", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+        ) * 10.
 
         properties = {"coordinates": coords, "masses": masses}
         # write each slice to a separate file
         for slice_axis in slice_axes:
             slice_dict = slicing.slice_particle_list(
                 box_size=box_size,
-                slice_size=slice_size,
+                num_slices=num_slices,
                 slice_axis=slice_axis,
                 properties=properties,
             )
@@ -233,7 +240,7 @@ def save_slice_data(
             fname = slicing.slice_file_name(
                 save_dir=save_dir,
                 slice_axis=slice_axis,
-                slice_size=slice_size.value,
+                num_slices=num_slices,
                 snapshot=snapshot,
             )
             h5file = h5py.File(fname, "r+")
@@ -245,18 +252,20 @@ def save_slice_data(
                 if not coord:
                     continue
 
+                coord_dset = f'{idx}/{PROPS_PTYPES["coordinates"]}'
                 io.add_to_hdf5(
                     h5file=h5file,
-                    dataset=f'{idx}/{PROPS_PTYPES["coordinates"]}',
+                    dataset=coord_dset,
                     vals=coord[0],
                     axis=1,
                 )
 
                 # only want to add single value for dm mass
                 if h5file[f'{idx}/{PROPS_PTYPES["masses"]}'].shape[0] == 0:
+                    mass_dset = f'{idx}/{PROPS_PTYPES["masses"]}'
                     io.add_to_hdf5(
                         h5file=h5file,
-                        dataset=f'{idx}/{PROPS_PTYPES["masses"]}',
+                        dataset=mass_dset,
                         vals=np.unique(masses[0]),
                         axis=0,
                     )

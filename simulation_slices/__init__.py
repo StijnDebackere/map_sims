@@ -1,53 +1,58 @@
 from pathlib import Path
 
+import astropy.units as u
 import numpy as np
 import toml
 
 
-CONFIG_FILE = str(Path(__file__).parent / 'batch.toml')
+CONFIG_FILE = str(Path(__file__).parent / "batch.toml")
 
 
 class Config(object):
     def __init__(self, config_file=CONFIG_FILE):
         config = toml.load(config_file)
-        self.base_dir = config['sims']['base_dir']
-        self.sim_dirs = config['sims']['sim_dirs']
-        self.sim_suite = config['sims']['sim_suite']
-        self.snapshots = config['sims']['snapshots']
-        self.ptypes = config['sims']['ptypes']
-        self.box_sizes = config['sims']['box_sizes']
+        self.base_dir = config["sims"]["base_dir"]
+        self.sim_dirs = config["sims"]["sim_dirs"]
+        self.sim_suite = config["sims"]["sim_suite"]
+        self.snapshots = config["sims"]["snapshots"]
+        self.ptypes = config["sims"]["ptypes"]
+        self.box_sizes = config["sims"]["box_sizes"] * u.Unit(
+            config["sims"]["box_sizes_units"]
+        )
 
-        self.slice_size = config['slices']['slice_size']
-        self.slice_axes = config['slices']['slice_axes']
-        self.slice_dir = config['slices']['save_dir']
+        self.num_slices = config["slices"]["num_slices"]
+        self.slice_axes = config["slices"]["slice_axes"]
+        self.slice_dir = config["slices"]["save_dir"]
 
-        self.map_dir = config['maps']['save_dir']
-        self.map_types = config['maps']['map_types']
-        self.map_size = config['maps']['map_size']
-        self.map_res = config['maps']['map_res']
-        self.map_thickness = config['maps']['map_thickness']
+        self.map_dir = config["maps"]["save_dir"]
+        self.map_types = config["maps"]["map_types"]
+        self.map_pix = config["maps"]["map_pix"]
+        self.map_size = config["maps"]["map_size"] * u.Unit(config["maps"]["map_units"])
+        self.map_thickness = config["maps"]["map_thickness"] * u.Unit(
+            config["maps"]["map_units"]
+        )
 
-        if 'coords' in config['sims'].keys():
+        if "coords" in config["sims"].keys():
             self.compute_coords = True
-            self.coords_dir = config['sims']['coords']['coords_dir']
-            self.coords_name = config['sims']['coords']['coords_name']
-            self.coord_dset = config['sims']['coords']['coord_dset']
-            self.group_dset = config['sims']['coords']['group_dset']
-            self.group_range = config['sims']['coords']['group_range']
-            self.extra_dsets = config['sims']['coords']['extra_dsets']
+            self.coords_dir = config["sims"]["coords"]["coords_dir"]
+            self.coords_name = config["sims"]["coords"]["coords_name"]
+            self.mass_range = config["sims"]["coords"]["mass_range"] * u.Unit(
+                config["sims"]["coords"]["mass_units"]
+            )
+            self.coord_dset = config["sims"]["coords"].get("coord_dset", None)
+            self.mass_dset = config["sims"]["coords"].get("mass_dset", None)
+            self.extra_dsets = config["sims"]["coords"].get("extra_dsets", None)
         else:
             self.compute_coords = False
-            self.coords_dir = config['maps']['coords_dir']
-            self.coords_name = config['maps']['coords_name']
+            self.coords_dir = config["maps"]["coords_dir"]
+            self.coords_name = config["maps"]["coords_name"]
 
-        self.obs_dir = config['observables']['save_dir']
-        self.obs_types = config['observables'].keys() - ['save_dir']
-        self.obs_kwargs = {
-            key: config['observables'][key] for key in self.obs_types
-        }
+        self.obs_dir = config["observables"]["save_dir"]
+        self.obs_types = config["observables"].keys() - ["save_dir"]
+        self.obs_kwargs = {key: config["observables"][key] for key in self.obs_types}
 
-        self.figure_dir = config['DIRECTORIES']['FIGURE_DIR']
-        self.data_dir = config['DIRECTORIES']['DATA_DIR']
+        self.figure_dir = config["DIRECTORIES"]["FIGURE_DIR"]
+        self.data_dir = config["DIRECTORIES"]["DATA_DIR"]
 
         self.build_config()
 
@@ -109,7 +114,11 @@ class Config(object):
     @coords_name.setter
     def coords_name(self, val):
         self._coords_name = val
-        self.coords_files = [sd / f'{val}.hdf5' for sd in self.coords_paths]
+        self.coords_files = [
+            [
+                sd / f"{val}_{snap:03d}.hdf5" for snap in self.snapshots[sim_idx]
+            ]  for sim_idx, sd in enumerate(self.coords_paths)
+        ]
 
     @property
     def obs_dir(self):
@@ -126,10 +135,10 @@ class Config(object):
 
     @sim_suite.setter
     def sim_suite(self, val):
-        if val.lower() == 'bahamas' or val.lower() == 'miratitan':
+        if val.lower() == "bahamas" or val.lower() == "miratitan":
             self._sim_suite = val
         else:
-            raise ValueError(f'{val} is not a valid sim_suite')
+            raise ValueError(f"{val} is not a valid sim_suite")
 
     @property
     def snapshots(self):
@@ -148,7 +157,7 @@ class Config(object):
         elif type(val) is int:
             self._snapshots = np.ones((self._n_sims, 1), dtype=int) * val
         else:
-            raise ValueError('snapshots should be list or int')
+            raise ValueError("snapshots should be list or int")
 
     @property
     def ptypes(self):
@@ -165,11 +174,13 @@ class Config(object):
                 self._ptypes = np.tile(np.atleast_1d(val)[None], (self._n_sims, 1))
 
         elif type(val) is str:
-            self._ptypes = np.chararray((self._n_sims, 1), itemsize=len(val), unicode=True)
+            self._ptypes = np.chararray(
+                (self._n_sims, 1), itemsize=len(val), unicode=True
+            )
             self._ptypes[:] = val
 
         else:
-            raise ValueError('ptypes should be list or str')
+            raise ValueError("ptypes should be list or str")
 
     @property
     def box_sizes(self):
@@ -182,22 +193,22 @@ class Config(object):
             if len(val) == self._n_sims:
                 self._box_sizes = [np.atleast_1d(v) for v in val]
             else:
-                raise ValueError('can only have 1 box_size per sim')
+                raise ValueError("can only have 1 box_size per sim")
 
-        elif type(val) is int:
+        elif type(val) is u.Quantity:
             self._box_sizes = np.ones(self._n_sims) * val
         else:
-            raise ValueError('box_sizes should be list or int')
+            raise ValueError("box_sizes should be list or astropy.units.Quantity")
 
     @property
-    def slice_size(self):
-        return self._slice_size
+    def num_slices(self):
+        return self._num_slices
 
-    @slice_size.setter
-    def slice_size(self, val):
-        if type(val) is not int and type(val) is not float:
-            raise ValueError('slice_size should be scalar')
-        self._slice_size = val
+    @num_slices.setter
+    def num_slices(self, val):
+        if type(val) is not int:
+            raise ValueError("num_slices should be int")
+        self._num_slices = val
 
     @property
     def slice_axes(self):
@@ -206,7 +217,7 @@ class Config(object):
     @slice_axes.setter
     def slice_axes(self, val):
         if set(val) & set([0, 1, 2]) != set(val):
-            raise ValueError('slice_axes can only contain 0, 1, 2')
+            raise ValueError("slice_axes can only contain 0, 1, 2")
         else:
             self._slice_axes = np.atleast_1d(list(set(val)))
 
@@ -216,13 +227,15 @@ class Config(object):
 
     @map_types.setter
     def map_types(self, val):
-        valid_map_types = ['gas_mass', 'dm_mass', 'stars_mass', 'bh_mass', 'sz']
+        valid_map_types = ["gas_mass", "dm_mass", "stars_mass", "bh_mass", "sz"]
         if type(val) is list:
             # map_types specified for each sim
             if len(val) == self._n_sims:
                 try:
                     if set(val) & set(valid_map_types) != set(val):
-                        raise ValueError(f'map_types can only contain {valid_map_types}')
+                        raise ValueError(
+                            f"map_types can only contain {valid_map_types}"
+                        )
                     else:
                         self._map_types = [[v] for v in val]
                 # if val is list of lists
@@ -230,19 +243,23 @@ class Config(object):
                     map_types = []
                     for v in val:
                         if set(v) & set(valid_map_types) != set(v):
-                            raise ValueError(f'map_types can only contain {valid_map_types}')
+                            raise ValueError(
+                                f"map_types can only contain {valid_map_types}"
+                            )
                         else:
                             map_types.append(v)
                     self._map_types = map_types
 
             # multiple map_types for each sim
             else:
-                self._map_types = np.tile(np.atleast_1d(val)[None], (self._n_sims, 1)).tolist()
+                self._map_types = np.tile(
+                    np.atleast_1d(val)[None], (self._n_sims, 1)
+                ).tolist()
 
         elif type(val) is str:
             self._map_types = np.asarray([val] * self._n_sims).tolist()
         else:
-            raise ValueError('map_types should be list or string')
+            raise ValueError("map_types should be list or string")
 
         # if set(val) & set(['gas_mass', 'dm_mass', 'stars_mass', 'bh_mass', 'sz']) != set(val):
         #     raise ValueError('map_types can only contain 0, 1, 2')
@@ -253,16 +270,18 @@ class Config(object):
         self.config = dict(
             dict(
                 (
-                    str(sim), dict(
+                    str(sim),
+                    dict(
                         (
-                            ('snapshots', self.snapshots[idx]),
-                            ('path', self.sim_paths[idx]),
-                            ('slice_dir', self.slice_paths[idx]),
-                            ('map_dir', self.map_paths[idx]),
-                            ('coords_file', self.coords_files[idx]),
-                            ('obs_dir', self.obs_paths[idx]),
+                            ("snapshots", self.snapshots[idx]),
+                            ("path", self.sim_paths[idx]),
+                            ("slice_dir", self.slice_paths[idx]),
+                            ("map_dir", self.map_paths[idx]),
+                            ("coords_file", self.coords_files[idx]),
+                            ("obs_dir", self.obs_paths[idx]),
                         )
-                    )
-                ) for idx, sim in enumerate(self.sim_dirs)
+                    ),
+                )
+                for idx, sim in enumerate(self.sim_dirs)
             )
         )

@@ -11,32 +11,43 @@ import simulation_slices.utilities as util
 
 
 def slice_file_name(
-        save_dir: str, slice_axis: int, slice_size: float, snapshot: int) -> str:
-    """Return the formatted base filename for the given slice."""
-    fname = f'axis_{slice_axis}_size_{slice_size}_{snapshot:03d}'
-    fname = f'{save_dir}/{fname}.hdf5'
+    save_dir: str, slice_axis: int, num_slices: int, snapshot: int
+) -> str:
+    """Return the formatted base filename for the given number of slices."""
+    fname = f"axis_{slice_axis}_nslices_{num_slices}_{snapshot:03d}"
+    fname = f"{save_dir}/{fname}.hdf5"
 
     return fname
 
 
 def create_slice_file(
-        save_dir: str,
-        snapshot: int,
-        box_size: int,
-        z: float, a: float, ptypes: List[str],
-        num_slices: int, slice_axis: int,
-        slice_size: float,
-        maxshape: int) -> str:
+    save_dir: str,
+    snapshot: int,
+    box_size: u.Quantity,
+    z: float,
+    a: float,
+    ptypes: List[str],
+    num_slices: int,
+    slice_axis: int,
+    maxshape: int,
+) -> str:
     """Create the hdf5 file in save_dir for given slice."""
     fname = slice_file_name(
-        save_dir=save_dir, slice_axis=slice_axis, slice_size=slice_size,
-        snapshot=snapshot
+        save_dir=save_dir,
+        slice_axis=slice_axis,
+        num_slices=num_slices,
+        snapshot=snapshot,
     )
 
     hdf_layout = slice_layout.get_slice_layout(
-        num_slices=num_slices, slice_axis=slice_axis, slice_size=slice_size,
-        maxshape=maxshape, box_size=box_size, snapshot=snapshot, ptypes=ptypes,
-        z=z, a=a,
+        num_slices=num_slices,
+        slice_axis=slice_axis,
+        maxshape=maxshape,
+        box_size=box_size,
+        snapshot=snapshot,
+        ptypes=ptypes,
+        z=z,
+        a=a,
     )
 
     # ensure start with clean slate
@@ -47,37 +58,42 @@ def create_slice_file(
     except FileNotFoundError:
         pass
     # create hdf5 file and generate the required datasets
-    io.create_hdf5(
-        fname=filename, layout=hdf_layout, close=True
-    )
+    io.create_hdf5(fname=filename, layout=hdf_layout, close=True)
 
     return str(filename)
 
 
 def open_slice_file(
-        save_dir: str, snapshot: int, slice_axis: int, slice_size: float,
-        mode: str='r'):
+    save_dir: str,
+    snapshot: int,
+    slice_axis: int,
+    num_slices: int,
+    mode: str = "r",
+):
     """Return the slice file with given specifications."""
     fname = slice_file_name(
-        save_dir=save_dir, snapshot=snapshot,
-        slice_axis=slice_axis, slice_size=slice_size,
+        save_dir=save_dir,
+        snapshot=snapshot,
+        slice_axis=slice_axis,
+        num_slices=num_slices,
     )
     h5file = h5py.File(fname, mode=mode)
     return h5file
 
 
 def read_slice_file_properties(
-        slice_nums: List[int],
-        properties: dict,
-        slice_file: Optional[str]=None,
-        save_dir: Optional[str]=None,
-        snapshot: Optional[int]=None,
-        slice_size: Optional[float]=None,
-        slice_axis: Optional[int]=None) -> dict:
+    slice_file: Union[str, h5py.File],
+    slice_nums: List[int],
+    properties: dict,
+) -> dict:
     """Read the given properties into a dict for slice_file.
 
     Parameters
     ----------
+    slice_file : str, optional
+        file to read from, determined from input if None
+    slice_nums : list of int
+        slice numbers to read
     properties : dict
         dsets to be loaded for each ptype [ptype: 'gas', 'dm', 'stars', 'bh']
             - ptype :
@@ -90,29 +106,31 @@ def read_slice_file_properties(
 
     """
     results = {}
-    if slice_file is None:
-        fname = slice_file_name(
-            save_dir=save_dir, snapshot=snapshot,
-            slice_axis=slice_axis, slice_size=slice_size,
-        )
-        slice_file = h5py.File(fname)
+    if type(slice_file) is str:
+        slice_file = h5py.File(fname, mode="r")
+
     else:
         for ptype, dsets in properties.items():
             results[ptype] = {}
             for dset in dsets:
                 res_dset = []
                 for slice_idx in slice_nums:
+                    key = f"{slice_idx}/{ptype}/{dset}"
                     try:
-                        key = f'{slice_idx}/{ptype}/{dset}'
                         h5_dset = slice_file[key]
                     except KeyError:
                         breakpoint()
-                        raise KeyError(f'key {key} not found in {slice_file.filename}')
-                    if h5_dset.attrs['single_value']:
-                        res_dset.append(slice_file[f'{slice_nums[0]}/{ptype}/{dset}'][:])
+                        raise KeyError(f"key {key} not found in {slice_file.filename}")
+                    if h5_dset.attrs["single_value"]:
+                        key = f"{slice_nums[0]}/{ptype}/{dset}"
+                        res_dset.append(
+                            slice_file[key][:] * u.Unit(slice_file[key].attrs["units"])
+                        )
                         break
                     else:
-                        res_dset.append(slice_file[f'{slice_idx}/{ptype}/{dset}'][:])
+                        res_dset.append(
+                            slice_file[key][:] * u.Unit(slice_file[key].attrs["units"])
+                        )
 
                 results[ptype][dset] = np.concatenate(res_dset, axis=-1)
 
@@ -120,20 +138,19 @@ def read_slice_file_properties(
 
 
 def get_coords_slices(
-        coords: np.ndarray, slice_size: float, slice_axis: int) -> np.ndarray:
+    coords: u.Quantity, slice_size: u.Quantity, slice_axis: int
+) -> np.ndarray:
     """For the list of periodic coords recover the slice_idx for the given
     slice_size and slice_axis.
 
     Parameters
     ----------
-    coords : (ndim, N) array
+    coords : (ndim, N) astropy.units.Quantity
         coordinates
-    slice_size : float
+    slice_size : astropy.units.Quantity
         size of the slices
     slice_axis : int
         dimension along which box has been sliced
-    origin : float
-        origin to compute slices with respect to
 
     Returns
     -------
@@ -146,8 +163,8 @@ def get_coords_slices(
 
 
 def slice_particle_list(
-        box_size: u.Quantity, slice_size: u.Quantity, slice_axis: int,
-        properties: dict) -> dict:
+    box_size: u.Quantity, num_slices: int, slice_axis: int, properties: dict
+) -> dict:
     """Slice the given list of (x, y, z) coordinates in slices of
     specified size along axis. Save the properties particle
     information as well.
@@ -156,8 +173,8 @@ def slice_particle_list(
     ----------
     box_size : astropy.units.Quantity
         box size
-    slice_size : astropy.units.Quantity
-        thickness of the slices
+    num_slices : int
+        total number of slices
     slice_axis : int
         axis to slice along [x=0, y=1, z=2]
     properties : dict of (..., N) array-like
@@ -174,15 +191,13 @@ def slice_particle_list(
     """
     # ensure all passed arguments match our expectations
     slice_axis = util.check_slice_axis(slice_axis)
-    slice_size = util.check_slice_size(slice_size=slice_size, box_size=box_size)
-    num_slices = int(box_size // slice_size)
+    slice_size = box_size / num_slices
 
     # for each coordinate along the slice axis, determine the slice it
     # belongs to
     slice_idx = get_coords_slices(
-        coords=properties['coordinates'], slice_size=slice_size,
-        slice_axis=slice_axis
-    )
+        coords=properties["coordinates"], slice_size=slice_size, slice_axis=slice_axis
+    ) % num_slices
 
     # place holder to organize slice data for each property
     slice_dict = dict([(prop, [[] for _ in range(num_slices)]) for prop in properties])

@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import List
 
+import astropy.units as u
 import h5py
 import numpy as np
 
@@ -68,7 +69,7 @@ def slice_sim(sim_idx: int, config: Config) -> List[str]:
     save_dir = config.slice_paths[sim_idx]
 
     slice_axes = config.slice_axes
-    slice_size = config.slice_size
+    num_slices = config.num_slices
 
     all_fnames = []
     if sim_suite.lower() == "bahamas":
@@ -78,7 +79,7 @@ def slice_sim(sim_idx: int, config: Config) -> List[str]:
                 snapshot=snap,
                 ptypes=ptypes,
                 slice_axes=slice_axes,
-                slice_size=slice_size,
+                num_slices=num_slices,
                 save_dir=save_dir,
                 verbose=False,
             )
@@ -88,10 +89,10 @@ def slice_sim(sim_idx: int, config: Config) -> List[str]:
         for snap in np.atleast_1d(snapshots):
             fnames = mira_titan.save_slice_data(
                 sim_dir=str(sim_dir),
-                snapshot=snap,
                 box_size=box_size,
+                snapshot=snap,
                 slice_axes=slice_axes,
-                slice_size=slice_size,
+                num_slices=num_slices,
                 save_dir=save_dir,
                 verbose=False,
             )
@@ -110,7 +111,7 @@ def map_coords(sim_idx: int, config: Config) -> List[str]:
     ptypes = config.ptypes[sim_idx]
 
     coords_name = config.coords_name
-    coords_file = config.coords_files[sim_idx]
+    coords_files = config.coords_files[sim_idx]
     all_fnames = []
 
     if config.compute_coords:
@@ -119,27 +120,28 @@ def map_coords(sim_idx: int, config: Config) -> List[str]:
 
     slice_dir = config.slice_paths[sim_idx]
     slice_axes = config.slice_axes
-    slice_size = config.slice_size
+    num_slices = config.num_slices
 
     save_dir = config.map_paths[sim_idx]
     map_types = config.map_types[sim_idx]
+    map_pix = config.map_pix
     map_size = config.map_size
-    map_res = config.map_res
     map_thickness = config.map_thickness
 
-    with h5py.File(str(coords_file), "r") as h5file:
-        centers = h5file["coordinates"][:]
 
-    for snap in np.atleast_1d(snapshots):
+    for idx, snap in enumerate(np.atleast_1d(snapshots)):
+        with h5py.File(str(coords_files[idx]), "r") as h5file:
+            centers = h5file["coordinates"][:5] * u.Unit(h5file["coordinates"].attrs["units"])
+
         fnames = map_gen.save_maps(
             centers=centers,
             slice_dir=slice_dir,
             snapshot=snap,
             slice_axes=slice_axes,
-            slice_size=slice_size,
+            num_slices=num_slices,
             box_size=box_size,
+            map_pix=map_pix,
             map_size=map_size,
-            map_res=map_res,
             map_thickness=map_thickness,
             map_types=map_types,
             save_dir=save_dir,

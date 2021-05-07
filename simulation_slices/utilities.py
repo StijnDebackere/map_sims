@@ -65,24 +65,6 @@ def check_slice_axis(slice_axis):
     return slice_axis
 
 
-def check_slice_size(slice_size, box_size):
-    """Ensure that slice_size evenly divides box_size."""
-    if type(box_size) is u.Quantity and type(slice_size) is not u.Quantity:
-        unit = box_size.unit
-        slice_size *= unit
-
-    if not box_size / slice_size % 1 == 0:
-        new_slice_size = box_size / (box_size // slice_size)
-        print(
-            f'box_size {box_size} needs to be an integer multiple'
-            f'of slice_size {slice_size}'
-        )
-        print(f'changing slice_size to {new_slice_size}')
-        return new_slice_size
-
-    return slice_size
-
-
 def check_path(path):
     """Ensure path is a pathlib.PosixPath."""
     if not type(path) is pathlib.PosixPath:
