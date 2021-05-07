@@ -16,9 +16,9 @@ PROPS_PTYPES = {"coordinates": f"dm/coordinates", "masses": f"dm/masses"}
 
 def save_coords_file(
     sim_dir: str,
-    box_size: int = 2100,
-    snapshot: int = 499,
-    group_range: Tuple[float, float] = (1e14, 1e16),
+    box_size: u.Quantity,
+    snapshot: int,
+    mass_range: Tuple[u.Quantity, u.Quantity],
     save_dir: Optional[str] = None,
     coords_fname: Optional[str] = "",
     **kwargs,
@@ -30,12 +30,12 @@ def save_coords_file(
     ----------
     sim_dir : str
         path of the simulation
-    box_size : int
+    box_size : astropy.units.Quantity
         size of simulation
     snapshot : int
         snapshot to look at
-    group_range : (min, max) tuple
-        minimum and maximum value for group_dset
+    mass_range : (min, max) tuple
+        minimum and maximum value for masses
     save_dir : str or None
         location to save to, defaults to snapshot_xxx/maps/
     coords_fname : str
@@ -48,21 +48,22 @@ def save_coords_file(
     saves a set of coordinates to save_dir
 
     """
-    group_info = MiraTitan(
+    sim_info = MiraTitan(
         sim_dir=sim_dir,
         box_size=box_size,
         snapnum=snapshot,
     )
+    h = sim_info.cosmo["h"]
 
     # ensure that save_dir exists
     if save_dir is None:
-        save_dir = util.check_path(group_info.filename).parent / "maps"
+        save_dir = util.check_path(sim_info.filename).parent / "maps"
     else:
         save_dir = util.check_path(save_dir)
 
-    fname = (save_dir / coords_fname).with_suffix(".hdf5")
+    fname = (save_dir / f"{coords_fname}_{snapshot:03d}").with_suffix(".hdf5")
 
-    group_data = group_info.read_properties(
+    group_data = sim_info.read_properties(
         "fof",
         [
             "fof_halo_mass",
@@ -74,34 +75,50 @@ def save_coords_file(
     )
     group_ids = group_data["fof_halo_tag"]
     masses = group_data["fof_halo_mass"]
-    selection = (masses > np.min(group_range) * masses.unit) & (
-        masses < np.max(group_range) * masses.unit
+    selection = (masses > np.min(mass_range)) & (masses < np.max(mass_range))
+
+    # only included selection
+    coordinates = (
+        np.vstack(
+            [
+                group_data["fof_halo_center_x"],
+                group_data["fof_halo_center_y"],
+                group_data["fof_halo_center_z"],
+            ]
+        )
+        .T[selection]
+        .to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
     )
-    coordinates = np.vstack(
-        [
-            group_data["fof_halo_center_x"],
-            group_data["fof_halo_center_y"],
-            group_data["fof_halo_center_z"],
-        ]
-    ).T[selection]
+    masses = masses[selection].to(
+        "Msun", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+    )
+    group_ids = group_ids[selection].astype(int)
 
     layout = {
         "attrs": {
-            "description": "File with selected coordinates for maps. All masses in M_sun/h",
+            "description": "File with selected coordinates for maps.",
         },
         "dsets": {
             "coordinates": {
-                "data": coordinates.value,
+                "data": coordinates,
                 "attrs": {
-                    "description": "Coordinates in cMpc/h",
-                    "units": str(coordinates.unit),
-                    "mass_range": group_range,
+                    "description": "Centers",
+                    "units": "Mpc",
+                    "mass_range": mass_range.value,
+                    "mass_range_units": str(mass_range.unit),
                 },
             },
             "group_ids": {
-                "data": group_ids[selection],
+                "data": group_ids,
                 "attrs": {
-                    "description": "Group IDs starting at 0",
+                    "description": "Group IDs",
+                },
+            },
+            "masses": {
+                "data": masses,
+                "attrs": {
+                    "description": "Masses",
+                    "units": "Msun",
                 },
             },
         },

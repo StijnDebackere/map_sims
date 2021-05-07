@@ -1,5 +1,6 @@
 from typing import List, Optional, Tuple
 
+import astropy.units as u
 from gadget import Gadget
 import h5py
 import numpy as np
@@ -76,13 +77,17 @@ PROPS_PTYPES['gas'] = {
 
 
 def save_coords_file(
-        sim_dir: str, snapshot: int,
-        group_dset: str, coord_dset: str,
-        group_range: Tuple[float, float],
-        extra_dsets: List[str],
-        save_dir: Optional[str]=None,
-        coords_fname: Optional[str]='',
-        verbose: Optional[bool]=False) -> str:
+    sim_dir: str,
+    snapshot: int,
+    coord_dset: str,
+    mass_dset: str,
+    mass_range: Tuple[u.Quantity, u.Quantity],
+    extra_dsets: List[str],
+    save_dir: Optional[str] = None,
+    coords_fname: Optional[str] = "",
+    verbose: Optional[bool] = False,
+    **kwargs,
+) -> str:
     """For snapshot of simulation in sim_dir, save the coord_dset for
     given group_dset and group_range.
 
@@ -92,12 +97,12 @@ def save_coords_file(
         path of the MiraTitanU directory
     snapshot : int
         snapshot to look at
-    group_dset : str
-        hdf5 FOF dataset to select group from
     coord_dset : str
         hdf5 dataset containing the coordinates
-    group_range : (min, max) tuple
-        minimum and maximum value for group_dset
+    mass_dset : str
+        hdf5 FOF dataset to get masses from
+    mass_range : (min, max) tuple
+        minimum and maximum value for mass_dset
     extra_dsets : iterable
         extra datasets to save to the file
     save_dir : str or None
@@ -112,77 +117,86 @@ def save_coords_file(
 
     """
     group_info = Gadget(
-        model_dir=sim_dir, file_type='subh', snapnum=snapshot,
-        units=True, comoving=True
+        model_dir=sim_dir, file_type="subh", snapnum=snapshot, units=True, comoving=True
     )
 
-    if 'FOF' not in group_dset:
-        raise ValueError('group_dset should be a FOF property')
-    if 'FOF' not in coord_dset:
-        raise ValueError('coord_dset should be a FOF property')
-    if not np.all(['FOF' in extra_dset for extra_dset in extra_dsets]):
-        raise ValueError('extra_dsets should be FOF properties')
+    if "FOF" not in group_dset:
+        raise ValueError("group_dset should be a FOF property")
+    if "FOF" not in coord_dset:
+        raise ValueError("coord_dset should be a FOF property")
+    if not np.all(["FOF" in extra_dset for extra_dset in extra_dsets]):
+        raise ValueError("extra_dsets should be FOF properties")
 
     # ensure that save_dir exists
     if save_dir is None:
-        save_dir = util.check_path(group_info.filename).parent / 'maps'
+        save_dir = util.check_path(group_info.filename).parent / "maps"
     else:
         save_dir = util.check_path(save_dir)
 
-    fname = (save_dir / coords_fname).with_suffix('.hdf5')
+    fname = (save_dir / f"{coords_fname}_{snapshot:03d}").with_suffix(".hdf5")
 
-    group_data = group_info.read_var(group_dset, verbose=verbose)
-    group_ids = np.arange(len(group_data))
-    selection = (
-        (group_data > np.min(group_range) * group_data.unit)
-        & (group_data < np.max(group_range) * group_data.unit))
+    masses = group_info.read_var(mass_dset, verbose=verbose)
+    group_ids = np.arange(len(masses))
+    selection = (mass_data > np.min(mass_range)) & (mass_data < np.max(mass_range))
     coordinates = group_info.read_var(coord_dset, verbose=verbose)[selection]
 
     extra = {
         extra_dset: {
-            'data': group_info.read_var(extra_dset, verbose=verbose).value[selection],
-            'attrs': {
-                'units': str(group_info.get_units(extra_dset, 0, verbose=verbose).unit),
-                **group_info.read_attrs(extra_dset, ids=0, verbose=verbose, dtype=object)
+            "data": group_info.read_var(extra_dset, verbose=verbose).value[selection],
+            "attrs": {
+                "units": str(group_info.get_units(extra_dset, 0, verbose=verbose).unit),
+                **group_info.read_attrs(
+                    extra_dset, ids=0, verbose=verbose, dtype=object
+                ),
             },
         }
         for extra_dset in extra_dsets
     }
     layout = {
-        'attrs': {
-            'description': 'File with selected coordinates for maps. All masses in M_sun/h',
+        "attrs": {
+            "description": "File with selected coordinates for maps.",
         },
-        'dsets': {
-            'coordinates': {
-                'data': coordinates.value,
-                'attrs': {
-                    'description': 'Coordinates in cMpc/h',
-                    'units': str(coordinates.unit),
-                    'group_dset': group_dset,
-                    'group_range': group_range,
+        "dsets": {
+            "coordinates": {
+                "data": coordinates.to_value("Mpc / littleh"),
+                "attrs": {
+                    "description": "Coordinates in cMpc/h",
+                    "units": "Mpc / littleh",
+                    "mass_dset": mass_dset,
+                    "mass_range": mass_range.value,
+                    "mass_range_units": str(mass_range.unit),
                 },
             },
-            'group_ids': {
-                'data': group_ids[selection],
-                'attrs': {
-                    'description': 'Group IDs starting at 0',
-                }
+            "group_ids": {
+                "data": group_ids[selection],
+                "attrs": {
+                    "description": "Group IDs starting at 0",
+                },
+            },
+            "masses": {
+                "data": masses[selection].to_value("Msun / littleh"),
+                "attrs": {
+                    "description": "Masses in Msun / h",
+                    "units": "Msun / littleh",
+                    },
             },
             **extra,
         },
     }
 
-    io.create_hdf5(
-        fname=fname, layout=layout, close=True
-    )
+    io.create_hdf5(fname=fname, layout=layout, close=True)
     return str(fname)
 
 
 def save_slice_data(
-        sim_dir: str, snapshot: int, ptypes: List[str],
-        slice_axes: List[int], slice_size: int,
-        save_dir: Optional[str]=None,
-        verbose: Optional[bool]=False) -> List[str]:
+    sim_dir: str,
+    snapshot: int,
+    ptypes: List[str],
+    slice_axes: List[int],
+    num_slices: int,
+    save_dir: Optional[str] = None,
+    verbose: Optional[bool] = False,
+) -> List[str]:
     """For snapshot of simulation in sim_dir, slice the particle data for
     all ptypes along the x, y, and z directions. Slices are saved
     in the Snapshots directory by default.

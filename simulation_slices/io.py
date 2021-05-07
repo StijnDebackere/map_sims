@@ -1,5 +1,6 @@
 import sys
 
+import astropy.units as u
 import h5py
 
 
@@ -43,8 +44,11 @@ def create_hdf5(fname, layout, close=False):
                 del h5file[dset]
 
             ds = h5file.create_dataset(
-                dset, data=val['data']
+                dset, data=val['data'].value
             )
+            if type(val) is u.Quantity:
+                dset.attrs["units"] = str(val['data'].unit)
+
         else:
             if dset in h5file.keys():
                 del h5file[dset]
@@ -55,20 +59,36 @@ def create_hdf5(fname, layout, close=False):
 
         if 'attrs' in val.keys():
             for attr, attr_val in val['attrs'].items():
-                ds.attrs[attr] = attr_val
+                # do not overwrite units if inferred from data!
+                if attr not in ds.attrs.keys():
+                    ds.attrs[attr] = attr_val
+
     if close:
         h5file.close()
 
     return h5file
 
 
-def add_to_hdf5(h5file, dataset, vals, axis):
-    """Add vals to axis of dataset of h5file."""
+def add_to_hdf5(
+        h5file: h5py.File,
+        dataset: str,
+        vals: u.Quantity,
+        axis: int
+):
+    """Append vals to axis of dataset of h5file."""
     try:
         dset = h5file[dataset]
     except KeyError:
         breakpoint()
         raise KeyError(f'{dataset} not found in {h5file.filename}')
+
+    if "units" in dset.attrs.keys():
+        unit = dset.attrs["units"]
+
+    else:
+        unit = str(vals.unit)
+        dset.attrs["units"] = unit
+
     dset.resize(
         dset.shape[axis] + vals.shape[axis], axis=axis
     )
@@ -76,4 +96,4 @@ def add_to_hdf5(h5file, dataset, vals, axis):
     sl[axis] = slice(dset.shape[axis] - vals.shape[axis], dset.shape[axis])
     sl = tuple(sl)
 
-    dset[sl] = vals
+    dset[sl] = vals.to_value(unit)

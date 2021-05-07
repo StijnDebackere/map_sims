@@ -20,9 +20,9 @@ def save_coords(sim_idx: int, config: Config) -> List[str]:
     box_size = config.box_sizes[sim_idx]
     save_dir = config.slice_paths[sim_idx]
 
-    group_dset = config.group_dset
+    mass_dset = config.mass_dset
+    mass_range = config.mass_range
     coord_dset = config.coord_dset
-    group_range = config.group_range
     extra_dsets = config.extra_dsets
     save_dir = config.coords_paths[sim_idx]
     coords_fname = config.coords_name
@@ -33,9 +33,9 @@ def save_coords(sim_idx: int, config: Config) -> List[str]:
             fname = bahamas.save_coords_file(
                 sim_dir=str(sim_dir),
                 snapshot=snap,
-                group_dset=group_dset,
+                mass_dset=mass_dset,
                 coord_dset=coord_dset,
-                group_range=group_range,
+                mass_range=mass_range,
                 extra_dsets=extra_dsets,
                 save_dir=save_dir,
                 coords_fname=coords_fname,
@@ -49,7 +49,7 @@ def save_coords(sim_idx: int, config: Config) -> List[str]:
                 sim_dir=str(sim_dir),
                 box_size=box_size,
                 snapshot=snap,
-                group_range=group_range,
+                mass_range=mass_range,
                 save_dir=save_dir,
                 coords_fname=coords_fname,
             )
