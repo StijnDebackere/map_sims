@@ -10,6 +10,7 @@ def attrs(
     snapshot: int,
     z: float,
     a: float,
+    h: float,
 ):
     """Return the required hdf5 attributes for all slices."""
     return {
@@ -21,6 +22,7 @@ def attrs(
         "snapshot": snapshot,
         "a": a,
         "z": z,
+        "h": h,
     }
 
 
@@ -70,26 +72,116 @@ def properties(maxshape):
                     # "units": "littleh2 Msun / Mpc3",
                 },
             },
-            "electron_number_densities": {
+            "smoothed_hydrogen": {
                 "shape": (0,),
                 "maxshape": (maxshape,),
                 "dtype": float,
                 "attrs": {
-                    "description": "Particle electron number density",
+                    "description": "Smoothed hydrogen mass fraction",
                     "single_value": False,
                     # "units": "littleh2 / Mpc3",
                 },
             },
-            "luminosities": {
+            "smoothed_helium": {
                 "shape": (0,),
                 "maxshape": (maxshape,),
                 "dtype": float,
                 "attrs": {
-                    "description": "Particle X-ray luminosity",
+                    "description": "Smoothed helium mass fraction",
                     "single_value": False,
-                    # "units": "Lsun",
+                    # "units": "littleh2 / Mpc3",
                 },
             },
+            "smoothed_carbon": {
+                "shape": (0,),
+                "maxshape": (maxshape,),
+                "dtype": float,
+                "attrs": {
+                    "description": "Smoothed carbon mass fraction",
+                    "single_value": False,
+                    # "units": "littleh2 / Mpc3",
+                },
+            },
+            "smoothed_nitrogen": {
+                "shape": (0,),
+                "maxshape": (maxshape,),
+                "dtype": float,
+                "attrs": {
+                    "description": "Smoothed nitrogen mass fraction",
+                    "single_value": False,
+                    # "units": "littleh2 / Mpc3",
+                },
+            },
+            "smoothed_oxygen": {
+                "shape": (0,),
+                "maxshape": (maxshape,),
+                "dtype": float,
+                "attrs": {
+                    "description": "Smoothed oxygen mass fraction",
+                    "single_value": False,
+                    # "units": "littleh2 / Mpc3",
+                },
+            },
+            "smoothed_neon": {
+                "shape": (0,),
+                "maxshape": (maxshape,),
+                "dtype": float,
+                "attrs": {
+                    "description": "Smoothed neon mass fraction",
+                    "single_value": False,
+                    # "units": "littleh2 / Mpc3",
+                },
+            },
+            "smoothed_magnesium": {
+                "shape": (0,),
+                "maxshape": (maxshape,),
+                "dtype": float,
+                "attrs": {
+                    "description": "Smoothed magnesium mass fraction",
+                    "single_value": False,
+                    # "units": "littleh2 / Mpc3",
+                },
+            },
+            "smoothed_silicon": {
+                "shape": (0,),
+                "maxshape": (maxshape,),
+                "dtype": float,
+                "attrs": {
+                    "description": "Smoothed silicon mass fraction",
+                    "single_value": False,
+                    # "units": "littleh2 / Mpc3",
+                },
+            },
+            "smoothed_iron": {
+                "shape": (0,),
+                "maxshape": (maxshape,),
+                "dtype": float,
+                "attrs": {
+                    "description": "Smoothed iron mass fraction",
+                    "single_value": False,
+                    # "units": "littleh2 / Mpc3",
+                },
+            },
+            # "electron_number_densities": {
+            #     "shape": (0,),
+            #     "maxshape": (maxshape,),
+            #     "dtype": float,
+            #     "attrs": {
+            #         "description": "Particle electron number density",
+            #         "single_value": False,
+            #         # "units": "littleh2 / Mpc3",
+            #     },
+            # },
+            # "luminosities": {
+            #     "shape": (0,),
+            #     "maxshape": (maxshape,),
+            #     "dtype": float,
+            #     "attrs": {
+            #         "description": "Particle X-ray luminosity",
+            #         "single_value": False,
+            #         # "units": "Lsun",
+            #     },
+            # },
             **joint,
         },
         "dm": {
@@ -118,6 +210,7 @@ def get_slice_layout(
     snapshot: int,
     z: float,
     a: float,
+    h: float,
     ptypes: List[str],
     maxshape: int,
 ) -> dict:
@@ -137,6 +230,8 @@ def get_slice_layout(
         redshift
     a : float
         expansion factor
+    h : float
+        dimensionless Hubble parameter
     ptypes : ['gas', 'dm', 'stars', 'bh']
         particle types to include
     maxshape : int
@@ -156,6 +251,7 @@ def get_slice_layout(
         slice_axis=slice_axis,
         z=z,
         a=a,
+        h=h,
         box_size=box_size,
         snapshot=snapshot,
     )

@@ -195,6 +195,7 @@ def save_slice_data(
             box_size=sim_info.box_size,
             z=sim_info.z,
             a=sim_info.a,
+            h=h,
             ptypes=["dm"],
             num_slices=num_slices,
             slice_axis=slice_axis,
@@ -222,10 +223,9 @@ def save_slice_data(
         coords = np.vstack([properties["x"], properties["y"], properties["z"]]).to(
             "Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
         )
-        # multiply particle masses by 10 => simulations are downsampled
-        masses = np.atleast_1d(sim_info.simulation_info["m_p"]).to(
+        masses = np.atleast_1d(sim_info.simulation_info["snap"]["m_p"]).to(
             "Msun", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
-        ) * 10.
+        )
 
         properties = {"coordinates": coords, "masses": masses}
         # write each slice to a separate file

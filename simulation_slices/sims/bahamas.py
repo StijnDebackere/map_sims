@@ -249,6 +249,7 @@ def save_slice_data(
             box_size=box_size,
             z=z,
             a=a,
+            h=h,
             ptypes=ptypes,
             num_slices=num_slices,
             slice_axis=slice_axis,
@@ -359,38 +360,50 @@ def save_slice_data(
                     verbose=False,
                     reshape=True,
                 )
-                electron_number_densities = interp_tables.n_e(
-                    z=z,
-                    T=temperatures,
-                    rho=densities,
-                    h=h,
-                    X=smoothed_hydrogen,
-                    Y=smoothed_helium,
-                )
-                luminosities = interp_tables.x_ray_luminosity(
-                    z=z,
-                    rho=densities,
-                    T=temperatures,
-                    masses=masses,
-                    hydrogen_mf=smoothed_hydrogen,
-                    helium_mf=smoothed_helium,
-                    carbon_mf=smoothed_carbon,
-                    nitrogen_mf=smoothed_nitrogen,
-                    oxygen_mf=smoothed_oxygen,
-                    neon_mf=smoothed_neon,
-                    magnesium_mf=smoothed_magnesium,
-                    silicon_mf=smoothed_silicon,
-                    iron_mf=smoothed_iron,
-                    h=h,
-                )
+                # electron_number_densities = interp_tables.n_e(
+                #     z=z,
+                #     T=temperatures,
+                #     rho=densities,
+                #     h=h,
+                #     X=smoothed_hydrogen,
+                #     Y=smoothed_helium,
+                # )
+                # luminosities = interp_tables.x_ray_luminosity(
+                #     z=z,
+                #     rho=densities,
+                #     T=temperatures,
+                #     masses=masses,
+                #     hydrogen_mf=smoothed_hydrogen,
+                #     helium_mf=smoothed_helium,
+                #     carbon_mf=smoothed_carbon,
+                #     nitrogen_mf=smoothed_nitrogen,
+                #     oxygen_mf=smoothed_oxygen,
+                #     neon_mf=smoothed_neon,
+                #     magnesium_mf=smoothed_magnesium,
+                #     silicon_mf=smoothed_silicon,
+                #     iron_mf=smoothed_iron,
+                #     h=h,
+                # )
 
                 # load in remaining data for X-ray luminosities
 
                 properties = {
                     "temperatures": temperatures,
                     "densities": densities,
-                    "electron_number_densities": electron_number_densities,
-                    "luminosities": luminosities,
+                    "smoothed_hydrogen": smoothed_hydrogen,
+                    "smoothed_helium": smoothed_helium,
+                    "masses": masses,
+                    "smoothed_hydrogen": smoothed_hydrogen,
+                    "smoothed_helium": smoothed_helium,
+                    "smoothed_carbon": smoothed_carbon,
+                    "smoothed_nitrogen": smoothed_nitrogen,
+                    "smoothed_oxygen": smoothed_oxygen,
+                    "smoothed_neon": smoothed_neon,
+                    "smoothed_magnesium": smoothed_magnesium,
+                    "smoothed_silicon": smoothed_silicon,
+                    "smoothed_iron": smoothed_iron,
+                    # "electron_number_densities": electron_number_densities,
+                    # "luminosities": luminosities,
                     **properties,
                 }
 
@@ -419,78 +432,127 @@ def save_slice_data(
                         continue
 
                     coord_dset = f'{idx}/{PROPS_PTYPES[ptype]["coordinates"]}'
-                    coord_units = h5file[coord_dset].attrs["units"]
                     io.add_to_hdf5(
                         h5file=h5file,
                         dataset=coord_dset,
-                        vals=coord[0].to(coord_units),
+                        vals=coord[0],
                         axis=1,
                     )
 
                     # add masses
                     mass_dset = f'{idx}/{PROPS_PTYPES[ptype]["masses"]}'
-                    mass_units = h5file[mass_dset].attrs["units"]
                     if ptype == "dm":
                         # only want to add single value for dm mass
                         if h5file[mass_dset].shape[0] == 0:
                             io.add_to_hdf5(
                                 h5file=h5file,
                                 dataset=mass_dset,
-                                vals=np.unique(masses[0]).to(mass_units),
+                                vals=np.unique(masses[0]),
                                 axis=0,
                             )
                     else:
                         io.add_to_hdf5(
                             h5file=h5file,
                             dataset=mass_dset,
-                            vals=masses[0].to(mass_units),
+                            vals=masses[0],
                             axis=0,
                         )
 
                     # add extra gas properties
                     if ptype == "gas":
                         # get gas properties, list of array
-                        temps = slice_dict["temperatures"][idx]
-                        dens = slice_dict["densities"][idx]
-                        ne = slice_dict["electron_number_densities"][idx]
-                        lums = slice_dict["luminosities"][idx]
-
-                        temp_dset = f'{idx}/{PROPS_PTYPES[ptype]["temperatures"]}'
-                        temp_units = h5file[temp_dset].attrs["units"]
-
-                        dens_dset = f'{idx}/{PROPS_PTYPES[ptype]["densities"]}'
-                        dens_units = h5file[dens_dset].attrs["units"]
-
-                        edens_dset = f'{idx}/{PROPS_PTYPES[ptype]["electron_number_densities"]}'
-                        edens_units = h5file[edens_dset].attrs["units"]
-
-                        lum_dset = f'{idx}/{PROPS_PTYPES[ptype]["luminosities"]}'
-                        lum_units = h5file[lum_dset].attrs["units"]
+                        temperatures = slice_dict["temperatures"][idx]
+                        densities = slice_dict["densities"][idx]
+                        smoothed_hydrogen = slice_dict["smoothed_hydrogen"][idx]
+                        smoothed_helium = slice_dict["smoothed_helium"][idx]
+                        smoothed_carbon = slice_dict["smoothed_carbon"][idx]
+                        smoothed_nitrogen = slice_dict["smoothed_nitrogen"][idx]
+                        smoothed_oxygen = slice_dict["smoothed_oxygen"][idx]
+                        smoothed_neon = slice_dict["smoothed_neon"][idx]
+                        smoothed_magnesium = slice_dict["smoothed_magnesium"][idx]
+                        smoothed_silicon = slice_dict["smoothed_silicon"][idx]
+                        smoothed_iron = slice_dict["smoothed_iron"][idx]
+                        # ne = slice_dict["electron_number_densities"][idx]
+                        # lums = slice_dict["luminosities"][idx]
 
                         io.add_to_hdf5(
                             h5file=h5file,
-                            vals=temps[0].to(temp_units),
+                            vals=temperatures[0],
                             axis=0,
-                            dataset=temp_dset,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["temperatures"]}',
                         )
                         io.add_to_hdf5(
                             h5file=h5file,
-                            vals=dens[0].to(dens_units),
+                            vals=densities[0],
                             axis=0,
-                            dataset=dens_dset,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["densities"]}',
                         )
                         io.add_to_hdf5(
                             h5file=h5file,
-                            vals=ne[0].to(edens_units),
+                            vals=smoothed_hydrogen[0],
                             axis=0,
-                            dataset=edens_dset,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_hydrogen"]}',
                         )
                         io.add_to_hdf5(
                             h5file=h5file,
-                            vals=lums[0].to(lum_units),
+                            vals=smoothed_helium[0],
                             axis=0,
-                            dataset=lum_dset,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_helium"]}',
                         )
+                        io.add_to_hdf5(
+                            h5file=h5file,
+                            vals=smoothed_carbon[0],
+                            axis=0,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_carbon"]}',
+                        )
+                        io.add_to_hdf5(
+                            h5file=h5file,
+                            vals=smoothed_nitrogen[0],
+                            axis=0,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_nitrogen"]}',
+                        )
+                        io.add_to_hdf5(
+                            h5file=h5file,
+                            vals=smoothed_oxygen[0],
+                            axis=0,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_oxygen"]}',
+                        )
+                        io.add_to_hdf5(
+                            h5file=h5file,
+                            vals=smoothed_neon[0],
+                            axis=0,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_neon"]}',
+                        )
+                        io.add_to_hdf5(
+                            h5file=h5file,
+                            vals=smoothed_magnesium[0],
+                            axis=0,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_magnesium"]}',
+                        )
+                        io.add_to_hdf5(
+                            h5file=h5file,
+                            vals=smoothed_silicon[0],
+                            axis=0,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_silicon"]}',
+                        )
+                        io.add_to_hdf5(
+                            h5file=h5file,
+                            vals=smoothed_iron[0],
+                            axis=0,
+                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_iron"]}',
+                        )
+                        # io.add_to_hdf5(
+                        #     h5file=h5file,
+                        #     vals=ne[0],
+                        #     axis=0,
+                        #     dataset=f'{idx}/{PROPS_PTYPES[ptype]["electron_number_densities"]}',
+                        # )
+                        # io.add_to_hdf5(
+                        #     h5file=h5file,
+                        #     vals=lums[0],
+                        #     axis=0,
+                        #     dataset=f'{idx}/{PROPS_PTYPES[ptype]["luminosities"]}',
+                        # )
 
                 h5file.close()
 

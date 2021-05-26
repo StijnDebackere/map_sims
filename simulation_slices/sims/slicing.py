@@ -26,6 +26,7 @@ def create_slice_file(
     box_size: u.Quantity,
     z: float,
     a: float,
+    h: float,
     ptypes: List[str],
     num_slices: int,
     slice_axis: int,
@@ -48,6 +49,7 @@ def create_slice_file(
         ptypes=ptypes,
         z=z,
         a=a,
+        h=h,
     )
 
     # ensure start with clean slate

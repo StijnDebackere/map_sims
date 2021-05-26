@@ -55,7 +55,7 @@ def coords_within_range(*args):
 
 
 @args_to_arrays
-def n_e(z, T, rho, X, Y, h, m_H=1.6726e-24 * u.g):
+def n_e(z, T, rho, smoothed_hydrogen, smoothed_helium, h, m_H=1.6726e-24 * u.g):
     """Get the electron number density for a gas at given redshift z,
     temperature T and with Hydrogen/Helium mass fractions of X/Y.
 
@@ -67,11 +67,11 @@ def n_e(z, T, rho, X, Y, h, m_H=1.6726e-24 * u.g):
         temperature of particles [K]
     rho : array-like
         mass density of particles [M_sun/Mpc^3]
-    X : array-like
+    smoothed_hydrogen : array-like
         mass fraction in Hydrogen
-    Y : array-like
+    smoothed_helium : array-like
         mass fraction in Helium
-    h : float
+    h : float, if array, only first value is taken
         little h, dimensionless Hubble parameter
     m_H : float
         Hydrogen mass [Default: 1.6726e-24 g]
@@ -81,13 +81,13 @@ def n_e(z, T, rho, X, Y, h, m_H=1.6726e-24 * u.g):
     ne : array-like
         electron number density [h^2 Mpc^-3]
     """
-    n_H = (X * rho / m_H).to(
+    h = np.atleast_1d(h)[:1]
+    n_H = (smoothed_hydrogen * rho / m_H).to(
         u.cm**-3, equivalencies=u.with_H0(100 * h * (u.km / (u.s * u.Mpc)))
     )
 
     # get ratio of Helium to Hydrogen for given mass abundances
-    n_He_n_H = Y / (3.971 * X)
-    z = np.tile(z, (n_H.shape[0]))
+    n_He_n_H = smoothed_helium / (3.971 * smoothed_hydrogen)
 
     with h5py.File(NE_FILE, 'r') as f:
         z_interp = f['Redshift_bins'][:]
@@ -117,7 +117,8 @@ def n_e(z, T, rho, X, Y, h, m_H=1.6726e-24 * u.g):
         ne = interp.interpn(
             points=coords_interp,
             values=ne_nh_interp,
-            xi=coords
+            xi=coords,
+            method="linear",
         ) * n_H
 
     return ne.to(u.littleh**2 * u.Mpc**-3, equivalencies=u.with_H0(h * 100 * u.km / (u.s * u.Mpc)))
@@ -257,7 +258,7 @@ def x_ray_luminosity(
         mass fraction in Silicon
     iron_mf : array-like
         mass fraction in Iron
-    h : float
+    h : float, if array, only first value is taken
         little h, dimensionless Hubble parameter
     m_H : float
         Hydrogen mass [Default: 1.6726e-24 g]
@@ -270,6 +271,7 @@ def x_ray_luminosity(
         particle X-ray luminosities in L_sun
 
     """
+    h = np.atleast_1d(h)[:1]
     #Initialise interpolation class
     interp = interpolate()
     interp.load_table()
