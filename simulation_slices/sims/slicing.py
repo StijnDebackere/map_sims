@@ -79,7 +79,7 @@ def open_slice_file(
         slice_axis=slice_axis,
         num_slices=num_slices,
     )
-    h5file = h5py.File(fname, mode=mode)
+    h5file = h5py.File(fname, mode=mode, swmr=True)
     return h5file
 
 
