@@ -1,11 +1,19 @@
 import sys
+import warnings
 
 import astropy.units as u
+import numpy as np
 import h5py
 
 
-def create_hdf5(fname, layout, close=False):
-    """Create an empty hdf5 file with layout given by dictionary
+def create_hdf5(
+    fname: str,
+    layout: dict,
+    close: bool = False,
+    overwrite: bool = False,
+    swmr: bool = False,
+) -> h5py.File:
+    """Create an hdf5 file with layout given by dictionary
 
     Parameters
     ----------
@@ -26,45 +34,110 @@ def create_hdf5(fname, layout, close=False):
                 - 'data': array-like
                 - 'attrs' : dict
                     - 'attr' : value
+    close : bool
+        return closed file
+    overwrite : bool
+        overwrite dsets if present in fname
+    swmr : bool
+        return file in single write multiple read mode
 
     Returns
     -------
-    h5file : hdf5 file if not close
-        file with given layout
+    h5file : hdf5 file
+        (closed) file with given layout
     """
+    if overwrite:
+        # truncate file if overwriting
+        mode = "w"
+    else:
+        if swmr:
+            raise ValueError("cannot enable swmr and not overwrite.")
+        mode = "a"
+
     # create hdf5 file and generate the required datasets
-    h5file = h5py.File(str(fname), mode='a')
+    h5file = h5py.File(str(fname), mode=mode)
 
-    for attr, val in layout['attrs'].items():
-        h5file.attrs[attr] = val
+    for attr, val in layout["attrs"].items():
+        # attr not yet in h5file
+        if attr not in h5file.attrs.keys():
+            h5file.attrs[attr] = val
+        # attr already in file but does not match
+        elif val != h5file.attrs[attr]:
+            raise ValueError(f"{attr=} does not match")
 
-    for dset, val in layout['dsets'].items():
-        if 'data' in val.keys():
+    for dset, val in layout["dsets"].items():
+        # dset already contains data
+        if "data" in val.keys():
+            # dset already in h5file, cannot overwrite
             if dset in h5file.keys():
-                del h5file[dset]
+                if type(val["data"]) is u.Quantity:
+                    if np.allclose(val["data"].to_value(h5file[dset].attrs["units"]), h5file[dset][()]):
+                        # load dset since we will compare its attributes later
+                        ds = h5file[dset]
+                    else:
+                        raise ValueError(f"{dset=} does not match")
+                else:
+                    if np.allclose(val["data"], h5file[dset][()]):
+                        if "units" in h5file[dset].attrs.keys():
+                            raise ValueError(f"{dset=} is not astropy.units.Quantity")
 
-            ds = h5file.create_dataset(
-                dset, data=val['data'].value
-            )
-            if type(val) is u.Quantity:
-                dset.attrs["units"] = str(val['data'].unit)
+                        # load dset since we will compare its attributes later
+                        ds = h5file[dset]
+                    else:
+                        raise ValueError(f"{dset=} does not match")
 
+            # dset not yet in h5file
+            else:
+                if type(val["data"]) is u.Quantity:
+                    ds = h5file.create_dataset(
+                        dset,
+                        data=val["data"].value,
+                    )
+                    ds.attrs["units"] = str(val["data"].unit)
+
+                else:
+                    ds = h5file.create_dataset(
+                        dset,
+                        data=val["data"],
+                    )
+
+        # dset only contains shape information of data to be added
         else:
+            # dset already in h5file, cannot overwrite
             if dset in h5file.keys():
-                del h5file[dset]
-            ds = h5file.create_dataset(
-                dset, shape=val['shape'], dtype=val['dtype'],
-                maxshape=val['maxshape']
-            )
+                if h5file[dset].shape != val["shape"]:
+                    raise ValueError(f"{dset=} shape={val['shape']} does not match {h5file[dset].shape}")
+                if h5file[dset].maxshape != val["maxshape"]:
+                    raise ValueError(f"{dset=} maxshape={val['maxshape']} does not match {h5file[dset].maxshape}")
+                if h5file[dset].dtype != val["dtype"]:
+                    raise ValueError(f"{dset=} dtype={val['dtype']} does not match {h5file[dset].dtype}")
+                # load dset since we will compare its attributes later
+                ds = h5file[dset]
 
-        if 'attrs' in val.keys():
-            for attr, attr_val in val['attrs'].items():
-                # do not overwrite units if inferred from data!
+            # dset not yet in h5file
+            else:
+                ds = h5file.create_dataset(
+                    dset,
+                    shape=val["shape"],
+                    dtype=val["dtype"],
+                    maxshape=val["maxshape"],
+                )
+
+        if "attrs" in val.keys():
+            for attr, attr_val in val["attrs"].items():
+                # add attr if not present
                 if attr not in ds.attrs.keys():
                     ds.attrs[attr] = attr_val
+                # attr present, cannot overwrite
+                else:
+                    if attr_val != ds.attrs[attr]:
+                        raise ValueError(f"{attr=} does not match")
 
     if close:
         h5file.close()
+    else:
+        if swmr:
+            h5file.swmr_mode = True
 
     return h5file
 
