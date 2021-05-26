@@ -11,6 +11,108 @@ import simulation_slices.sims.slicing as slicing
 import simulation_slices.utilities as util
 
 
+def coords_to_map_bin(
+    coords: u.Quantity,
+    map_center: u.Quantity,
+    map_size: u.Quantity,
+    map_pix: int,
+    box_size: u.Quantity,
+    func: Callable,
+    logger: util.LoggerType = None,
+    **props,
+) -> u.Quantity:
+    """Convert the given 2D coordinates to a pixelated map of observable
+    func taking props as kwargs.
+
+    Parameters
+    ----------
+    coords : (2, N) astropy.units.Quantity
+        (x, y) coordinates
+    map_center : (2,) astropy.units.Quantity
+        center of the (x, y) coordinate system
+    map_size : astropy.units.Quantity
+        size of the map
+    map_pix : int
+        square root of number of pixels in map
+    box_size : astropy.units.Quantity
+        size of the box
+    func : callable
+        function that calculates observable for each particle
+    props : dict of (..., N) or (1,) arrays
+        properties to average, should be the kwargs of func
+
+    Returns
+    -------
+    mapped : (map_pix, map_pix) astropy.units.Quantity
+        Sum_{i in pixel} func(**props_i) / A_pix
+
+    """
+    n_pix = map_pix ** 2
+    pix_size = map_size / map_pix
+
+    # convert the coordinates to the pixel coordinate system
+    # O: origin
+    # x: map_center
+    #  ___
+    # | x |
+    # O---
+    map_origin = tools.min_diff(np.atleast_1d(map_center), map_size / 2, box_size)
+
+    # compute the offsets w.r.t the map_origin, taking into account
+    # periodic boundary conditions
+    coords_origin = tools.min_diff(coords, map_origin.reshape(2, 1), box_size)
+
+    # get the x and y values of the pixelated maps w.r.t. origin
+    x_pix = slicing.get_coords_slices(
+        coords=coords_origin, slice_size=pix_size, slice_axis=0
+    )
+    y_pix = slicing.get_coords_slices(
+        coords=coords_origin, slice_size=pix_size, slice_axis=1
+    )
+
+    # slice out only pixel values within the map
+    in_map = (x_pix < map_pix) & (x_pix >= 0) & (y_pix < map_pix) & (y_pix >= 0)
+
+    # map (i, j) pixels to 1D pixel id = i * num_pix + j for all the
+    # pixels in the map
+    pix_ids = tools.pixel_to_pix_id([x_pix[in_map], y_pix[in_map]], map_pix)
+
+    props = dict(
+        [
+            (k, v[..., in_map]) if np.atleast_1d(v).shape[-1] == len(in_map)
+            # if v is a single value, apply it for all coords in pixel
+            else (k, v * np.ones(in_map.sum()))
+            for k, v in props.items()
+        ]
+    )
+
+    # calculate func for each particle, we already divide by A_pix
+    func_values = func(**props) / pix_size ** 2
+
+    # now we need to associate each value to the correct pixel
+    sort_order = np.argsort(pix_ids)
+    func_values = func_values[sort_order]
+
+    # get the location of each pixel for the sorted pixel list
+    # e.g. for sorted pix_ids = [0, 0, 0, 1, 1, ..., num_pix_side**2, ...]
+    # we would get back [0, 3, ...]
+    unique_ids, loc_ids = np.unique(pix_ids[sort_order], return_index=True)
+
+    # need to also add the final value for pix_id = num_pix**2 - 1
+    pix_range = np.concatenate([loc_ids, [len(pix_ids)]])
+
+    pixel_values = np.zeros(n_pix, dtype=float)
+    pixel_values[unique_ids] = np.array(
+        [np.sum(func_values[i:j].value) for i, j in zip(pix_range[:-1], pix_range[1:])]
+    )
+
+    # reshape the array to the map we wanted
+    # we get (i, j) array with x_pix along rows and y_pix along columns
+    # ensure correct units
+    mapped = tools.pix_id_array_to_map(pixel_values) * func_values.unit
+    return mapped
+
+
 def kernel(r: u.Quantity, h: u.Quantity, dim: int = 2) -> u.Quantity:
     """
     The Wendland Quintic spline kernel.
