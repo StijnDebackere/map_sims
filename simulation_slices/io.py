@@ -142,18 +142,13 @@ def create_hdf5(
     return h5file
 
 
-def add_to_hdf5(
-        h5file: h5py.File,
-        dataset: str,
-        vals: u.Quantity,
-        axis: int
-):
+def add_to_hdf5(h5file: h5py.File, dataset: str, vals: u.Quantity, axis: int):
     """Append vals to axis of dataset of h5file."""
     try:
         dset = h5file[dataset]
     except KeyError:
         breakpoint()
-        raise KeyError(f'{dataset} not found in {h5file.filename}')
+        raise KeyError(f"{dataset} not found in {h5file.filename}")
 
     if "units" in dset.attrs.keys():
         unit = dset.attrs["units"]
@@ -162,11 +157,11 @@ def add_to_hdf5(
         unit = str(vals.unit)
         dset.attrs["units"] = unit
 
-    dset.resize(
-        dset.shape[axis] + vals.shape[axis], axis=axis
-    )
+    dset.resize(dset.shape[axis] + vals.shape[axis], axis=axis)
     sl = [slice(None)] * len(dset.shape)
     sl[axis] = slice(dset.shape[axis] - vals.shape[axis], dset.shape[axis])
     sl = tuple(sl)
 
     dset[sl] = vals.to_value(unit)
+    if h5file.swmr_mode:
+        dset.flush()
