@@ -81,4 +81,47 @@ def dist(x, y, box_size, axis=0):
 
     """
     dx = min_diff(x=x, y=y, box_size=box_size)
-    return np.linalg.norm(dx, axis=axis)
+    return np.linalg.norm(np.atleast_1d(dx), axis=axis)
+
+
+def slice_around_center(
+    center: u.Quantity,
+    distance: u.Quantity,
+    box_size: u.Quantity
+) -> dict:
+    """Return distance bounds for all coordinates that are within distance
+    from center for a periodic box of box_size.
+
+    Parameters
+    ----------
+    center : astropy.units.Quantity
+        coordinates
+    distance :
+    """
+    center = np.atleast_1d(center)
+    distance = np.atleast_1d(distance)
+
+    if distance.shape[0] != center.shape[0]:
+        raise ValueError("distance should match shape of center")
+
+    def get_bounds(c, d, box_size):
+        unit = box_size.unit
+        if d >= 0.5 * box_size:
+            return np.array([[0, box_size.to_value(unit)]]) * unit
+
+        lower_bound = c - d
+        upper_bound = c + d
+        if lower_bound > 0 * unit and upper_bound < box_size:
+            return np.array([[lower_bound.to_value(unit), upper_bound.to_value(unit)]]) * unit
+
+        return np.array(
+            [
+                [0, np.mod(upper_bound, box_size).to_value(unit)],
+                [np.mod(lower_bound, box_size).to_value(unit), box_size.to_value(unit)]
+            ]
+        ) * unit
+
+    bounds = {
+        i: get_bounds(c, d, box_size) for i, (c, d) in enumerate(zip(center, distance))
+    }
+    return bounds
