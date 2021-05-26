@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 import time
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import astropy.units as u
 import h5py
@@ -46,9 +46,74 @@ def get_logger(sim_idx: int, config: Config, fname: str) -> logging.Logger:
 
     logger.addHandler(fh)
     return logger
+
+
+def slice_sim(
+        sim_idx: int, snapshot: int, config: Union[Config, str], logger: util.LoggerType = None
+) -> List[str]:
+    """Save a set of slices for sim_idx in config.sim_paths."""
+    start = time.time()
+
+    if type(config) is str:
+        config = Config(config)
+
     sim_dir = config.sim_paths[sim_idx]
     sim_suite = config.sim_suite
-    snapshots = config.snapshots[sim_idx]
+    box_size = config.box_sizes[sim_idx]
+    ptypes = config.ptypes[sim_idx]
+    save_dir = config.slice_paths[sim_idx]
+
+    slice_axes = config.slice_axes
+    num_slices = config.num_slices
+
+    if logger is None and config.logging:
+        logger = get_logger(
+            sim_idx=sim_idx,
+            config=config,
+            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_slice_sim{config.log_name_append}",
+        )
+
+    if sim_suite.lower() == "bahamas":
+        fnames = bahamas.save_slice_data(
+            sim_dir=str(sim_dir),
+            snapshot=snap,
+            ptypes=ptypes,
+            slice_axes=slice_axes,
+            num_slices=num_slices,
+            save_dir=save_dir,
+            verbose=False,
+            logger=logger,
+        )
+
+    elif sim_suite.lower() == "miratitan":
+        fnames = mira_titan.save_slice_data(
+            sim_dir=str(sim_dir),
+            box_size=box_size,
+            snapshot=snapshot,
+            slice_axes=slice_axes,
+            num_slices=num_slices,
+            save_dir=save_dir,
+            verbose=False,
+            logger=logger,
+        )
+
+    end = time.time()
+    if logger:
+        logger.info(f"slice_sim_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s")
+    # return fnames
+
+
+def save_coords(
+    sim_idx: int, snapshot: int, config: Union[Config, str], logger: util.LoggerType = None
+) -> str:
+    """Save a set of halo centers to generate maps around."""
+    start = time.time()
+
+    if type(config) is str:
+        config = Config(config)
+
+    sim_dir = config.sim_paths[sim_idx]
+    sim_suite = config.sim_suite
     box_size = config.box_sizes[sim_idx]
     save_dir = config.slice_paths[sim_idx]
 
@@ -58,129 +123,120 @@ def get_logger(sim_idx: int, config: Config, fname: str) -> logging.Logger:
     extra_dsets = config.extra_dsets
     save_dir = config.coords_paths[sim_idx]
     coords_fname = config.coords_name
+    sample_haloes_bins = config.sample_haloes_bins
 
-    all_fnames = []
+    if logger is None and config.logging:
+        logger = get_logger(
+            sim_idx=sim_idx,
+            config=config,
+            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_coords{config.log_name_append}",
+        )
+
     if sim_suite.lower() == "bahamas":
-        for snap in np.atleast_1d(snapshots):
-            fname = bahamas.save_coords_file(
-                sim_dir=str(sim_dir),
-                snapshot=snap,
-                mass_dset=mass_dset,
-                coord_dset=coord_dset,
-                mass_range=mass_range,
-                extra_dsets=extra_dsets,
-                save_dir=save_dir,
-                coords_fname=coords_fname,
-                verbose=False,
-            )
-            all_fnames = [*all_fnames, fname]
+        fname = bahamas.save_coords_file(
+            sim_dir=str(sim_dir),
+            snapshot=snapshot,
+            mass_dset=mass_dset,
+            coord_dset=coord_dset,
+            mass_range=mass_range,
+            extra_dsets=extra_dsets,
+            save_dir=save_dir,
+            coords_fname=coords_fname,
+            sample_haloes_bins=sample_haloes_bins,
+            logger=logger,
+            verbose=False,
+        )
 
     elif sim_suite.lower() == "miratitan":
-        for snap in np.atleast_1d(snapshots):
-            fname = mira_titan.save_coords_file(
-                sim_dir=str(sim_dir),
-                box_size=box_size,
-                snapshot=snap,
-                mass_range=mass_range,
-                save_dir=save_dir,
-                coords_fname=coords_fname,
-            )
-            all_fnames = [*all_fnames, fname]
+        fname = mira_titan.save_coords_file(
+            sim_dir=str(sim_dir),
+            box_size=box_size,
+            snapshot=snapshot,
+            mass_range=mass_range,
+            save_dir=save_dir,
+            coords_fname=coords_fname,
+            sample_haloes_bins=sample_haloes_bins,
+            logger=logger,
+        )
 
-    return all_fnames
-
-
-def slice_sim(sim_idx: int, config: Config) -> List[str]:
-    """Save a set of slices for sim_idx in config.sim_paths."""
-    sim_dir = config.sim_paths[sim_idx]
-    sim_suite = config.sim_suite
-    snapshots = config.snapshots[sim_idx]
-    box_size = config.box_sizes[sim_idx]
-    ptypes = config.ptypes[sim_idx]
-    save_dir = config.slice_paths[sim_idx]
-
-    slice_axes = config.slice_axes
-    num_slices = config.num_slices
-
-    all_fnames = []
-    if sim_suite.lower() == "bahamas":
-        for snap in np.atleast_1d(snapshots):
-            fnames = bahamas.save_slice_data(
-                sim_dir=str(sim_dir),
-                snapshot=snap,
-                ptypes=ptypes,
-                slice_axes=slice_axes,
-                num_slices=num_slices,
-                save_dir=save_dir,
-                verbose=False,
-            )
-            all_fnames = [*all_fnames, *(fnames or [])]
-
-    elif sim_suite.lower() == "miratitan":
-        for snap in np.atleast_1d(snapshots):
-            fnames = mira_titan.save_slice_data(
-                sim_dir=str(sim_dir),
-                box_size=box_size,
-                snapshot=snap,
-                slice_axes=slice_axes,
-                num_slices=num_slices,
-                save_dir=save_dir,
-                verbose=False,
-            )
-            all_fnames = [*all_fnames, *(fnames or [])]
-
-    return all_fnames
+    end = time.time()
+    if logger:
+        logger.info(f"save_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s")
+    # return fname
 
 
-def map_coords(sim_idx: int, config: Config) -> List[str]:
+def map_coords(
+    sim_idx: int, snapshot: int, slice_axis: int, coords_file: str, config: Union[Config, str], logger: util.LoggerType = None
+) -> List[str]:
     """Save a set of maps for sim_idx in config.sim_paths."""
+    start = time.time()
+
+    if type(config) is str:
+        config = Config(config)
+
     base_dir = config.base_dir
     sim_dir = config.sim_paths[sim_idx]
     sim_suite = config.sim_suite
-    snapshots = config.snapshots[sim_idx]
     box_size = config.box_sizes[sim_idx]
     ptypes = config.ptypes[sim_idx]
 
     coords_name = config.coords_name
-    coords_files = config.coords_files[sim_idx]
-    all_fnames = []
 
-    if config.compute_coords:
-        fnames = save_coords(sim_idx=sim_idx, config=config)
-        all_fnames = [*all_fnames, *(fnames or [])]
+    if logger is None and config.logging:
+        logger = get_logger(
+            sim_idx=sim_idx,
+            config=config,
+            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_coords{config.log_name_append}",
+        )
 
     slice_dir = config.slice_paths[sim_idx]
-    slice_axes = config.slice_axes
     num_slices = config.num_slices
 
     save_dir = config.map_paths[sim_idx]
+    map_name_append = config.map_name_append
+    map_method = config.map_method
+
     map_types = config.map_types[sim_idx]
     map_pix = config.map_pix
     map_size = config.map_size
     map_thickness = config.map_thickness
+    n_ngb = config.n_ngb
 
-
-    for idx, snap in enumerate(np.atleast_1d(snapshots)):
-        with h5py.File(str(coords_files[idx]), "r") as h5file:
-            centers = h5file["coordinates"][:5] * u.Unit(h5file["coordinates"].attrs["units"])
-
-        fnames = map_gen.save_maps(
-            centers=centers,
-            slice_dir=slice_dir,
-            snapshot=snap,
-            slice_axes=slice_axes,
-            num_slices=num_slices,
-            box_size=box_size,
-            map_pix=map_pix,
-            map_size=map_size,
-            map_thickness=map_thickness,
-            map_types=map_types,
-            save_dir=save_dir,
-            coords_name=coords_name,
+    with h5py.File(str(coords_file), "r") as h5file:
+        centers = h5file["coordinates"][:] * u.Unit(
+            h5file["coordinates"].attrs["units"]
         )
-        all_fnames = [*all_fnames, *(fnames or [])]
+        group_ids = h5file["group_ids"][:]
+        masses = h5file["masses"][:] * u.Unit(
+            h5file["masses"].attrs["units"]
+        )
 
-    return all_fnames
+    fname = map_gen.save_maps(
+        centers=centers,
+        group_ids=group_ids,
+        masses=masses,
+        slice_dir=slice_dir,
+        snapshot=snapshot,
+        slice_axis=slice_axis,
+        num_slices=num_slices,
+        box_size=box_size,
+        map_pix=map_pix,
+        map_size=map_size,
+        map_thickness=map_thickness,
+        map_types=map_types,
+        save_dir=save_dir,
+        coords_name=coords_name,
+        map_name_append=map_name_append,
+        method=map_method,
+        n_ngb=n_ngb,
+        logger=logger,
+        verbose=False,
+    )
+
+    end = time.time()
+    if logger:
+        logger.info(f"map_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s")
+    # return fname
 
 
 def analyze_map(
