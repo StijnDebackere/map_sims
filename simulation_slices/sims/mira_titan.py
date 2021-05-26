@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional, Tuple
 from pathlib import Path
 
@@ -22,6 +23,8 @@ def save_coords_file(
     mass_range: Tuple[u.Quantity, u.Quantity],
     save_dir: Optional[str] = None,
     coords_fname: Optional[str] = "",
+    sample_haloes_bins: Optional[dict] = None,
+    logger: util.LoggerType = None,
     **kwargs,
 ) -> str:
     """For snapshot of simulation in sim_dir, save coordinates of haloes
@@ -77,6 +80,24 @@ def save_coords_file(
     group_ids = group_data["fof_halo_tag"]
     masses = group_data["fof_halo_mass"]
     selection = (masses > np.min(mass_range)) & (masses < np.max(mass_range))
+
+    # subsample the halo sample
+    if sample_haloes_bins is not None:
+        mass_bin_edges = sample_haloes_bins["mass_bin_edges"]
+        n_in_bin = sample_haloes_bins["n_in_bin"]
+
+        # group halo indices by mass bins
+        sampled_ids = util.groupby(np.arange(0, masses.shape[0]), masses, mass_bin_edges)
+
+        selection = []
+        for i, ids in sampled_ids.items():
+            # get number of haloes to draw for bin
+            n = n_in_bin[i]
+            if n >= len(ids):
+                selection.append(ids)
+            else:
+                selection.append(np.random.choice(ids, size=n, replace=False))
+        selection = np.concatenate(selection)
 
     # only included selection
     coordinates = (
@@ -136,6 +157,7 @@ def save_slice_data(
     slice_axes: List[int] = [0, 1, 2],
     num_slices: int = 1000,
     save_dir: Optional[str] = None,
+    logger: util.LoggerType = None,
     verbose: Optional[bool] = False,
 ) -> List[str]:
     """For snapshot of simulation in sim_dir, slice the particle data for

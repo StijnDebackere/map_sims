@@ -13,6 +13,42 @@ def on_queue(queue, func, *args, **kwargs):
     queue.put([os.getpid(), res])
 
 
+def groupby(data, index, bins):
+    """Group data by index binned into bins.
+
+    Values outside bins are dropped"""
+    if type(index) == type(bins) == u.Quantity:
+        bin_ids = np.digitize(index.to_value(bins.unit), bins.value)
+    else:
+        bin_ids = np.digitize(index, bins)
+
+    return {i: data[bin_ids == i + 1] for i in range(0, len(bins) - 1)}
+
+
+def apply_grouped(fun, grouped_data, **kwargs):
+    return {i: fun(gd, **kwargs) for i, gd in grouped_data.items()}
+
+
+def bin_centers(bins, log=False):
+    """Return the center position of bins, with bins along axis -1."""
+    if log:
+        if type(bins) is u.Quantity:
+            centers = (
+                (bins[..., 1:] - bins[..., :-1])
+                / (np.log(bins.value[..., 1:]) - np.log(bins.value[..., :-1]))
+            )
+
+        else:
+            centers = (
+                (bins[..., 1:] - bins[..., :-1])
+                / (np.log(bins[..., 1:]) - np.log(bins[..., :-1]))
+            )
+    else:
+        centers = 0.5 * (bins[..., :-1] + bins[..., 1:])
+
+    return centers
+
+
 def arrays_to_coords(*xi):
     """
     Convert a set of N 1-D coordinate arrays to a regular coordinate grid of

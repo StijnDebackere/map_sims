@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional, Tuple
 
 import astropy.units as u
@@ -75,6 +76,8 @@ def save_coords_file(
     save_dir: Optional[str] = None,
     coords_fname: Optional[str] = "",
     verbose: Optional[bool] = False,
+    sample_haloes_bins: Optional[dict] = None,
+    logger: util.LoggerType = None,
     **kwargs,
 ) -> str:
     """For snapshot of simulation in sim_dir, save the coord_dset for
@@ -109,7 +112,7 @@ def save_coords_file(
         model_dir=sim_dir, file_type="subh", snapnum=snapshot, units=True, comoving=True
     )
 
-    if "FOF" not in group_dset:
+    if "FOF" not in mass_dset:
         raise ValueError("group_dset should be a FOF property")
     if "FOF" not in coord_dset:
         raise ValueError("coord_dset should be a FOF property")
@@ -126,8 +129,30 @@ def save_coords_file(
 
     masses = group_info.read_var(mass_dset, verbose=verbose)
     group_ids = np.arange(len(masses))
-    selection = (mass_data > np.min(mass_range)) & (mass_data < np.max(mass_range))
+    selection = (masses > np.min(mass_range)) & (masses < np.max(mass_range))
+
+    # subsample the halo sample
+    if sample_haloes_bins is not None:
+        mass_bin_edges = sample_haloes_bins["mass_bin_edges"]
+        n_in_bin = sample_haloes_bins["n_in_bin"]
+
+        # group halo indices by mass bins
+        sampled_ids = util.groupby(np.arange(0, masses.shape[0]), masses, mass_bin_edges)
+
+        selection = []
+        for i, ids in sampled_ids.items():
+            # get number of haloes to draw for bin
+            n = n_in_bin[i]
+            if n >= len(ids):
+                selection.append(ids)
+            else:
+                selection.append(np.random.choice(ids, size=n, replace=False))
+        selection = np.concatenate(selection)
+
     coordinates = group_info.read_var(coord_dset, verbose=verbose)[selection]
+    masses = masses[selection]
+    group_ids = group_ids[selection].astype(int)
+
 
     extra = {
         extra_dset: {
@@ -157,13 +182,13 @@ def save_coords_file(
                 },
             },
             "group_ids": {
-                "data": group_ids[selection],
+                "data": group_ids,
                 "attrs": {
                     "description": "Group IDs starting at 0",
                 },
             },
             "masses": {
-                "data": masses[selection].to_value("Msun / littleh"),
+                "data": masses.to_value("Msun / littleh"),
                 "attrs": {
                     "description": "Masses in Msun / h",
                     "units": "Msun / littleh",
@@ -180,34 +205,35 @@ def save_coords_file(
 def save_slice_data(
     sim_dir: str,
     snapshot: int,
-    ptypes: List[str],
     slice_axes: List[int],
     num_slices: int,
+    ptypes: List[str],
     save_dir: Optional[str] = None,
     verbose: Optional[bool] = False,
+    logger: util.LoggerType = None,
 ) -> List[str]:
     """For snapshot of simulation in sim_dir, slice the particle data for
-    all ptypes along the x, y, and z directions. Slices are saved
-    in the Snapshots directory by default.
+    all ptypes along the slice_axis. Slices are saved in the Snapshots
+    directory by default.
 
     Parameters
     ----------
     sim_dir : str
         path of the MiraTitanU directory
-    datatype : str
-        particles or snap, particle data to slice
     snapshot : int
         snapshot to look at
+    slice_axes : list of int
+        axes to slice along [x=0, y=1, z=2]
+    num_slices : int
+        number of slices to divide box in
     ptypes : iterable of ['gas', 'dm', 'bh', 'stars']
         particle types to read in
-    slice_axis : int
-        axis to slice along [x=0, y=1, z=2]
-    slice_size : float
-        slice thickness in units of box_size
     save_dir : str or None
         location to save to, defaults to snapshot_xxx/slices/
     verbose : bool
         print progress bar
+    logger : logging.Logger
+        optional logging
 
     Returns
     -------
