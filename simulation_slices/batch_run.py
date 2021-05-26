@@ -1,20 +1,51 @@
+import logging
 import os
 from pathlib import Path
-from typing import List
+import time
+from typing import List, Optional
 
 import astropy.units as u
 import h5py
 import numpy as np
 
 from simulation_slices import Config
+import simulation_slices.utilities as util
 import simulation_slices.maps.analysis as analysis
 import simulation_slices.maps.generation as map_gen
 import simulation_slices.sims.bahamas as bahamas
 import simulation_slices.sims.mira_titan as mira_titan
 
 
-def save_coords(sim_idx: int, config: Config) -> List[str]:
-    """Save a set of halo centers to generate maps around."""
+def get_logger(sim_idx: int, config: Config, fname: str) -> logging.Logger:
+    logger = logging.getLogger(f"{os.getpid()} - batch_run")
+
+    log_dir = config.log_dir
+    # save to log file
+    fh = logging.FileHandler(
+        f"{log_dir}/{fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.log"
+    )
+
+    if config.log_level.lower() == "info":
+        fh.setLevel(logging.INFO)
+        logger.setLevel(logging.INFO)
+    elif config.log_level.lower() == "debug":
+        fh.setLevel(logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
+    elif config.log_level.lower() == "warning":
+        fh.setLevel(logging.WARNING)
+        logger.setLevel(logging.WARNING)
+    elif config.log_level.lower() == "critical":
+        fh.setLevel(logging.CRITICAL)
+        logger.setLevel(logging.CRITICAL)
+
+    # set formatting
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s [%(levelname)s] %(funcName)s - %(message)s"
+    )
+    fh.setFormatter(formatter)
+
+    logger.addHandler(fh)
+    return logger
     sim_dir = config.sim_paths[sim_idx]
     sim_suite = config.sim_suite
     snapshots = config.snapshots[sim_idx]

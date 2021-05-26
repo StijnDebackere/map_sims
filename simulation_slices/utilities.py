@@ -1,11 +1,17 @@
 from functools import wraps
+import logging
 import os
 import pathlib
 from pathlib import Path
 import time
+from typing import Union
 
 import astropy.units as u
+from dagster import DagsterLogManager
 import numpy as np
+
+
+LoggerType = Union[logging.Logger, DagsterLogManager]
 
 
 def on_queue(queue, func, *args, **kwargs):
@@ -63,35 +69,31 @@ def arrays_to_coords(*xi):
     return coords.reshape(-1, len(xi))
 
 
-def join_dict_arrays(a, b, axis=-1):
-    """Concatenate with matching keys."""
-    if a == {} or b == {}:
-        return a or b
+def time_this(pid=False, logger=None):
+    def outer(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            t1 = time.time()
+            result = func(*args, **kwargs)
+            t2 = time.time()
+            if pid and not logger:
+                message = (
+                    f'Process {os.getpid()} - '
+                    f'evaluating {func.__name__} took {t2 - t1:.2f}s'
+                )
+            else:
+                message = (
+                    f'evaluating {func.__name__} took {t2 - t1:.2f}s'
+                )
 
-    if not a.keys() == b.keys():
-        raise ValueError('a and b should have matching keys')
+            if logger:
+                logger.debug(message)
+            else:
+                print(message)
 
-    for key in a.keys():
-        a[key] = np.concatenate([a[key], b[key]], axis=axis)
-
-    return a
-
-
-def time_this(func, pid=False):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        t1 = time.time()
-        result = func(*args, **kwargs)
-        t2 = time.time()
-        if pid:
-            print(
-                f'Process {os.getpid()}: '
-                f'Evaluating {func.__name__} took {t2 - t1:.2f}s'
-            )
-        else:
-            print(f'Evaluating {func.__name__} took {t2 - t1:.2f}s')
-        return result
-    return wrapper
+            return result
+        return wrapper
+    return outer
 
 
 def check_slice_axis(slice_axis):
