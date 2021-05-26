@@ -15,8 +15,10 @@ setuptools.setup(
     packages=['simulation_slices'],
     install_requires=[
         "astropy",
+        "dagster",
         "h5py",
         "gadget @ https://github.com/StijnDebackere/gadget",
+        "mira_titan @ https://github.com/StijnDebackere/mira_titan",
         "numba",
         "numpy",
         "scipy",
