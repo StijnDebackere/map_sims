@@ -1,10 +1,13 @@
-from typing import List, Callable, Tuple
+import time
+from typing import List, Callable, Tuple, Optional
 
 import astropy.units as u
 import numpy as np
 from scipy.spatial import KDTree
 from tqdm import tqdm
 
+import simulation_slices.io as io
+import simulation_slices.maps.map_layout as map_layout
 import simulation_slices.maps.observables as obs
 import simulation_slices.maps.tools as tools
 import simulation_slices.sims.slicing as slicing
@@ -133,7 +136,7 @@ def kernel(r: u.Quantity, h: u.Quantity, dim: int = 2) -> u.Quantity:
     return W
 
 
-def coords_to_map(
+def coords_to_map_sph(
     coords: u.Quantity,
     map_center: u.Quantity,
     map_size: u.Quantity,
@@ -141,9 +144,10 @@ def coords_to_map(
     box_size: u.Quantity,
     func: Callable,
     n_ngb: int = 30,
+    logger: util.LoggerType = None,
     **props,
 ) -> u.Quantity:
-    """Convert the given 2D coordinates to a pixelated map of observable
+    """Smooth the given 2D coordinates to a pixelated map of observable
     func taking props as kwargs.
 
     Parameters
@@ -171,60 +175,100 @@ def coords_to_map(
         Sum_{i in pixel} func(**props_i) / A_pix
 
     """
-    n_pix = map_pix ** 2
+    n_coords = coords.shape[-1]
     pix_size = map_size / map_pix
 
-    # convert the coordinates to the pixel coordinate system
+    # compute the offsets w.r.t the map_origin, taking into account
+    # periodic boundary conditions
     # O: origin
     # x: map_center
     #  ___
     # | x |
     # O---
-    map_origin = tools.min_diff(np.atleast_1d(map_center), map_size / 2, box_size)
+    map_origin = tools.min_diff(np.atleast_1d(map_center), 0.5 * map_size, box_size)
 
     # compute the offsets w.r.t the map_origin, taking into account
     # periodic boundary conditions
     coords_origin = tools.min_diff(coords, map_origin.reshape(2, 1), box_size)
 
+    start = time.time()
     tree = KDTree(coords_origin.T)
     dist, _ = tree.query(coords_origin.T, k=n_ngb)
+    end = time.time()
+    if logger:
+        logger.debug(
+            f"calculating h for {n_ngb=} and n_part={coords_origin.shape[-1]} took {end - start:.2f}s"
+        )
 
     # 2 times smoothing length for each particle
     h_max = dist.max(axis=-1) * coords_origin.unit
-    h = 0.5 * h_max
-
-    pix_range = np.linspace(0.5, map_pix - 0.5, map_pix) * pix_size
-    # get the pixel centers for the grid
-    pixel_centers = util.arrays_to_coords(pix_range, pix_range)
 
     mapped = np.zeros((map_pix, map_pix))
-    # (n_pix, n_coords) array with pairwise distances for each pixel and particle
-    dist_grid = np.linalg.norm(pixel_centers[..., None] - coords_origin[None], axis=1)
 
-    # for each of n_pix only include particles within 2 * smoothing length
-    included = dist_grid < h_max[None]
+    start = time.time()
+    for idx, (coord_pix, h_pix) in enumerate(
+        zip(coords_origin.T / pix_size, h_max / pix_size)
+    ):
+        # all pixels within a smoothing length of particle at coord_pix
+        x_lower = np.max([np.floor(coord_pix[0] - h_pix), 0])
+        x_upper = np.min([np.floor(coord_pix[0] + h_pix), map_pix - 1]) + 1
+        y_lower = np.max([np.floor(coord_pix[1] - h_pix), 0])
+        y_upper = np.min([np.floor(coord_pix[1] + h_pix), map_pix - 1]) + 1
 
-    # calculate weight for each particle using the distance to each pixel
-    weight = func(**props) * kernel(dist_grid[included], h[np.where(included)[1]])
-    pix_values = np.zeros(dist_grid.shape) * weight.unit
-    pix_values[included] = weight
-    mapped = pix_values.sum(axis=-1).reshape(map_pix, map_pix)
+        # region around particle completely outside of map
+        if x_upper < 0 or y_upper < 0 or x_lower >= map_pix or y_lower >= map_pix:
+            continue
+
+        # distance to pixel *centers* (+ 0.5) within h_max of coord_pix
+        pix_all = np.mgrid[x_lower:x_upper, y_lower:y_upper].astype(int)
+        dist_pix = np.linalg.norm(coord_pix[:, None, None] - (pix_all + 0.5), axis=0)
+
+        # extract the properties for particle at coord_pix
+        props = dict(
+            [
+                (k, v[..., idx]) if np.atleast_1d(v).shape[-1] == n_coords
+                # if v is a single value, apply it for all coords in pixel
+                else (k, v)
+                for k, v in props.items()
+            ]
+        )
+
+        # smoothing length = 0.5 h_max
+        weight = func(**props) * kernel(dist_pix * pix_size, 0.5 * h_pix * pix_size)
+
+        # fill correct pixel values for mapped
+        mapped[
+            pix_all.reshape(2, -1)[0], pix_all.reshape(2, -1)[1]
+        ] += weight.value.flatten()
+
+    unit = weight.unit
+    mapped = mapped * unit
 
     return mapped
 
 
-def get_maps(
+def save_maps(
     centers: u.Quantity,
+    group_ids: np.ndarray,
+    masses: u.Quantity,
     slice_dir: str,
     snapshot: int,
     slice_axis: int,
-    box_size: u.Quantity,
     num_slices: int,
+    box_size: u.Quantity,
     map_pix: int,
     map_size: u.Quantity,
     map_thickness: u.Quantity,
     map_types: List[str],
+    save_dir: str,
+    coords_name: str = "",
+    map_name_append: str = "",
+    overwrite: bool = False,
+    swmr: bool = False,
+    method: str = None,
+    n_ngb: int = 30,
     verbose: bool = False,
+    logger: util.LoggerType = None,
 ) -> u.Quantity:
     """Project map around coord in a box of (map_size, map_size, map_thickness)
     in a map of (map_pix, map_pix) for given map_type.
