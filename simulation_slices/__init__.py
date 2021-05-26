@@ -4,13 +4,23 @@ import astropy.units as u
 import numpy as np
 import toml
 
+import simulation_slices.maps.observables as obs
+
 
 CONFIG_FILE = str(Path(__file__).parent / "batch.toml")
 
 
 class Config(object):
     def __init__(self, config_file=CONFIG_FILE):
+        self.config_file = config_file
         config = toml.load(config_file)
+        self.logging = config["setup"]["logging"]
+        if self.logging:
+            self.log_dir = config["setup"]["log_dir"]
+            self.log_level = config["setup"]["log_level"]
+            self.log_name_append = config["setup"].get("log_name_append", "")
+
+        # configuration for slice_sim
         self.base_dir = config["sims"]["base_dir"]
         self.sim_dirs = config["sims"]["sim_dirs"]
         self.sim_suite = config["sims"]["sim_suite"]
@@ -24,35 +34,48 @@ class Config(object):
         self.slice_axes = config["slices"]["slice_axes"]
         self.slice_dir = config["slices"]["save_dir"]
 
+        # configuration for save_coords
+        mass_units = config["coords"].get("mass_units", None)
+        log10_mass_range = config["coords"].get("log10_mass_range", None)
+        if log10_mass_range is not None:
+            self.mass_range = 10**np.array(log10_mass_range) * u.Unit(mass_units)
+
+        self.coords_dir = config["coords"].get("coords_dir", None)
+        self.coords_name = config["coords"].get("coords_name", None)
+        self.coord_dset = config["coords"].get("coord_dset", None)
+        self.mass_dset = config["coords"].get("mass_dset", None)
+        self.extra_dsets = config["coords"].get("extra_dsets", None)
+        if "sample_haloes_bins" in config["coords"].keys():
+            sample_haloes_bins = config["coords"]["sample_haloes_bins"]
+            n_bins = sample_haloes_bins["n_bins"]
+            self.sample_haloes_bins = {
+                "mass_bin_edges": 10**np.linspace(
+                    *sample_haloes_bins["log10_mass_range"], n_bins + 1) * u.Unit(mass_units),
+                "n_in_bin": np.ones(n_bins, dtype=int) * sample_haloes_bins["n_in_bin"]
+            }
+        else:
+            self.sample_haloes_bins = None
+
+
+        # configuration for map_sim
         self.map_dir = config["maps"]["save_dir"]
+        self.map_name_append = config["maps"].get("map_name_append", "")
+        self.map_method = config["maps"].get("map_method", None)
         self.map_types = config["maps"]["map_types"]
         self.map_pix = config["maps"]["map_pix"]
         self.map_size = config["maps"]["map_size"] * u.Unit(config["maps"]["map_units"])
         self.map_thickness = config["maps"]["map_thickness"] * u.Unit(
             config["maps"]["map_units"]
         )
+        self.n_ngb = config["maps"].get("n_ngb", None)
 
-        if "coords" in config["sims"].keys():
-            self.compute_coords = True
-            self.coords_dir = config["sims"]["coords"]["coords_dir"]
-            self.coords_name = config["sims"]["coords"]["coords_name"]
-            self.mass_range = config["sims"]["coords"]["mass_range"] * u.Unit(
-                config["sims"]["coords"]["mass_units"]
-            )
-            self.coord_dset = config["sims"]["coords"].get("coord_dset", None)
-            self.mass_dset = config["sims"]["coords"].get("mass_dset", None)
-            self.extra_dsets = config["sims"]["coords"].get("extra_dsets", None)
-        else:
-            self.compute_coords = False
-            self.coords_dir = config["maps"]["coords_dir"]
-            self.coords_name = config["maps"]["coords_name"]
-
+        # configuration for observables
         self.obs_dir = config["observables"]["save_dir"]
         self.obs_types = config["observables"].keys() - ["save_dir"]
         self.obs_kwargs = {key: config["observables"][key] for key in self.obs_types}
 
-        self.figure_dir = config["DIRECTORIES"]["FIGURE_DIR"]
-        self.data_dir = config["DIRECTORIES"]["DATA_DIR"]
+        # self.figure_dir = config["DIRECTORIES"]["FIGURE_DIR"]
+        # self.data_dir = config["DIRECTORIES"]["DATA_DIR"]
 
         self.build_config()
 
@@ -227,7 +250,7 @@ class Config(object):
 
     @map_types.setter
     def map_types(self, val):
-        valid_map_types = ["gas_mass", "dm_mass", "stars_mass", "bh_mass", "sz"]
+        valid_map_types = obs.MAP_TYPES_OPTIONS.keys()
         if type(val) is list:
             # map_types specified for each sim
             if len(val) == self._n_sims:
