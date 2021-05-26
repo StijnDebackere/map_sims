@@ -99,21 +99,27 @@ def read_slice_file_properties(
     properties : dict
         dsets to be loaded for each ptype [ptype: 'gas', 'dm', 'stars', 'bh']
             - ptype :
-                - dsets : str
-                - ...
+                - dsets : [dsets]
+                - attrs : [attrs] => assumed at root of slice_file!
 
     Returns
     -------
-    properties : dict with loaded dset for each ptype and slice_num in properties
+    properties : dict with loaded dsets and attrs for each ptype and
+    slice_num in properties
 
     """
     results = {}
-    if type(slice_file) is str:
-        slice_file = h5py.File(fname, mode="r")
 
-    else:
-        for ptype, dsets in properties.items():
-            results[ptype] = {}
+    if type(slice_file) is str:
+        slice_file = h5py.File(slice_file, mode="r", swmr=True)
+
+    for ptype in properties.keys():
+        results[ptype] = {}
+
+        dsets = properties[ptype].get("dsets", None)
+        attrs = properties[ptype].get("attrs", None)
+
+        if dsets is not None:
             for dset in dsets:
                 res_dset = []
                 for slice_idx in slice_nums:
@@ -122,19 +128,35 @@ def read_slice_file_properties(
                         h5_dset = slice_file[key]
                     except KeyError:
                         breakpoint()
-                        raise KeyError(f"key {key} not found in {slice_file.filename}")
+                        raise KeyError(f"dset {key} not found in {slice_file.filename}")
                     if h5_dset.attrs["single_value"]:
                         key = f"{slice_nums[0]}/{ptype}/{dset}"
+                        # empty slice
+                        if 0 in slice_file[key].shape:
+                            continue
+
                         res_dset.append(
                             slice_file[key][:] * u.Unit(slice_file[key].attrs["units"])
                         )
                         break
                     else:
+                        # empty slice
+                        if 0 in slice_file[key].shape:
+                            continue
+
                         res_dset.append(
                             slice_file[key][:] * u.Unit(slice_file[key].attrs["units"])
                         )
 
                 results[ptype][dset] = np.concatenate(res_dset, axis=-1)
+
+        if attrs is not None:
+            for attr in attrs:
+                try:
+                    results[ptype][attr] = np.atleast_1d(slice_file.attrs[attr])
+                except KeyError:
+                    breakpoint()
+                    raise KeyError(f"attribute {attr} not found in {slice_file.filename}")
 
     return results
 
