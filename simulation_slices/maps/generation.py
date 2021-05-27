@@ -383,19 +383,14 @@ def save_maps(
         extra={
             "centers": {
                 "data": centers_sorted,
-                # "shape": (0,),
-                # "maxshape": (maxshape,),
-                # "dtype": float,
                 "attrs": {
                     "description": "Halo centers.",
                     "single_value": False,
+                    "units": str(centers_sorted.unit),
                 },
             },
             "group_ids": {
                 "data": group_ids_sorted,
-                # "shape": (0,),
-                # "maxshape": (maxshape,),
-                # "dtype": int,
                 "attrs": {
                     "description": "Halo group ids.",
                     "single_value": False,
@@ -403,12 +398,10 @@ def save_maps(
             },
             "masses": {
                 "data": masses_sorted,
-                # "shape": (0,),
-                # "maxshape": (maxshape,),
-                # "dtype": float,
                 "attrs": {
                     "description": "Halo masses.",
                     "single_value": False,
+                    "units": str(masses_sorted.unit),
                 },
             },
         },

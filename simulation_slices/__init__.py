@@ -56,10 +56,10 @@ class Config(object):
         else:
             self.sample_haloes_bins = None
 
-
         # configuration for map_sim
         self.map_dir = config["maps"]["save_dir"]
         self.map_name_append = config["maps"].get("map_name_append", "")
+        self.map_overwrite = config["maps"].get("map_overwrite", False)
         self.map_method = config["maps"].get("map_method", None)
         self.map_types = config["maps"]["map_types"]
         self.map_pix = config["maps"]["map_pix"]

@@ -176,7 +176,7 @@ def create_map_file(
             raise ValueError("cannot enable swmr and not overwrite")
         map_file = h5py.File(map_name, "a")
     else:
-        map_layout = map_layout.get_map_layout(
+        map_layout = get_map_layout(
             slice_axis=slice_axis,
             box_size=box_size,
             map_types=map_types,
@@ -192,6 +192,7 @@ def create_map_file(
             fname=map_name,
             layout=map_layout,
             close=close,
+            overwrite=overwrite,
             swmr=swmr,
         )
 

@@ -194,6 +194,7 @@ def map_coords(
 
     save_dir = config.map_paths[sim_idx]
     map_name_append = config.map_name_append
+    map_overwrite = config.map_overwrite
     map_method = config.map_method
 
     map_types = config.map_types[sim_idx]
@@ -227,6 +228,7 @@ def map_coords(
         save_dir=save_dir,
         coords_name=coords_name,
         map_name_append=map_name_append,
+        overwrite=map_overwrite,
         method=map_method,
         n_ngb=n_ngb,
         logger=logger,
