@@ -424,7 +424,10 @@ def save_maps(
         centers_sorted[min_idx:][i == inv_ids[min_idx:]]
         for i in range(unique_slice_ranges.shape[0])
     ]
-
+    group_ids_in_ranges = [
+        group_ids_sorted[min_idx:][i == inv_ids[min_idx:]]
+        for i in range(unique_slice_ranges.shape[0])
+    ]
     # get the required slice_file properties for each map_type
     map_props = obs.map_types_to_properties(map_types)
 
@@ -433,13 +436,14 @@ def save_maps(
 
     if verbose:
         iterator = tqdm(
-            zip(centers_in_ranges, unique_slice_ranges), desc="Saving slice_ranges"
+            zip(centers_in_ranges, group_ids_in_ranges, unique_slice_ranges),
+            desc="Saving slice_ranges",
         )
     else:
-        iterator = zip(centers_in_ranges, unique_slice_ranges)
+        iterator = zip(centers_in_ranges, group_ids_in_ranges, unique_slice_ranges)
 
     num_maps = 0
-    for centers_in_range, slice_range in iterator:
+    for centers_in_range, group_ids_in_range, slice_range in iterator:
         if centers_in_range.shape[0] < 1:
             continue
 
@@ -462,10 +466,8 @@ def save_maps(
         distance = np.ones(3) * 0.6 * map_size
         distance[slice_axis] = 0.5 * map_thickness
 
-        breakpoint()
-        for centers in centers_in_range:
+        for gid, center in zip(group_ids_in_range, centers_in_range):
             num_maps += 1
-            start = time.time()
             # dict with (x, 2) array of bounds for each axis
             bounds = tools.slice_around_center(
                 center=center, distance=distance, box_size=box_size
@@ -514,7 +516,7 @@ def save_maps(
                 tsel1 = time.time()
                 if logger:
                     logger.debug(
-                        f"selection for {map_type=} and {center=} took {tsel1 - tsel0:.2f}s"
+                        f"{gid=} - selection for {map_type=} took {tsel1 - tsel0:.2f}s"
                     )
                 # size of array required for SPH smoothing
                 # SPH used up to haloes of 7152 particles for map_pix = 256
@@ -546,9 +548,13 @@ def save_maps(
                     **props_map_type,
                 )
                 maps[map_type].append(mp[None])
-
-                tw0 = time.time()
+                tf = time.time()
+                if logger:
+                    logger.info(
+                        f"{gid=} - full {map_type=} took {tf - tsel0:.2f}s"
+                    )
                 if num_maps % 100 == 0:
+                    tw0 = time.time()
                     # save after each slice_range
                     io.add_to_hdf5(
                         h5file=map_file,
@@ -556,14 +562,13 @@ def save_maps(
                         vals=np.concatenate(maps[map_type], axis=0),
                         axis=0,
                     )
-
-                tw1 = time.time()
-                if logger:
-                    logger.debug(
-                        f"writing {map_type=} for n={len(maps[map_type])} took {tw1 - tw0:.2f}s"
-                    )
-                # start filling up again
-                maps[map_type] = []
+                    tw1 = time.time()
+                    if logger:
+                        logger.info(
+                            f"{gid=} - writing {map_type=} for n={len(maps[map_type])} took {tw1 - tw0:.2f}s"
+                        )
+                    # start filling up again
+                    maps[map_type] = []
 
     for map_type, mps in maps.items():
         if mps:
