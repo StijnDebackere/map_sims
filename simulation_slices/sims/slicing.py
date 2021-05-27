@@ -127,11 +127,11 @@ def read_slice_file_properties(
                     try:
                         h5_dset = slice_file[key]
                     except KeyError:
-                        breakpoint()
                         raise KeyError(f"dset {key} not found in {slice_file.filename}")
+
+                    # for single-valued datasets we only need to load property
+                    # from first non-empty slice
                     if h5_dset.attrs["single_value"]:
-                        key = f"{slice_nums[0]}/{ptype}/{dset}"
-                        # empty slice
                         if 0 in slice_file[key].shape:
                             continue
 
@@ -139,6 +139,7 @@ def read_slice_file_properties(
                             slice_file[key][:] * u.Unit(slice_file[key].attrs["units"])
                         )
                         break
+
                     else:
                         # empty slice
                         if 0 in slice_file[key].shape:
@@ -148,7 +149,11 @@ def read_slice_file_properties(
                             slice_file[key][:] * u.Unit(slice_file[key].attrs["units"])
                         )
 
-                results[ptype][dset] = np.concatenate(res_dset, axis=-1)
+                # we have a non-empty dataset
+                if res_dset:
+                    results[ptype][dset] = np.concatenate(res_dset, axis=-1)
+                else:
+                    results[ptype][dset] = None
 
         if attrs is not None:
             for attr in attrs:
