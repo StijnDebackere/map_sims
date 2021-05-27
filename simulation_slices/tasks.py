@@ -49,7 +49,10 @@ def get_logger(sim_idx: int, config: Config, fname: str) -> logging.Logger:
 
 
 def slice_sim(
-        sim_idx: int, snapshot: int, config: Union[Config, str], logger: util.LoggerType = None
+    sim_idx: int,
+    snapshot: int,
+    config: Union[Config, str],
+    logger: util.LoggerType = None,
 ) -> List[str]:
     """Save a set of slices for sim_idx in config.sim_paths."""
     start = time.time()
@@ -99,12 +102,17 @@ def slice_sim(
 
     end = time.time()
     if logger:
-        logger.info(f"slice_sim_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s")
+        logger.info(
+            f"slice_sim_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
+        )
     # return fnames
 
 
 def save_coords(
-    sim_idx: int, snapshot: int, config: Union[Config, str], logger: util.LoggerType = None
+    sim_idx: int,
+    snapshot: int,
+    config: Union[Config, str],
+    logger: util.LoggerType = None,
 ) -> str:
     """Save a set of halo centers to generate maps around."""
     start = time.time()
@@ -161,12 +169,19 @@ def save_coords(
 
     end = time.time()
     if logger:
-        logger.info(f"save_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s")
+        logger.info(
+            f"save_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
+        )
     # return fname
 
 
 def map_coords(
-    sim_idx: int, snapshot: int, slice_axis: int, coords_file: str, config: Union[Config, str], logger: util.LoggerType = None
+    sim_idx: int,
+    snapshot: int,
+    slice_axis: int,
+    coords_file: str,
+    config: Union[Config, str],
+    logger: util.LoggerType = None,
 ) -> List[str]:
     """Save a set of maps for sim_idx in config.sim_paths."""
     start = time.time()
@@ -208,9 +223,7 @@ def map_coords(
             h5file["coordinates"].attrs["units"]
         )
         group_ids = h5file["group_ids"][:]
-        masses = h5file["masses"][:] * u.Unit(
-            h5file["masses"].attrs["units"]
-        )
+        masses = h5file["masses"][:] * u.Unit(h5file["masses"].attrs["units"])
 
     fname = map_gen.save_maps(
         centers=centers,
@@ -237,7 +250,9 @@ def map_coords(
 
     end = time.time()
     if logger:
-        logger.info(f"map_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s")
+        logger.info(
+            f"map_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
+        )
     # return fname
 
 
