@@ -14,6 +14,24 @@ import simulation_slices.sims.slicing as slicing
 import simulation_slices.utilities as util
 
 
+def get_map_name(
+    save_dir: str,
+    slice_axis: int,
+    snapshot: int,
+    method: str,
+    coords_name: str = "",
+    map_name_append: str = "",
+) -> str:
+    save_dir = util.check_path(save_dir)
+    if coords_name != "":
+        coords_name = f"_{coords_name}"
+    map_name = (
+        f"{save_dir}/{slice_axis}_maps_{method}{coords_name}"
+        f"{map_name_append}_{snapshot:03d}.hdf5"
+    )
+    return map_name
+
+
 def coords_to_map_bin(
     coords: u.Quantity,
     map_center: u.Quantity,
@@ -320,8 +338,14 @@ def save_maps(
     -------
     saves maps to {save_dir}/{slice_axis}_maps_{coords_name}{map_name_append}_{snapshot:03d}.hdf5
     """
-    save_dir = util.check_path(save_dir)
-    map_name = f"{save_dir}/{slice_axis}_maps_{method}_{coords_name}{map_name_append}_{snapshot:03d}.hdf5"
+    map_name = get_map_name(
+        save_dir=save_dir,
+        slice_axis=slice_axis,
+        snapshot=snapshot,
+        method=method,
+        coords_name=coords_name,
+        map_name_append=map_name_append,
+    )
 
     # sort maps for speedup from hdf5 caching
     centers = np.atleast_2d(centers).reshape(-1, 3)
