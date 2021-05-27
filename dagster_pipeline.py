@@ -18,7 +18,7 @@ from dagster import (
 )
 from dagster.core.storage.fs_io_manager import fs_io_manager
 
-import simulation_slices.batch_run as batch
+import simulation_slices.tasks as tasks
 from simulation_slices import Config
 
 
@@ -31,21 +31,20 @@ def slice_sim_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
     )
     def _slice_sim(context) -> Nothing:
         if context.resources.settings["slice_sims"]:
+            context.log.info(
+                f"Start slicing {cfg.sim_dirs[sim_idx]} for {snapshot=}"
+            )
             if cfg.logging:
-                context.log.info(
-                    f"Start slicing {cfg.sim_dirs[sim_idx]} for {snapshot=}"
-                )
                 logger = context.log.info
             else:
                 logger = None
 
-            fnames = batch.slice_sim(
+            fnames = tasks.slice_sim(
                 sim_idx=sim_idx, snapshot=snapshot, config=cfg, logger=logger
             )
-            if cfg.logging:
-                context.log.info(
-                    f"Finished slicing {cfg.sim_dirs[sim_idx]} for {snapshot=}"
-                )
+            context.log.info(
+                f"Finished slicing {cfg.sim_dirs[sim_idx]} for {snapshot=}"
+            )
 
             for idx, fname in enumerate(fnames):
                 yield AssetMaterialization(
@@ -56,8 +55,7 @@ def slice_sim_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
                     metadata_entries=[EventMetadataEntry.path(fname, "file path")],
                 )
         else:
-            if cfg.logging:
-                context.log.info(f"Skipping slicing {cfg.sim_dirs[sim_idx]}")
+            context.log.info(f"Skipping slicing {cfg.sim_dirs[sim_idx]}")
 
         yield Output(None)
 
@@ -73,22 +71,21 @@ def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
     )
     def _save_coords(context) -> Nothing:
         if context.resources.settings["save_coords"]:
+            context.log.info(
+                f"Start saving coordinates for {cfg.sim_dirs[sim_idx]} for {snapshot=}"
+            )
             if cfg.logging:
-                context.log.info(
-                    f"Start saving coordinates for {cfg.sim_dirs[sim_idx]} for {snapshot=}"
-                )
                 logger = context.log.info
             else:
                 logger = None
 
-            fname = batch.save_coords(
+            fname = tasks.save_coords(
                 sim_idx=sim_idx, snapshot=snapshot, config=cfg, logger=logger
             )
 
-            if cfg.logging:
-                context.log.info(
-                    f"Finished saving coordinates for {cfg.sim_dirs[sim_idx]} for {snapshot=}"
-                )
+            context.log.info(
+                f"Finished saving coordinates for {cfg.sim_dirs[sim_idx]} for {snapshot=}"
+            )
 
             yield AssetMaterialization(
                 asset_key=AssetKey(
@@ -98,8 +95,7 @@ def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
                 metadata_entries=[EventMetadataEntry.path(fname, "file path")],
             )
         else:
-            if cfg.logging:
-                context.log.info(f"Skipping saving coordinates for {cfg.sim_dirs[sim_idx]}")
+            context.log.info(f"Skipping saving coordinates for {cfg.sim_dirs[sim_idx]}")
 
         yield Output(None)
 
@@ -116,15 +112,15 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
     )
     def _map_sim(context) -> Nothing:
         if context.resources.settings["map_sims"]:
+            context.log.info(f"Start mapping simulation {cfg.sim_dirs[sim_idx]}")
             if cfg.logging:
-                context.log.info(f"Start mapping simulation {cfg.sim_dirs[sim_idx]}")
                 logger = context.log.info
             else:
                 logger = None
 
             fnames = []
             for slice_axis in cfg.slice_axes:
-                fname = batch.map_coords(
+                fname = tasks.map_coords(
                     sim_idx=sim_idx,
                     config=cfg,
                     snapshot=snapshot,
@@ -134,8 +130,7 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
                 )
                 fnames.append(fname)
 
-            if cfg.logging:
-                context.log.info(f"Finished mapping simulation {cfg.sim_dirs[sim_idx]}")
+            context.log.info(f"Finished mapping simulation {cfg.sim_dirs[sim_idx]}")
 
             for idx, fname in enumerate(fnames):
                 yield AssetMaterialization(
@@ -144,8 +139,7 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
                     metadata_entries=[EventMetadataEntry.path(fname, "file path")],
                 )
         else:
-            if cfg.logging:
-                context.log.info(f"Skipping mapping simulation {cfg.sim_dirs[sim_idx]}")
+            context.log.info(f"Skipping mapping simulation {cfg.sim_dirs[sim_idx]}")
 
         yield Output(None)
 
