@@ -2,6 +2,42 @@ import astropy.units as u
 import numpy as np
 
 
+def pix_dist(a, b, b_is_pix=True):
+    """Calculate the distance between pixel centers of list if pixels a_ij
+    = (i, j) and b = (k, l).
+
+    Parameters
+    ----------
+    a : (n, 2) array-like
+        list of pixels
+    b : (2, ) array-like
+        pixel offset
+    b_is_pix : bool
+        b should be treated as pixel, otherwise used as coordinate
+
+    """
+    a = np.atleast_2d(a).astype(int)
+    b = np.atleast_1d(b)
+    if b_is_pix:
+        b = b.astype(int)
+    else:
+        b = b.astype(float)
+
+    if len(a.shape) > 2 or a.shape[-1] != 2:
+        raise ValueError("a should be broadcastable to shape (n, 2)")
+    if len(b.shape) > 1 or b.shape[-1] != 2:
+        raise ValueError("b should be broadcastable to shape (2,)")
+
+    # distance between pixels
+    if b_is_pix:
+        dist = np.linalg.norm(a - b, axis=-1)
+    # b can be partial pixel coordinate -> need to convert a to pixel centers
+    else:
+        dist = np.linalg.norm(a + 0.5 - b, axis=-1)
+
+    return dist
+
+
 def pix_id_to_pixel(pix_id, map_pix):
     """Convert pix_id = i * map_pix + j  to pixel (i, j)."""
     if ((pix_id >= map_pix**2) | (pix_id < 0)).any():
