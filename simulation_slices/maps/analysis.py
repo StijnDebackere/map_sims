@@ -21,7 +21,7 @@ PI = np.pi
 PI_INV = 1.0 / np.pi
 
 
-def filter_zeta(R, maps, A_pix, R1, R2, Rm, **kwargs):
+def filter_zeta(R, maps, A_pix, R1, R2=None, Rm=None, **kwargs):
     """Convergence map filter for zeta_c statistic of Clowe et al.
     (1998).
 
@@ -53,15 +53,19 @@ def filter_zeta(R, maps, A_pix, R1, R2, Rm, **kwargs):
         np.sum(PI_INV / R1 ** 2 * maps.reshape(-1, R.shape[0])[..., R <= R1], axis=-1)
         * A_pix
     )
-    maps_R2_Rm = (
-        np.sum(
-            -PI_INV
-            / (Rm ** 2 - R2 ** 2)
-            * maps.reshape(-1, R.shape[0])[..., ((R > R2) & (R < Rm))],
-            axis=-1,
+
+    if R2 is None or Rm is None:
+        maps_R2_Rm = 0 * maps_R1.unit
+    else:
+        maps_R2_Rm = (
+            np.sum(
+                -PI_INV
+                / (Rm ** 2 - R2 ** 2)
+                * maps.reshape(-1, R.shape[0])[..., ((R > R2) & (R < Rm))],
+                axis=-1,
+            )
+            * A_pix
         )
-        * A_pix
-    )
     return PI * R1 ** 2 * (maps_R1 + maps_R2_Rm)
 
 
@@ -70,6 +74,7 @@ def M_aperture(
     pix_size: u.Quantity,
     filt: Callable,
     r_off: u.Quantity,
+    center: u.Quantity = None,
     **filt_kwargs,
 ) -> u.Quantity:
     """Filter maps around x_0 with filter filt(x - x_0, **filt_kwargs).
@@ -91,13 +96,16 @@ def M_aperture(
         mass contained within filt around x_0
     """
     map_pix = maps.shape[-1]
-    center = (0.5 * map_pix, 0.5 * map_pix)
+    if center is None:
+        center_pix =  (0.5 * map_pix, 0.5 * map_pix)
+    else:
+        center_pix =  np.atleast_1d(center) / pix_size
     r_off = np.atleast_1d(r_off)
 
     R = (
         tools.pix_dist(
             tools.pix_id_to_pixel(np.arange(map_pix ** 2), map_pix),
-            center + r_off / pix_size,
+            center_pix + r_off / pix_size,
             b_is_pix=False,
         )
         * pix_size
