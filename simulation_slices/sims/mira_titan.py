@@ -21,6 +21,7 @@ def save_coords_file(
     box_size: u.Quantity,
     snapshot: int,
     mass_range: Tuple[u.Quantity, u.Quantity],
+    coord_range: u.Quantity = None,
     save_dir: Optional[str] = None,
     coords_fname: Optional[str] = "",
     sample_haloes_bins: Optional[dict] = None,
@@ -40,6 +41,8 @@ def save_coords_file(
         snapshot to look at
     mass_range : (min, max) tuple
         minimum and maximum value for masses
+    coord_range : (3, 2) array
+        range for coordinates to include
     save_dir : str or None
         location to save to, defaults to snapshot_xxx/maps/
     coords_fname : str
@@ -77,9 +80,35 @@ def save_coords_file(
             "fof_halo_tag",
         ],
     )
+    coordinates = (
+        np.vstack(
+            [
+                group_data["fof_halo_center_x"],
+                group_data["fof_halo_center_y"],
+                group_data["fof_halo_center_z"],
+            ]
+        )
+        .T
+        .to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+    )
     group_ids = group_data["fof_halo_tag"]
     masses = group_data["fof_halo_mass"]
-    selection = (masses > np.min(mass_range)) & (masses < np.max(mass_range))
+
+    mass_range = mass_range.to(masses.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+    mass_selection = (masses > np.min(mass_range)) & (masses < np.max(mass_range))
+
+    # also select coordinate range
+    if coord_range is not None:
+        coord_range = coord_range.to(coordinates.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+        coord_selection = np.all(
+            [
+                (coordinates[:, i] > np.min(coord_range[i])) & (coordinates[:, i] < np.max(coord_range[i]))
+                for i in range(coord_range.shape[0])
+            ], axis=0
+        )
+        selection = mass_selection & coord_selection
+    else:
+        selection = mass_selection
 
     # subsample the halo sample
     if sample_haloes_bins is not None:
@@ -100,17 +129,7 @@ def save_coords_file(
         selection = np.concatenate(selection)
 
     # only included selection
-    coordinates = (
-        np.vstack(
-            [
-                group_data["fof_halo_center_x"],
-                group_data["fof_halo_center_y"],
-                group_data["fof_halo_center_z"],
-            ]
-        )
-        .T[selection]
-        .to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
-    )
+    coordinates = coordinates[selection]
     masses = masses[selection].to(
         "Msun", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
     )
@@ -146,7 +165,11 @@ def save_coords_file(
         },
     }
 
-    io.create_hdf5(fname=fname, layout=layout, close=True)
+    if coord_range is not None:
+        layout["dsets"]["coordinates"]["attrs"]["coord_range"] = coord_range.value
+        layout["dsets"]["coordinates"]["attrs"]["coord_range_units"] = str(coord_range.unit)
+
+    io.create_hdf5(fname=fname, layout=layout, overwrite=True, close=True)
     return str(fname)
 
 

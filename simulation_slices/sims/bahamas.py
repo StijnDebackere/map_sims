@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import List, Optional, Tuple
 
 import astropy.units as u
@@ -72,7 +73,8 @@ def save_coords_file(
     coord_dset: str,
     mass_dset: str,
     mass_range: Tuple[u.Quantity, u.Quantity],
-    extra_dsets: List[str],
+    coord_range: u.Quantity = None,
+    extra_dsets: List[str] = None,
     save_dir: Optional[str] = None,
     coords_fname: Optional[str] = "",
     verbose: Optional[bool] = False,
@@ -95,6 +97,8 @@ def save_coords_file(
         hdf5 FOF dataset to get masses from
     mass_range : (min, max) tuple
         minimum and maximum value for mass_dset
+    coord_range : (3, 2) array
+        range for coordinates to include
     extra_dsets : iterable
         extra datasets to save to the file
     save_dir : str or None
@@ -111,6 +115,7 @@ def save_coords_file(
     group_info = Gadget(
         model_dir=sim_dir, file_type="subh", snapnum=snapshot, units=True, comoving=True
     )
+    h = group_info.h
 
     if "FOF" not in mass_dset:
         raise ValueError("group_dset should be a FOF property")
@@ -127,9 +132,25 @@ def save_coords_file(
 
     fname = (save_dir / f"{coords_fname}_{snapshot:03d}").with_suffix(".hdf5")
 
+    coordinates = group_info.read_var(coord_dset, verbose=verbose)
     masses = group_info.read_var(mass_dset, verbose=verbose)
     group_ids = np.arange(len(masses))
-    selection = (masses > np.min(mass_range)) & (masses < np.max(mass_range))
+
+    mass_range = mass_range.to(masses.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+    mass_selection = (masses > np.min(mass_range)) & (masses < np.max(mass_range))
+
+    # also select coordinate range
+    if coord_range is not None:
+        coord_range = coord_range.to(coordinates.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+        coord_selection = np.all(
+            [
+                (coordinates[:, i] > np.min(coord_range[i])) & (coordinates[:, i] < np.max(coord_range[i]))
+                for i in range(coord_range.shape[0])
+            ], axis=0
+        )
+        selection = mass_selection & coord_selection
+    else:
+        selection = mass_selection
 
     # subsample the halo sample
     if sample_haloes_bins is not None:
@@ -149,7 +170,7 @@ def save_coords_file(
                 selection.append(np.random.choice(ids, size=n, replace=False))
         selection = np.concatenate(selection)
 
-    coordinates = group_info.read_var(coord_dset, verbose=verbose)[selection]
+    coordinates = coordinates[selection]
     masses = masses[selection]
     group_ids = group_ids[selection].astype(int)
 
@@ -164,8 +185,9 @@ def save_coords_file(
                 ),
             },
         }
-        for extra_dset in extra_dsets
+        for extra_dset in (extra_dsets or {})
     }
+
     layout = {
         "attrs": {
             "description": "File with selected coordinates for maps.",
@@ -198,7 +220,11 @@ def save_coords_file(
         },
     }
 
-    io.create_hdf5(fname=fname, layout=layout, close=True)
+    if coord_range is not None:
+        layout["dsets"]["coordinates"]["attrs"]["coord_range"] = coord_range.value
+        layout["dsets"]["coordinates"]["attrs"]["coord_range_units"] = str(coord_range.unit)
+
+    io.create_hdf5(fname=fname, layout=layout, overwrite=True, close=True)
     return str(fname)
 
 
