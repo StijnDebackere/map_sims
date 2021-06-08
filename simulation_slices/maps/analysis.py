@@ -1,11 +1,16 @@
+import time
+import traceback
 from typing import Callable, Optional, Union
+import warnings
 
 import astropy.units as u
 import h5py
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from simulation_slices import Config
+import simulation_slices.io as io
 import simulation_slices.maps.generation as map_gen
 import simulation_slices.maps.observables as obs
 import simulation_slices.maps.tools as tools
@@ -144,6 +149,106 @@ def radial_average(
     return (r, np.array([float(r.value) for r in radial_profile.values()]) * r.unit)
 
 
+def save_observable(
+    sim_idx: int,
+    slice_axis: int,
+    snapshot: int,
+    config: Union[Config, str],
+    obs_name_prepend: str,
+    obs_attrs: dict,
+    fun_obs: Callable,
+    chunk_size: int = 5000,
+    verbose: bool = False,
+    map_name: str = None,
+    obs_name: str = None,
+    **kwargs,
+):
+    """Save observable fun_obs(maps, pix_scale, **kwargs) for sim_idx."""
+    if type(config) is str:
+        config = Config(config)
 
-    """
-    pass
+    if map_name is None:
+        map_name = map_gen.get_map_name(
+            save_dir=config.map_paths[sim_idx],
+            slice_axis=slice_axis,
+            snapshot=snapshot,
+            method=config.map_method,
+            coords_name=config.coords_name,
+            map_name_append=config.map_name_append,
+        )
+    if obs_name is None:
+        obs_name = obs.get_obs_name(
+            save_dir=config.obs_paths[sim_idx],
+            slice_axis=slice_axis,
+            snapshot=snapshot,
+            method=config.map_method,
+            coords_name=config.coords_name,
+            obs_name_append=config.obs_name_append,
+        )
+    map_types = config.map_types[sim_idx]
+
+    with h5py.File(map_name, "r") as f:
+        map_pix = f.attrs["map_pix"]
+        map_size = f.attrs["map_size"] * u.Unit(str(f.attrs["length_units"]))
+        pix_size = map_size / map_pix
+
+        observables = {}
+
+        n = f["group_ids"].shape[0]
+        if chunk_size < n:
+            chunks = np.linspace(0, n, np.floor(n / chunk_size).astype(int)).astype(int)
+        else:
+            chunks = np.linspace(0, n, 2).astype(int)
+
+        for map_type in map_types:
+            map_unit = u.Unit(str(f[map_type].attrs["units"]))
+            values = np.zeros(n, dtype=float)
+
+            if verbose:
+                iterator = tqdm(range(len(chunks) - 1), desc='Reading chunks')
+            else:
+                iterator = range(len(chunks) - 1)
+
+            for i in iterator:
+                sl = slice(chunks[i], chunks[i+1])
+                vals = fun_obs(
+                    maps=f[map_type][sl] * map_unit, pix_size=pix_size, **kwargs
+                )
+                unit = vals.unit
+                values[sl] = vals.value
+
+            observables[f"{obs_name_prepend}_{map_type}"] = {
+                "data": values * unit,
+                "attrs": {**obs_attrs, **kwargs},
+            }
+
+        layout = {
+            "attrs": {**f.attrs},
+            "dsets": {
+                "centers": {
+                    "data": f["centers"][()],
+                    "attrs": {**f["centers"].attrs},
+                },
+                "masses": {
+                    "data": f["masses"][()],
+                    "attrs": {**f["masses"].attrs},
+                },
+                "group_ids": {
+                    "data": f["group_ids"][()],
+                    "attrs": {**f["group_ids"].attrs},
+                },
+                **observables
+            },
+        }
+        try:
+            io.create_hdf5(
+                fname=obs_name,
+                close=True,
+                overwrite=config.obs_overwrite,
+                layout=layout,
+            )
+        except Exception as e:
+            warnings.warn("Saving to hdf5 failed with exception:")
+            warnings.warn(''.join(traceback.format_exception(type(e), e, e.__traceback__)))
+
+    return layout
