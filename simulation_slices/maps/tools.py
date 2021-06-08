@@ -124,7 +124,8 @@ def dist(x, y, box_size, axis=0):
 def slice_around_center(
     center: u.Quantity,
     distance: u.Quantity,
-    box_size: u.Quantity
+    box_size: u.Quantity,
+    pix_size: u.Quantity = None,
 ) -> dict:
     """Return distance bounds for all coordinates that are within distance
     from center for a periodic box of box_size.
@@ -141,24 +142,42 @@ def slice_around_center(
     if distance.shape[0] != center.shape[0]:
         raise ValueError("distance should match shape of center")
 
-    def get_bounds(c, d, box_size):
+    def get_bounds(c, d, box_size, pix_size):
         unit = box_size.unit
         if d >= 0.5 * box_size:
-            return np.array([[0, box_size.to_value(unit)]]) * unit
+            if pix_size is not None:
+                return np.array([[0, int(box_size / pix_size)]])
+            else:
+                return np.array([[0, box_size]]) * unit
 
-        lower_bound = c - d
-        upper_bound = c + d
-        if lower_bound > 0 * unit and upper_bound < box_size:
-            return np.array([[lower_bound.to_value(unit), upper_bound.to_value(unit)]]) * unit
+        if pix_size is not None:
+            lower_lim = 0
+            upper_lim = box_size / pix_size
+
+            lower_bound = int((c - d) / pix_size)
+            upper_bound = int((c + d) / pix_size) + 1
+
+            unit = 1
+
+        else:
+            lower_lim = 0
+            upper_lim = box_size.to_value(unit)
+
+            lower_bound = (c - d).to_value(unit)
+            upper_bound = (c + d).to_value(unit)
+
+        if lower_bound >= lower_lim and upper_bound < upper_lim:
+            return np.array([[lower_bound, upper_bound]]) * unit
 
         return np.array(
             [
-                [0, np.mod(upper_bound, box_size).to_value(unit)],
-                [np.mod(lower_bound, box_size).to_value(unit), box_size.to_value(unit)]
+                [lower_lim, np.mod(upper_bound, upper_lim)],
+                [np.mod(lower_bound, upper_lim), upper_lim]
             ]
         ) * unit
 
     bounds = {
-        i: get_bounds(c, d, box_size) for i, (c, d) in enumerate(zip(center, distance))
+        i: get_bounds(c, d, box_size, pix_size)
+        for i, (c, d) in enumerate(zip(center, distance))
     }
     return bounds
