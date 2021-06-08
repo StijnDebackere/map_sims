@@ -41,6 +41,11 @@ class Config(object):
             self.num_slices = config["slices"].get("num_slices", None)
             self.slice_axes = config["slices"].get("slice_axes", None)
             self.slice_dir = config["slices"].get("save_dir", None)
+            self.slice_downsample = config["slices"].get("slice_downsample", False)
+            self.downsample_factor = config["slices"].get("slice_downsample_factor", None)
+            if self.slice_downsample and self.downsample_factor is not None:
+                if self.downsample_factor <= 0. or self.downsample_factor >= 1:
+                    raise ValueError(f"{self.downsample_factor=} should be in range (0, 1).")
 
         # optional info for save_coords
         if "coords" in config.keys():

@@ -234,6 +234,8 @@ def save_slice_data(
     slice_axes: List[int],
     num_slices: int,
     ptypes: List[str],
+    downsample: bool = False,
+    downsample_factor: float = None,
     save_dir: Optional[str] = None,
     verbose: Optional[bool] = False,
     logger: util.LoggerType = None,
@@ -286,6 +288,8 @@ def save_slice_data(
 
     # crude estimate of maximum number of particles in each slice
     N_tot = sum(snap_info.num_part_tot)
+    if downsample:
+        N_tot = downsample_factor * N_tot
     maxshape = int(2 * N_tot / num_slices)
 
     a = snap_info.a
@@ -306,6 +310,8 @@ def save_slice_data(
             num_slices=num_slices,
             slice_axis=slice_axis,
             maxshape=maxshape,
+            downsample=downsample,
+            downsample_factor=downsample_factor,
         )
         fnames.append(fname)
 
@@ -320,6 +326,7 @@ def save_slice_data(
         num_files_range = range(snap_info.num_files)
 
     for file_num in num_files_range:
+        t0 = time.time()
         for ptype in ptypes:
             # need to put particles along columns for hdf5 optimal usage
             # read everything in Mpc / h
@@ -459,6 +466,22 @@ def save_slice_data(
                     **properties,
                 }
 
+            if downsample:
+                n_part = properties["coordinates"].shape[-1]
+                ids = np.random.choice(
+                    n_part, replace=False, size=int(n_part * downsample_factor)
+                )
+
+                # rescale masses
+                properties["masses"] = properties["masses"] / downsample_factor
+                if properties["masses"].shape[0] == 1:
+                    properties = dict(
+                        (k, v[..., ids]) if k != "masses" else (k, v)
+                        for k, v in properties.items()
+                    )
+                else:
+                    properties = {k: v[..., ids] for k, v in properties.items()}
+
             # write each slice to a separate file
             for slice_axis in slice_axes:
                 slice_dict = slicing.slice_particle_list(
@@ -473,6 +496,8 @@ def save_slice_data(
                     slice_axis=slice_axis,
                     num_slices=num_slices,
                     snapshot=snapshot,
+                    downsample=downsample,
+                    downsample_factor=downsample_factor,
                 )
                 h5file = h5py.File(fname, "r+")
 
@@ -607,5 +632,8 @@ def save_slice_data(
                         # )
 
                 h5file.close()
+        t1 = time.time()
+        if logger:
+            logger.info(f"{file_num=} took {t1 - t0:.2f}s")
 
     return fnames

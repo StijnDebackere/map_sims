@@ -21,10 +21,14 @@ def get_map_name(
     method: str,
     coords_name: str = "",
     map_name_append: str = "",
+    downsample: bool = False,
+    downsample_factor: float = None,
 ) -> str:
     save_dir = util.check_path(save_dir)
     if coords_name != "":
         coords_name = f"_{coords_name}"
+    if downsample:
+        coords_name = f"{coords_name}_downsample_{str(downsample_factor).replace('.', 'p')}"
     map_name = (
         f"{save_dir}/{slice_axis}_maps_{method}{coords_name}"
         f"{map_name_append}_{snapshot:03d}.hdf5"
@@ -281,6 +285,8 @@ def save_maps(
     save_dir: str,
     coords_name: str = "",
     map_name_append: str = "",
+    downsample: bool = False,
+    downsample_factor: float = None,
     overwrite: bool = False,
     swmr: bool = False,
     method: str = None,
@@ -345,6 +351,8 @@ def save_maps(
         method=method,
         coords_name=coords_name,
         map_name_append=map_name_append,
+        downsample=downsample,
+        downsample_factor=downsample_factor,
     )
 
     # sort maps for speedup from hdf5 caching
@@ -389,6 +397,8 @@ def save_maps(
         snapshot=snapshot,
         slice_axis=slice_axis,
         num_slices=num_slices,
+        downsample=downsample,
+        downsample_factor=downsample_factor,
     )
     map_file = map_layout.create_map_file(
         map_name=map_name,
@@ -434,7 +444,6 @@ def save_maps(
     # get the ids for all centers belonging to unique_slice_ranges
     unique_slice_ranges, inv_ids = np.unique(slice_ranges, return_inverse=True, axis=0)
 
-    #
     if not overwrite:
         min_idx = np.min([map_file[map_type].shape[0] for map_type in map_types])
         for map_type in map_types:
@@ -505,17 +514,15 @@ def save_maps(
                 tsel0 = time.time()
                 ptype = obs.MAP_TYPES_OPTIONS[map_type]["ptype"]
 
-                # (3, N) array
                 coords = props[ptype]["coordinates"][:]
+                selection = np.ones(coords.shape, dtype=bool)
 
-                # ensure only particles within slab are included
-                selection = np.zeros(coords.shape, dtype=bool)
                 for axis, intervals in bounds.items():
                     temp_sel = selection[axis]
                     for interval in intervals:
                         temp_sel = (coords[axis] >= interval[0]) & (
                             coords[axis] <= interval[1]
-                        ) | temp_sel
+                        ) & temp_sel
                     selection[axis] = temp_sel
 
                 selection = np.all(selection, axis=0)

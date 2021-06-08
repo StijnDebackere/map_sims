@@ -11,11 +11,13 @@ import simulation_slices.utilities as util
 
 
 def slice_file_name(
-    save_dir: str, slice_axis: int, num_slices: int, snapshot: int
+        save_dir: str, slice_axis: int, num_slices: int, snapshot: int, downsample: bool, downsample_factor: float,
 ) -> str:
     """Return the formatted base filename for the given number of slices."""
-    fname = f"axis_{slice_axis}_nslices_{num_slices}_{snapshot:03d}"
-    fname = f"{save_dir}/{fname}.hdf5"
+    fname = f"axis_{slice_axis}_nslices_{num_slices}"
+    if downsample:
+        fname = f"{fname}_downsample_{str(downsample_factor).replace('.', 'p')}"
+    fname = f"{save_dir}/{fname}_{snapshot:03d}.hdf5"
 
     return fname
 
@@ -31,6 +33,8 @@ def create_slice_file(
     num_slices: int,
     slice_axis: int,
     maxshape: int,
+    downsample: bool = False,
+    downsample_factor: float = None,
 ) -> str:
     """Create the hdf5 file in save_dir for given slice."""
     fname = slice_file_name(
@@ -38,6 +42,8 @@ def create_slice_file(
         slice_axis=slice_axis,
         num_slices=num_slices,
         snapshot=snapshot,
+        downsample=downsample,
+        downsample_factor=downsample_factor,
     )
 
     hdf_layout = slice_layout.get_slice_layout(
@@ -70,6 +76,8 @@ def open_slice_file(
     snapshot: int,
     slice_axis: int,
     num_slices: int,
+    downsample: bool = False,
+    downsample_factor: float = None,
     mode: str = "r",
 ):
     """Return the slice file with given specifications."""
@@ -78,6 +86,8 @@ def open_slice_file(
         snapshot=snapshot,
         slice_axis=slice_axis,
         num_slices=num_slices,
+        downsample=downsample,
+        downsample_factor=downsample_factor,
     )
     h5file = h5py.File(fname, mode=mode, swmr=True)
     return h5file

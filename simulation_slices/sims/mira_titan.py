@@ -182,6 +182,7 @@ def save_slice_data(
     save_dir: Optional[str] = None,
     logger: util.LoggerType = None,
     verbose: Optional[bool] = False,
+    **kwargs,
 ) -> List[str]:
     """For snapshot of simulation in sim_dir, slice the particle data for
     all ptypes along the x, y, and z directions. Slices are saved

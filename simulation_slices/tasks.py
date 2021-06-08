@@ -68,6 +68,8 @@ def slice_sim(
 
     slice_axes = config.slice_axes
     num_slices = config.num_slices
+    downsample = config.slice_downsample
+    downsample_factor = config.downsample_factor
 
     if logger is None and config.logging:
         logger = get_logger(
@@ -79,10 +81,12 @@ def slice_sim(
     if sim_suite.lower() == "bahamas":
         fnames = bahamas.save_slice_data(
             sim_dir=str(sim_dir),
-            snapshot=snap,
+            snapshot=snapshot,
             ptypes=ptypes,
             slice_axes=slice_axes,
             num_slices=num_slices,
+            downsample=downsample,
+            downsample_factor=downsample_factor,
             save_dir=save_dir,
             verbose=False,
             logger=logger,
@@ -105,7 +109,7 @@ def slice_sim(
         logger.info(
             f"slice_sim_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
-    # return fnames
+    return fnames
 
 
 def save_coords(
@@ -123,7 +127,6 @@ def save_coords(
     sim_dir = config.sim_paths[sim_idx]
     sim_suite = config.sim_suite
     box_size = config.box_sizes[sim_idx]
-    save_dir = config.slice_paths[sim_idx]
 
     mass_dset = config.mass_dset
     mass_range = config.mass_range
@@ -172,7 +175,7 @@ def save_coords(
         logger.info(
             f"save_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
-    # return fname
+    return fname
 
 
 def map_coords(
@@ -188,6 +191,8 @@ def map_coords(
 
     if type(config) is str:
         config = Config(config)
+
+    swmr = config.swmr
 
     base_dir = config.base_dir
     sim_dir = config.sim_paths[sim_idx]
@@ -206,6 +211,8 @@ def map_coords(
 
     slice_dir = config.slice_paths[sim_idx]
     num_slices = config.num_slices
+    downsample = config.slice_downsample
+    downsample_factor = config.downsample_factor
 
     save_dir = config.map_paths[sim_idx]
     map_name_append = config.map_name_append
@@ -233,6 +240,8 @@ def map_coords(
         snapshot=snapshot,
         slice_axis=slice_axis,
         num_slices=num_slices,
+        downsample=downsample,
+        downsample_factor=downsample_factor,
         box_size=box_size,
         map_pix=map_pix,
         map_size=map_size,
@@ -245,6 +254,7 @@ def map_coords(
         method=map_method,
         n_ngb=n_ngb,
         logger=logger,
+        swmr=swmr,
         verbose=False,
     )
 
@@ -253,7 +263,7 @@ def map_coords(
         logger.info(
             f"map_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
-    # return fname
+    return fname
 
 
 def analyze_map(
