@@ -11,16 +11,14 @@ CONFIG_FILE = str(Path(__file__).parent / "batch.toml")
 
 
 class Config(object):
-    def __init__(self, config_file=CONFIG_FILE):
-        self.config_file = config_file
-        config = toml.load(config_file)
-        self.logging = config["setup"]["logging"]
-        if self.logging:
-            self.log_dir = config["setup"]["log_dir"]
-            self.log_level = config["setup"]["log_level"]
-            self.log_name_append = config["setup"].get("log_name_append", "")
+    def __init__(self, config_file=CONFIG_FILE, config_dict=None):
+        if config_dict is None:
+            self.config_file = config_file
+            config = toml.load(config_file)
+        else:
+            config = config_dict
 
-        # configuration for slice_sim
+        # simulation info
         self.base_dir = config["sims"]["base_dir"]
         self.sim_dirs = config["sims"]["sim_dirs"]
         self.sim_suite = config["sims"]["sim_suite"]
@@ -30,54 +28,80 @@ class Config(object):
             config["sims"]["box_sizes_units"]
         )
 
-        self.num_slices = config["slices"]["num_slices"]
-        self.slice_axes = config["slices"]["slice_axes"]
-        self.slice_dir = config["slices"]["save_dir"]
+        # optional setup
+        self.swmr = config["setup"].get("swmr", False)
+        self.logging = config["setup"].get("logging", False)
+        if self.logging:
+            self.log_dir = config["setup"]["log_dir"]
+            self.log_level = config["setup"]["log_level"]
+            self.log_name_append = config["setup"].get("log_name_append", "")
 
-        # configuration for save_coords
-        mass_units = config["coords"].get("mass_units", None)
-        log10_mass_range = config["coords"].get("log10_mass_range", None)
-        if log10_mass_range is not None:
-            self.mass_range = 10**np.array(log10_mass_range) * u.Unit(mass_units)
+        # optional slice info
+        if "slices" in config.keys():
+            self.num_slices = config["slices"].get("num_slices", None)
+            self.slice_axes = config["slices"].get("slice_axes", None)
+            self.slice_dir = config["slices"].get("save_dir", None)
 
-        self.coords_dir = config["coords"].get("coords_dir", None)
-        self.coords_name = config["coords"].get("coords_name", None)
-        self.coord_dset = config["coords"].get("coord_dset", None)
-        self.mass_dset = config["coords"].get("mass_dset", None)
-        self.extra_dsets = config["coords"].get("extra_dsets", None)
-        if "sample_haloes_bins" in config["coords"].keys():
-            sample_haloes_bins = config["coords"]["sample_haloes_bins"]
-            n_bins = sample_haloes_bins["n_bins"]
-            self.sample_haloes_bins = {
-                "mass_bin_edges": 10**np.linspace(
-                    *sample_haloes_bins["log10_mass_range"], n_bins + 1) * u.Unit(mass_units),
-                "n_in_bin": np.ones(n_bins, dtype=int) * sample_haloes_bins["n_in_bin"]
-            }
-        else:
-            self.sample_haloes_bins = None
+        # optional info for save_coords
+        if "coords" in config.keys():
+            mass_units = config["coords"].get("mass_units", None)
+            log10_mass_range = config["coords"].get("log10_mass_range", None)
+            if log10_mass_range is not None:
+                self.mass_range = 10**np.array(log10_mass_range) * u.Unit(mass_units)
+
+            self.coords_dir = config["coords"].get("coords_dir", None)
+            self.coords_name = config["coords"].get("coords_name", None)
+            self.coord_dset = config["coords"].get("coord_dset", None)
+
+            self.mass_dset = config["coords"].get("mass_dset", None)
+            self.extra_dsets = config["coords"].get("extra_dsets", None)
+            if "sample_haloes_bins" in config["coords"].keys():
+                sample_haloes_bins = config["coords"]["sample_haloes_bins"]
+                n_bins = sample_haloes_bins["n_bins"]
+                self.sample_haloes_bins = {
+                    "mass_bin_edges": 10**np.linspace(
+                        *sample_haloes_bins["log10_mass_range"], n_bins + 1) * u.Unit(mass_units),
+                    "n_in_bin": np.ones(n_bins, dtype=int) * sample_haloes_bins["n_in_bin"]
+                }
+            else:
+                self.sample_haloes_bins = None
 
         # configuration for map_sim
-        self.map_dir = config["maps"]["save_dir"]
-        self.map_name_append = config["maps"].get("map_name_append", "")
-        self.map_overwrite = config["maps"].get("map_overwrite", False)
-        self.map_method = config["maps"].get("map_method", None)
-        self.map_types = config["maps"]["map_types"]
-        self.map_pix = config["maps"]["map_pix"]
-        self.map_size = config["maps"]["map_size"] * u.Unit(config["maps"]["map_units"])
-        self.map_thickness = config["maps"]["map_thickness"] * u.Unit(
-            config["maps"]["map_units"]
-        )
-        self.n_ngb = config["maps"].get("n_ngb", None)
+        if "maps" in config.keys():
+            self.map_dir = config["maps"].get("save_dir", None)
+            self.map_name_append = config["maps"].get("map_name_append", "")
+            self.map_overwrite = config["maps"].get("map_overwrite", False)
+            self.map_method = config["maps"].get("map_method", None)
+            self.map_types = config["maps"]["map_types"]
+            self.map_pix = config["maps"]["map_pix"]
+
+            self.map_full = config["maps"].get("map_full", False)
+            if not self.map_full:
+                self.map_size = config["maps"]["map_size"] * u.Unit(config["maps"]["map_units"])
+                self.map_thickness = config["maps"]["map_thickness"] * u.Unit(
+                    config["maps"]["map_units"]
+                )
+            else:
+                self.map_size = self.box_sizes
+                self.map_thickness = self.box_sizes
+
+            self.n_ngb = config["maps"].get("n_ngb", None)
+            if getattr(self, "coords_dir", None) is None:
+                self.coords_dir = config["maps"].get("coords_dir", None)
+                self.coords_name = config["maps"].get("coords_name", None)
 
         # configuration for observables
-        self.obs_dir = config["observables"]["save_dir"]
-        self.obs_types = config["observables"].keys() - ["save_dir"]
-        self.obs_kwargs = {key: config["observables"][key] for key in self.obs_types}
+        if "observables" in config.keys():
+            self.obs_dir = config["observables"].get("save_dir", None)
+            self.obs_name_append = config["observables"].get("obs_name_append", "")
+            self.obs_overwrite = config["observables"].get("obs_overwrite", False)
+            self.obs_types = config["observables"].keys() - ["save_dir"]
+            # self.obs_kwargs = {key: config["observables"][key] for key in self.obs_types}
 
         # self.figure_dir = config["DIRECTORIES"]["FIGURE_DIR"]
         # self.data_dir = config["DIRECTORIES"]["DATA_DIR"]
 
-        self.build_config()
+        # self.build_config()
 
     def __getitem__(self, key):
         return self.config[key]
@@ -127,8 +151,12 @@ class Config(object):
 
     @coords_dir.setter
     def coords_dir(self, val):
-        self._coords_dir = Path(val)
-        self.coords_paths = [self._coords_dir / sd for sd in self.sim_dirs]
+        if val is None:
+            self._coords_dir = None
+            self.coords_paths = [None for sd in self.sim_dirs]
+        else:
+            self._coords_dir = Path(val)
+            self.coords_paths = [self._coords_dir / sd for sd in self.sim_dirs]
 
     @property
     def coords_name(self):
@@ -136,12 +164,19 @@ class Config(object):
 
     @coords_name.setter
     def coords_name(self, val):
-        self._coords_name = val
-        self.coords_files = [
-            [
-                sd / f"{val}_{snap:03d}.hdf5" for snap in self.snapshots[sim_idx]
-            ]  for sim_idx, sd in enumerate(self.coords_paths)
-        ]
+        if val is None:
+            self._coords_name = None
+            self.coords_files = [
+                [None for snap in self.snapshots[sim_idx]]
+                for sim_idx in range(len(self.sim_dirs))
+            ]
+        else:
+            self._coords_name = val
+            self.coords_files = [
+                [
+                    sd / f"{val}_{snap:03d}.hdf5" for snap in self.snapshots[sim_idx]
+                ]  for sim_idx, sd in enumerate(self.coords_paths)
+            ]
 
     @property
     def obs_dir(self):
@@ -275,6 +310,8 @@ class Config(object):
 
             # multiple map_types for each sim
             else:
+                if any(isinstance(v, list) for v in val):
+                    raise ValueError("if len(map_types) != n_sims, map_types cannot have nested lists")
                 self._map_types = np.tile(
                     np.atleast_1d(val)[None], (self._n_sims, 1)
                 ).tolist()
@@ -289,22 +326,22 @@ class Config(object):
         # else:
         #     self._map_types = np.atleast_1d(list(set(val)))
 
-    def build_config(self):
-        self.config = dict(
-            dict(
-                (
-                    str(sim),
-                    dict(
-                        (
-                            ("snapshots", self.snapshots[idx]),
-                            ("path", self.sim_paths[idx]),
-                            ("slice_dir", self.slice_paths[idx]),
-                            ("map_dir", self.map_paths[idx]),
-                            ("coords_file", self.coords_files[idx]),
-                            ("obs_dir", self.obs_paths[idx]),
-                        )
-                    ),
-                )
-                for idx, sim in enumerate(self.sim_dirs)
-            )
-        )
+    # def build_config(self):
+    #     self.config = dict(
+    #         dict(
+    #             (
+    #                 str(sim),
+    #                 dict(
+    #                     (
+    #                         ("snapshots", self.snapshots[idx]),
+    #                         ("path", self.sim_paths[idx]),
+    #                         ("slice_dir", self.slice_paths[idx]),
+    #                         ("map_dir", self.map_paths[idx]),
+    #                         ("coords_file", self.coords_files[idx]),
+    #                         ("obs_dir", self.obs_paths[idx]),
+    #                     )
+    #                 ),
+    #             )
+    #             for idx, sim in enumerate(self.sim_dirs)
+    #         )
+    #     )
