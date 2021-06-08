@@ -1,10 +1,12 @@
 import astropy.units as u
 import numpy as np
 
+import simulation_slices.utilities as util
+
 
 def pix_dist(a, b, b_is_pix=True):
-    """Calculate the distance between pixel centers of list if pixels a_ij
-    = (i, j) and b = (k, l).
+    """Calculate the distance between pixel centers of list of pixels
+    a = (i, j) and b = (k, l).
 
     Parameters
     ----------
@@ -119,6 +121,46 @@ def dist(x, y, box_size, axis=0):
     """
     dx = min_diff(x=x, y=y, box_size=box_size)
     return np.linalg.norm(np.atleast_1d(dx), axis=axis)
+
+
+def distances_from_centers(
+    center, dr, pix_size, box_size,
+):
+    """Calculate the distance for a pixel grid with pix_size of physical
+    size (2dr, 2dr) around center for a simulation with box_size
+    (needed for periodic boundary conditions).
+
+    Parameters
+    ----------
+    center : (2, ) astropy.units.Quantity
+        center for the grid
+    dr : astropy.units.Quantity
+        minimum radius of the grid
+    pix_size : astropy.units.Quantity
+        physical size of a pixel
+    box_size : astropy.units.Quantity
+        size of the simulation box
+
+    Returns
+    -------
+    pix_grid : (2, n) array-like
+        x, y pixel coordinates for the pixel grid
+    distances : (n, ) array-like
+        physical distance from center for each pixel in pix_grid
+    """
+    map_pix = int(box_size / pix_size)
+    center = np.atleast_1d(center)
+
+    # lower (x, y) for pixel grid => these can exceed box_size since we only care about distances around center
+    n_pix = np.ceil(2 * dr / pix_size).astype(int)
+    lower = np.floor((center - dr) / pix_size).astype(int)
+
+    # pix_x_range and pix_y_range
+    pix_ranges = np.linspace(lower, lower + n_pix - 1, n_pix).T
+    pix_grid = util.arrays_to_coords(*pix_ranges).astype(int)
+
+    distances = pix_dist(a=pix_grid, b=center / pix_size, b_is_pix=False)
+    return (pix_grid % map_pix).T, distances * pix_size
 
 
 def slice_around_center(

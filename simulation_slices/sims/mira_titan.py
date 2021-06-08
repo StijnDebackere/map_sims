@@ -173,6 +173,146 @@ def save_coords_file(
     return str(fname)
 
 
+def save_subvolumes(
+    sim_dir: str,
+    box_size: u.Quantity,
+    snapshot: int,
+    mass_range: Tuple[u.Quantity, u.Quantity],
+    coord_ranges: u.Quantity = None,
+    save_dir: Optional[str] = None,
+    coords_fnames: Optional[str] = "",
+    logger: util.LoggerType = None,
+    **kwargs,
+) -> str:
+    """For snapshot of simulation in sim_dir, save coordinates of haloes
+    within group_range.
+
+    Parameters
+    ----------
+    sim_dir : str
+        path of the simulation
+    box_size : astropy.units.Quantity
+        size of simulation
+    snapshot : int
+        snapshot to look at
+    mass_range : (min, max) tuple
+        minimum and maximum value for masses
+    coord_ranges : (n, 3, 2) array
+        ranges for coordinates to include
+    save_dir : str or None
+        location to save to, defaults to snapshot_xxx/maps/
+    coords_fnames : (n,) list of strings
+        names for the coordinates files without extension
+
+    Returns
+    -------
+    fname : str
+        filename of coords file
+    saves a set of coordinates to save_dir
+
+    """
+    sim_info = MiraTitan(
+        sim_dir=sim_dir,
+        box_size=box_size,
+        snapnum=snapshot,
+    )
+    h = sim_info.cosmo["h"]
+
+    # ensure that save_dir exists
+    if save_dir is None:
+        save_dir = util.check_path(sim_info.filename).parent / "maps"
+    else:
+        save_dir = util.check_path(save_dir)
+
+    tl0 = time.time()
+    group_data = sim_info.read_properties(
+        "fof",
+        [
+            "fof_halo_mass",
+            "fof_halo_center_x",
+            "fof_halo_center_y",
+            "fof_halo_center_z",
+            "fof_halo_tag",
+        ],
+    )
+    tl1 = time.time()
+    if logger:
+        logger.debug(f"loading fof data took {tl1 - tl0:.2f}s")
+
+    coordinates = (
+        np.vstack(
+            [
+                group_data["fof_halo_center_x"],
+                group_data["fof_halo_center_y"],
+                group_data["fof_halo_center_z"],
+            ]
+        )
+        .T
+        .to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+    )
+    masses = group_data["fof_halo_mass"].to(
+        "Msun", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+    )
+    group_ids = group_data["fof_halo_tag"].astype(int)
+
+    mass_range = mass_range.to(masses.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+    mass_selection = (masses > np.min(mass_range)) & (masses < np.max(mass_range))
+
+    fnames = []
+    # also select coordinate range
+    for idx, coord_range in enumerate(coord_ranges):
+        tc0 = time.time()
+        fname = (save_dir / f"{coords_fnames[idx]}_{snapshot:03d}").with_suffix(".hdf5")
+        coord_range = coord_range.to(coordinates.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+        coord_selection = np.all(
+            [
+                (coordinates[:, i] > np.min(coord_range[i])) & (coordinates[:, i] < np.max(coord_range[i]))
+                for i in range(coord_range.shape[0])
+            ], axis=0
+        )
+        selection = mass_selection & coord_selection
+
+        layout = {
+            "attrs": {
+                "description": "File with selected coordinates for maps.",
+            },
+            "dsets": {
+                "coordinates": {
+                    "data": coordinates[selection],
+                    "attrs": {
+                        "description": "Centers",
+                        "units": str(coordinates.unit),
+                        "mass_range": mass_range.value,
+                        "mass_range_units": str(mass_range.unit),
+                        "coord_range": coord_range.value,
+                        "coord_range_units": str(coord_range.unit),
+                    },
+                },
+                "group_ids": {
+                    "data": group_ids[selection],
+                    "attrs": {
+                        "description": "Group IDs",
+                    },
+                },
+                "masses": {
+                    "data": masses[selection],
+                    "attrs": {
+                        "description": "Masses",
+                        "units": str(masses.unit),
+                    },
+                },
+            },
+        }
+
+        io.create_hdf5(fname=fname, layout=layout, close=True)
+        fnames.append(str(fname))
+        tc1 = time.time()
+        if logger:
+            logger.debug("saving coord_range took {tc1 - tc0:.2f}s")
+
+    return fnames
+
+
 def save_slice_data(
     sim_dir: str,
     box_size: u.Quantity,

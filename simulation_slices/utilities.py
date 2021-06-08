@@ -69,6 +69,151 @@ def arrays_to_coords(*xi):
     return coords.reshape(-1, len(xi))
 
 
+def coord_ids_to_curve(coord_ids, coord_shape):
+    """Convert a list of coord_ids = (x, y, z) with maximum coord_shape = (n_x, n_y, n_z)
+    a space-filling curve index.
+
+    e.g. in 3D:
+    curve_id = x + y * n_x + z * n_x * n_y
+
+    Parameters
+    ----------
+    coord_ids : (n, dim) array-like
+        index along each coordinate axis
+    coord_shape : (dim,) array-like
+        maximum index along each coordinate axis
+
+    Returns
+    -------
+    curve_ids : (n,) array-like
+        index along curve for each coord_id
+
+    """
+    coord_ids = np.atleast_2d(coord_ids)
+    coord_shape = np.atleast_1d(coord_shape)
+    if coord_ids.dtype != int:
+        raise ValueError("coord_ids should be int")
+    if coord_ids.shape[1] != coord_shape.shape[0]:
+        raise ValueError("axis 1 of coord_ids should match axis 0 of coord_shape")
+
+    # coord_ids => (n, i)
+    # coord_shape => (i, )
+    dim_factor = np.concatenate([[1], np.cumprod(coord_shape[:-1])]).astype(int)
+    curve_ids = np.sum(coord_ids * dim_factor, axis=-1)
+
+    return curve_ids
+
+
+def curve_to_coord_ids(curve_ids, coord_shape):
+    """Convert a list of curve ids into coord_ids = (x, y, z) with maximum
+    coord_shape = (n_x, n_y, n_z).
+
+    In 3D:
+    curve_id = x + y * n_x + z * n_x * n_y
+    => coord_id = (x, y, z)
+
+    e.g. curve_id = 954 for coord_shape = [10, 15, 20]
+    => [[ 954 % (15 * 10) = 54 => 54 % 10 = 4 => 4 // 1 = 4 ]
+        [ 954 % (15 * 10) = 54 => 54 // 10 = 5 ]
+        [ 954 // (15 * 10) = 6 ]]
+    => coord_id = [4, 5, 6]
+
+    Parameters
+    ----------
+    curve_ids : (n,) array-like
+        index along curve for each coord_id
+    coord_shape : (dim,) array-like
+        maximum index along each coordinate axis
+
+    Returns
+    -------
+    coord_ids : (n, dim) array-like
+        index along each coordinate axis
+
+    """
+    curve_ids = np.atleast_1d(curve_ids)
+    coord_shape = np.atleast_1d(coord_shape)
+    if len(curve_ids.shape) > 1:
+        raise ValueError("curve_ids should be 1D array")
+    if len(coord_shape.shape) > 1:
+        raise ValueError("coord_shape should be 1D array")
+
+    # will construct coord_ids from long division into coord_shape
+    coord_ids = np.tile(curve_ids[..., None], (1, coord_shape.shape[0]))
+
+    # increment in number of elements for increment in coord_id along each dimension
+    # e.g. coord_shape = [10, 15, 20]
+    # => [1, 10, 150]
+    dim_factor = np.concatenate([[1], np.cumprod(coord_shape[:-1])])
+
+    for dim in range(0, coord_shape.shape[0]):
+        # what is remainder of coord_id until dimension
+        for div in dim_factor[dim + 1:][::-1]:
+            coord_ids[:, dim] = coord_ids[:, dim] % div
+
+        # what is long_division along dimension
+        coord_ids[:, dim] = coord_ids[:, dim] // dim_factor[dim]
+
+    return coord_ids
+
+
+def get_subvolume_ranges(
+    box_size: u.Quantity,
+    n_divides: List[int],
+    n_sub: int = 100,
+    curve_ids: List[int] = None,
+):
+    """Divide simulation of box_size into n_divides along axes,
+    choose n_sub volumes.
+
+    Parameters
+    ----------
+    box_size : astropy.units.Quantity
+        box size
+    n_divides : int or (3,) int array-like
+        number of divisions of L along each dimension
+    n_sub : int
+        number of subvolume ranges to return
+    curve_ids : array-like or None
+        choice of curve_ids to get ranges for
+
+    Returns
+    -------
+    coord_ranges : (n_sub, 3, 2) astropy.units.Quantity
+        coordinate range for each n_sub
+    curve_ids : (n_sub,) array-like
+        unique space-filling curve id for each subvolume
+    """
+    n_divides = np.atleast_1d(n_divides).reshape(-1)
+    delta_L = box_size / n_divides
+
+    if n_divides.shape[0] == 1:
+        n_divides = np.repeat(n_divides, 3)
+
+    if n_divides.shape[0] != 3:
+        raise ValueError("need n_divides for 3 dimensions.")
+
+    if curve_ids is not None:
+        coord_ids = curve_to_coord_ids(curve_ids=curve_ids, coord_shape=n_divides)
+        coord_ranges = np.zeros((len(curve_ids), 3, 2), dtype=float) * delta_L.unit
+
+    else:
+        # we want non-overlapping subvolumes
+        all_coord_ids = arrays_to_coords(*[np.arange(0, ndiv) for ndiv in n_divides])
+        chosen_ids = np.random.choice(all_coord_ids.shape[0], replace=False, size=n_sub)
+
+        coord_ids = all_coord_ids[chosen_ids]
+        curve_ids = coord_ids_to_curve(coord_ids, n_divides)
+        coord_ranges = np.zeros((n_sub, 3, 2), dtype=float) * delta_L.unit
+
+
+    for idx, coord_id in enumerate(coord_ids):
+        coord_range = np.array([coord_id * delta_L, (coord_id + 1) * delta_L]).T
+        coord_ranges[idx] = coord_range * delta_L.unit
+
+    return coord_ranges, curve_ids
+
+
 def time_this(pid=False, logger=None):
     def outer(func):
         @wraps(func)

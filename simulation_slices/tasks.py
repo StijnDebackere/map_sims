@@ -178,6 +178,186 @@ def save_coords(
     return fname
 
 
+def save_subvolumes(
+    sim_idx: int,
+    snapshot: int,
+    n_divides: int,
+    config: Union[Config, str],
+    curve_ids: List[int] = None,
+    n_sub: int = None,
+    logger: util.LoggerType = None,
+) -> str:
+    """Save a set of halo centers to generate maps around."""
+    start = time.time()
+
+    if type(config) is str:
+        config = Config(config)
+
+    sim_dir = config.sim_paths[sim_idx]
+    sim_suite = config.sim_suite
+    box_size = config.box_sizes[sim_idx]
+
+    mass_dset = config.mass_dset
+    mass_range = config.mass_range
+    coord_dset = config.coord_dset
+    extra_dsets = config.extra_dsets
+    save_dir = config.coords_paths[sim_idx]
+
+    if curve_ids is None:
+        # extract coordinate ranges for n_sub volumes
+        coord_ranges, curve_ids = util.get_subvolume_ranges(
+            box_size=box_size, n_divides=n_divides, n_sub=n_sub
+        )
+    else:
+        coord_ranges, curve_ids = util.get_subvolume_ranges(
+            box_size=box_size, n_divides=n_divides, curve_ids=curve_ids
+        )
+    coords_fnames = [
+        f"{config.coords_name}_ndiv_{n_divides:d}_id_{curve_id:d}"
+        for curve_id in curve_ids
+    ]
+
+    if logger is None and config.logging:
+        logger = get_logger(
+            sim_idx=sim_idx,
+            config=config,
+            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_subvols{config.log_name_append}",
+        )
+
+    if sim_suite.lower() == "bahamas":
+        fnames = bahamas.save_subvolumes(
+            sim_dir=str(sim_dir),
+            snapshot=snapshot,
+            mass_dset=mass_dset,
+            coord_dset=coord_dset,
+            coord_ranges=coord_ranges,
+            mass_range=mass_range,
+            extra_dsets=extra_dsets,
+            save_dir=save_dir,
+            coords_fnames=coords_fnames,
+            sample_haloes_bins=sample_haloes_bins,
+            logger=logger,
+            verbose=False,
+        )
+
+    elif sim_suite.lower() == "miratitan":
+        fnames = mira_titan.save_subvolumes(
+            sim_dir=str(sim_dir),
+            box_size=box_size,
+            snapshot=snapshot,
+            mass_range=mass_range,
+            coord_ranges=coord_ranges,
+            save_dir=save_dir,
+            coords_fnames=coords_fnames,
+            logger=logger,
+        )
+
+    end = time.time()
+    if logger:
+        logger.info(
+            f"save_subvols_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
+        )
+    return fnames, curve_ids
+
+
+def map_subvolumes(
+    sim_idx: int,
+    snapshot: int,
+    slice_axis: int,
+    n_divides: int,
+    config: Union[Config, str],
+    curve_ids: List[int] = None,
+    logger: util.LoggerType = None,
+) -> List[str]:
+    """Save a set of maps for sim_idx in config.sim_paths."""
+    start = time.time()
+
+    if type(config) is str:
+        config = Config(config)
+
+    base_dir = config.base_dir
+    sim_dir = config.sim_paths[sim_idx]
+    sim_suite = config.sim_suite
+    box_size = config.box_sizes[sim_idx]
+    ptypes = config.ptypes[sim_idx]
+
+    coords_name = config.coords_name
+
+    if logger is None and config.logging:
+        logger = get_logger(
+            sim_idx=sim_idx,
+            config=config,
+            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_coords{config.log_name_append}",
+        )
+
+    slice_dir = config.slice_paths[sim_idx]
+    num_slices = config.num_slices
+
+    save_dir = config.map_paths[sim_idx]
+    map_name_append = config.map_name_append
+    map_overwrite = config.map_overwrite
+    map_method = config.map_method
+
+    map_types = config.map_types[sim_idx]
+    map_pix = config.map_pix
+    map_size = config.map_size
+    map_thickness = config.map_thickness
+    n_ngb = config.n_ngb
+
+    # simple name without snapshot and hdf5 extension to use for saved filename
+    coords_names = [f"{config.coords_name}_ndiv_{n_divides:d}_id_{curve_id:d}"
+        for curve_id in curve_ids
+    ]
+    # full filename for loading of centers
+    coords_files = [
+        f"{save_dir}/{coords_name}_{snapshot:03d}.hdf5" for coords_name in coords_names
+    ]
+
+    fnames = []
+    for idx, coords_file in enumerate(coords_files):
+        tc0 = time.time()
+        with h5py.File(str(coords_file), "r") as h5file:
+            centers = h5file["coordinates"][:] * u.Unit(
+                h5file["coordinates"].attrs["units"]
+            )
+            group_ids = h5file["group_ids"][:]
+            masses = h5file["masses"][:] * u.Unit(h5file["masses"].attrs["units"])
+
+        fname = map_gen.save_maps(
+            centers=centers,
+            group_ids=group_ids,
+            masses=masses,
+            slice_dir=slice_dir,
+            snapshot=snapshot,
+            slice_axis=slice_axis,
+            num_slices=num_slices,
+            box_size=box_size,
+            map_pix=map_pix,
+            map_size=map_size,
+            map_thickness=map_thickness,
+            map_types=map_types,
+            save_dir=save_dir,
+            coords_name=coords_names[idx],
+            map_name_append=map_name_append,
+            overwrite=map_overwrite,
+            method=map_method,
+            n_ngb=n_ngb,
+            logger=logger,
+            verbose=False,
+        )
+        fnames.append(fname)
+        tc1 = time.time()
+        if logger:
+            logger.debug(f"{curve_ids[idx]=} took {tc1 - tc0:.2f}s")
+
+    end = time.time()
+    if logger:
+        logger.info(
+            f"map_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
+        )
+    return fnames
+
+
 def map_coords(
     sim_idx: int,
     snapshot: int,
