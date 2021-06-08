@@ -5,6 +5,8 @@ import astropy.units as u
 import numpy as np
 import h5py
 
+import simulation_slices.utilities as util
+
 
 def create_hdf5(
     fname: str,
@@ -46,6 +48,7 @@ def create_hdf5(
     h5file : hdf5 file
         (closed) file with given layout
     """
+    fname = util.check_path(fname)
     if overwrite:
         # truncate file if overwriting
         mode = "w"
@@ -54,8 +57,13 @@ def create_hdf5(
             raise ValueError("cannot enable swmr and not overwrite.")
         mode = "a"
 
+    if swmr:
+        libver = "v110"
+    else:
+        libver = "earliest"
+
     # create hdf5 file and generate the required datasets
-    h5file = h5py.File(str(fname), mode=mode)
+    h5file = h5py.File(str(fname), mode=mode, libver=libver)
 
     for attr, val in layout["attrs"].items():
         # attr not yet in h5file
@@ -78,8 +86,12 @@ def create_hdf5(
                         raise ValueError(f"{dset=} does not match")
                 else:
                     if np.allclose(val["data"], h5file[dset][()]):
+                        # val can still be unit, but loaded from hdf5 file
                         if "units" in h5file[dset].attrs.keys():
-                            raise ValueError(f"{dset=} is not astropy.units.Quantity")
+                            if "units" not in val["attrs"].keys():
+                                raise ValueError(f"{dset=} is not astropy.units.Quantity")
+                            elif val["attrs"]["units"] != h5file[dset].attrs["units"]:
+                                raise ValueError(f"{dset=} units do not match")
 
                         # load dset since we will compare its attributes later
                         ds = h5file[dset]
@@ -127,12 +139,26 @@ def create_hdf5(
             for attr, attr_val in val["attrs"].items():
                 # add attr if not present
                 if attr not in ds.attrs.keys():
-                    ds.attrs[attr] = attr_val
+                    if type(attr_val) is u.Quantity:
+                        ds.attrs[attr] = attr_val.value
+                        ds.attrs[f"{attr}_units"] = str(attr_val.unit)
+                    elif callable(attr_val):
+                        ds.attrs[attr] = attr_val.__name__
+                    else:
+                        try:
+                            ds.attrs[attr] = attr_val
+                        except TypeError:
+                            warnings.warn(f"{attr=} with type={type(attr_val)} cannot be saved, skipping.")
                 # attr present, cannot overwrite
                 else:
-                    if attr_val != ds.attrs[attr]:
-                        raise ValueError(f"{attr=} does not match")
+                    try:
+                        check_equal = (attr_val == ds.attrs[attr])
+                    except ValueError:
+                        check_equal = np.all(attr_val, ds.attrs[attr])
 
+                    if not check_equal:
+                        breakpoint()
+                        raise ValueError(f"{attr=} does not match for dset={val}")
     if close:
         h5file.close()
     else:
