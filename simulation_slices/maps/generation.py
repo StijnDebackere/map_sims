@@ -42,11 +42,11 @@ def get_map_name(
 
 def coords_to_map_bin(
     coords: u.Quantity,
-    map_center: u.Quantity,
     map_size: u.Quantity,
     map_pix: int,
     box_size: u.Quantity,
     func: Callable,
+    map_center: u.Quantity = None,
     logger: util.LoggerType = None,
     **props,
 ) -> u.Quantity:
@@ -57,7 +57,7 @@ def coords_to_map_bin(
     ----------
     coords : (2, N) astropy.units.Quantity
         (x, y) coordinates
-    map_center : (2,) astropy.units.Quantity
+    map_center : (2,) astropy.units.Quantity, optional
         center of the (x, y) coordinate system
     map_size : astropy.units.Quantity
         size of the map
@@ -85,11 +85,15 @@ def coords_to_map_bin(
     #  ___
     # | x |
     # O---
-    map_origin = tools.min_diff(np.atleast_1d(map_center), map_size / 2, box_size)
+    if map_center is not None:
+        map_origin = tools.min_diff(np.atleast_1d(map_center), map_size / 2, box_size)
 
-    # compute the offsets w.r.t the map_origin, taking into account
-    # periodic boundary conditions
-    coords_origin = tools.min_diff(coords, map_origin.reshape(2, 1), box_size)
+        # compute the offsets w.r.t the map_origin, taking into account
+        # periodic boundary conditions
+        coords_origin = tools.min_diff(coords, map_origin.reshape(2, 1), box_size)
+    else:
+        # assume coordinates are already with respect to origin
+        coords_origin = coords
 
     # get the x and y values of the pixelated maps w.r.t. origin
     x_pix = slicing.get_coords_slices(
@@ -123,7 +127,7 @@ def coords_to_map_bin(
     func_values = func_values[sort_order]
 
     # get the location of each pixel for the sorted pixel list
-    # e.g. for sorted pix_ids = [0, 0, 0, 1, 1, ..., num_pix_side**2, ...]
+    # e.g. for sorted pix_ids = [0, 0, 0, 1, 1, ..., num_pix_side**2 - 1, ...]
     # we would get back [0, 3, ...]
     unique_ids, loc_ids = np.unique(pix_ids[sort_order], return_index=True)
 
@@ -164,11 +168,11 @@ def kernel(r: u.Quantity, h: u.Quantity, dim: int = 2) -> u.Quantity:
 
 def coords_to_map_sph(
     coords: u.Quantity,
-    map_center: u.Quantity,
     map_size: u.Quantity,
     map_pix: int,
     box_size: u.Quantity,
     func: Callable,
+    map_center: u.Quantity = None,
     n_ngb: int = 30,
     logger: util.LoggerType = None,
     **props,
@@ -180,7 +184,7 @@ def coords_to_map_sph(
     ----------
     coords : (2, N) astropy.units.Quantity
         (x, y) coordinates
-    map_center : (2,) astropy.units.Quantity
+    map_center : (2,) astropy.units.Quantity, optional
         center of the (x, y) coordinate system
     map_size : astropy.units.Quantity
         size of the map
@@ -211,11 +215,15 @@ def coords_to_map_sph(
     #  ___
     # | x |
     # O---
-    map_origin = tools.min_diff(np.atleast_1d(map_center), 0.5 * map_size, box_size)
+    if map_center is not None:
+        map_origin = tools.min_diff(np.atleast_1d(map_center), 0.5 * map_size, box_size)
 
-    # compute the offsets w.r.t the map_origin, taking into account
-    # periodic boundary conditions
-    coords_origin = tools.min_diff(coords, map_origin.reshape(2, 1), box_size)
+        # compute the offsets w.r.t the map_origin, taking into account
+        # periodic boundary conditions
+        coords_origin = tools.min_diff(coords, map_origin.reshape(2, 1), box_size)
+    else:
+        # assume coords already centered
+        coords_origin = coords
 
     start = time.time()
     tree = KDTree(coords_origin.T)
