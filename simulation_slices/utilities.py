@@ -4,7 +4,7 @@ import os
 import pathlib
 from pathlib import Path
 import time
-from typing import Union
+from typing import Union, List
 
 import astropy.units as u
 from dagster import DagsterLogManager
@@ -109,7 +109,10 @@ def check_path(path):
         path = Path(path)
 
     if not path.exists():
-        path.mkdir(parents=True, exist_ok=True)
+        if path.suffix == "":
+            path.mkdir(parents=True, exist_ok=True)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
 
     return path
 
