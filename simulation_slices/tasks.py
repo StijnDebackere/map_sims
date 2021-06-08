@@ -266,6 +266,76 @@ def map_coords(
     return fname
 
 
+def map_full(
+    sim_idx: int,
+    snapshot: int,
+    slice_axis: int,
+    config: Union[Config, str],
+    logger: util.LoggerType = None,
+) -> List[str]:
+    """Save a set of maps for sim_idx in config.sim_paths."""
+    start = time.time()
+
+    if type(config) is str:
+        config = Config(config)
+
+    swmr = config.swmr
+
+    base_dir = config.base_dir
+    sim_dir = config.sim_paths[sim_idx]
+    sim_suite = config.sim_suite
+    box_size = config.box_sizes[sim_idx]
+    ptypes = config.ptypes[sim_idx]
+
+    if logger is None and config.logging:
+        logger = get_logger(
+            sim_idx=sim_idx,
+            config=config,
+            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_full{config.log_name_append}",
+        )
+
+    slice_dir = config.slice_paths[sim_idx]
+    num_slices = config.num_slices
+    downsample = config.slice_downsample
+    downsample_factor = config.downsample_factor
+
+    save_dir = config.map_paths[sim_idx]
+    map_name_append = config.map_name_append
+    map_overwrite = config.map_overwrite
+    map_method = config.map_method
+
+    map_types = config.map_types[sim_idx]
+    map_pix = config.map_pix
+    n_ngb = config.n_ngb
+
+    fname = map_gen.project_full(
+        slice_dir=slice_dir,
+        snapshot=snapshot,
+        slice_axis=slice_axis,
+        num_slices=num_slices,
+        downsample=downsample,
+        downsample_factor=downsample_factor,
+        box_size=box_size,
+        map_pix=map_pix,
+        map_types=map_types,
+        save_dir=save_dir,
+        map_name_append=map_name_append,
+        overwrite=map_overwrite,
+        method=map_method,
+        n_ngb=n_ngb,
+        logger=logger,
+        swmr=swmr,
+        verbose=False,
+    )
+
+    end = time.time()
+    if logger:
+        logger.info(
+            f"map_full_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
+        )
+    return fname
+
+
 def analyze_map(
     snapshots,
     box_size,

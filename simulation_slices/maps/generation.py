@@ -23,12 +23,16 @@ def get_map_name(
     map_name_append: str = "",
     downsample: bool = False,
     downsample_factor: float = None,
+    full: bool = False,
 ) -> str:
     save_dir = util.check_path(save_dir)
     if coords_name != "":
         coords_name = f"_{coords_name}"
     if downsample:
         coords_name = f"{coords_name}_downsample_{str(downsample_factor).replace('.', 'p')}"
+    if full:
+        map_name_append = f"{map_name_append}_full"
+
     map_name = (
         f"{save_dir}/{slice_axis}_maps_{method}{coords_name}"
         f"{map_name_append}_{snapshot:03d}.hdf5"
@@ -608,6 +612,183 @@ def save_maps(
                 dataset=map_type,
                 vals=np.concatenate(mps, axis=0),
                 axis=0,
+            )
+
+    # still need to close the HDF5 files
+    slice_file.close()
+    map_file.close()
+    return map_name
+
+
+def project_full(
+    slice_dir: str,
+    snapshot: int,
+    slice_axis: int,
+    num_slices: int,
+    box_size: u.Quantity,
+    map_pix: int,
+    map_types: List[str],
+    save_dir: str,
+    map_name_append: str = "",
+    downsample: bool = False,
+    downsample_factor: float = None,
+    overwrite: bool = False,
+    swmr: bool = False,
+    method: str = None,
+    n_ngb: int = 30,
+    verbose: bool = False,
+    logger: util.LoggerType = None,
+) -> u.Quantity:
+    """Project full simulation in a map of (map_pix, map_pix) for given
+    map_type.
+
+    Parameters
+    ----------
+    slice_dir : str
+        directory of the saved simulation slices
+    snapshot : int
+        snapshot to look at
+    slice_axis : int
+        axis to slice along [x=0, y=1, z=2]
+    box_size : astropy.units.Quantity
+        size of simulation
+    num_slices : int
+        total number of slices
+    map_pix : int
+        square root of number of pixels in map
+    map_size : astropy.units.Quantity
+        size of the map
+    map_thickness : astropy.units.Quantity
+        thickness of the map projection
+    map_types : ['gas_mass', 'dm_mass', 'stellar_mass', 'bh_mass', 'sz']
+        type of map to compute
+    save_dir : str
+        directory to save map files to
+    coords_name : str
+        identifier to append to filenames
+    map_name_append : str
+        optional extra to append to filenames
+    overwrite : bool
+        overwrite map_file if already exists
+    swmr : bool
+        enable single writer multiple reader mode for map_file
+    method : str ["sph", "bin"]
+        method for map projection: sph smoothing with n_ngb neighbours or 2D histogram
+    n_ngb : int
+        number of neighbours to determine SPH kernel size
+    verbose : bool
+        show progress bar
+
+    Returns
+    -------
+    saves maps to {save_dir}/{slice_axis}_maps_{coords_name}{map_name_append}_{snapshot:03d}.hdf5
+
+    """
+    map_name = get_map_name(
+        save_dir=save_dir,
+        slice_axis=slice_axis,
+        snapshot=snapshot,
+        method=method,
+        coords_name="",
+        map_name_append=map_name_append,
+        downsample=downsample,
+        downsample_factor=downsample_factor,
+        full=True,
+    )
+
+    # create index array that cuts out the slice_axis
+    no_slice_axis = np.arange(0, 3) != slice_axis
+
+    # open the files to read from and write to
+    slice_file = slicing.open_slice_file(
+        save_dir=slice_dir,
+        snapshot=snapshot,
+        slice_axis=slice_axis,
+        num_slices=num_slices,
+        downsample=downsample,
+        downsample_factor=downsample_factor,
+    )
+    map_file = map_layout.create_map_file(
+        map_name=map_name,
+        overwrite=overwrite,
+        close=False,
+        # cannot have swmr since we are adding attributes later
+        swmr=False,
+        slice_axis=slice_axis,
+        box_size=box_size,
+        map_types=map_types,
+        map_size=box_size,
+        map_thickness=box_size,
+        map_pix=map_pix,
+        snapshot=snapshot,
+        n_ngb=n_ngb,
+        maxshape=0,
+        full=True
+    )
+
+    map_props = obs.map_types_to_properties(map_types)
+
+    # we initialize all maps to 0
+    for map_type in map_types:
+        map_file[map_type][()] = np.zeros((map_pix, map_pix), dtype=float)
+
+    for slice_num in range(0, num_slices):
+        ts = time.time()
+        props = slicing.read_slice_file_properties(
+            slice_file=slice_file,
+            slice_nums=[slice_num],
+            properties=map_props,
+        )
+        for map_type in map_types:
+            ptype = obs.MAP_TYPES_OPTIONS[map_type]["ptype"]
+
+            coords = props[ptype]["coordinates"][:]
+
+            # ignore sliced dimension
+            coords_2d = coords[no_slice_axis]
+
+            # remove coordinates from props
+            props_map_type = {
+                k: props[ptype][k] for k in props[ptype].keys() - ["coordinates"]
+            }
+
+            # size of array required for SPH smoothing
+            # SPH used up to haloes of 7152 particles for map_pix = 256
+            # enough for the most massive downsampled MiraTitan haloes
+            if method is None:
+                arr_size = 2 * coords_2d.shape[-1] * 2 * map_pix ** 2 * 64 * u.bit
+                if arr_size > 15 * u.GB:
+                    coords_to_map = coords_to_map_bin
+                else:
+                    props_map_type = {"n_ngb": n_ngb, **props_map_type}
+                    coords_to_map = coords_to_map_sph
+
+            elif method == "sph":
+                props_map_type = {"n_ngb": n_ngb, **props_map_type}
+                coords_to_map = coords_to_map_sph
+            elif method == "bin":
+                coords_to_map = coords_to_map_bin
+            else:
+                raise ValueError(f"{method=} should be 'sph' or 'bin'.")
+
+            mp = coords_to_map(
+                coords=coords_2d,
+                map_size=box_size,
+                map_pix=map_pix,
+                box_size=box_size,
+                func=obs.MAP_TYPES_OPTIONS[map_type]["func"],
+                map_center=None,
+                logger=logger,
+                **props_map_type,
+            )
+            map_file[map_type][()] += mp.value
+            if slice_num == 0:
+                map_file[map_type].attrs["units"] = str(mp.unit)
+
+        tf = time.time()
+        if logger:
+            logger.info(
+                f"{slice_num=} - full took {tf - ts:.2f}s"
             )
 
     # still need to close the HDF5 files

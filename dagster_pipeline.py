@@ -25,14 +25,14 @@ from simulation_slices import Config
 # inspired by https://stackoverflow.com/q/61330816/
 def slice_sim_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
     @solid(
-        name=str(f"slice_sim_{cfg.sim_dirs[sim_idx]}_{snapshot:03d}"),
-        description=f"Slice {cfg.sim_dirs[sim_idx]} for {snapshot=}.",
+        name=str(f"slice_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"),
+        description=f"Slice {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}.",
         required_resource_keys={"settings"},
     )
     def _slice_sim(context) -> Nothing:
         if context.resources.settings["slice_sims"]:
             context.log.info(
-                f"Start slicing {cfg.sim_dirs[sim_idx]} for {snapshot=}"
+                f"Start slicing {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}"
             )
             if cfg.logging:
                 logger = context.log
@@ -43,19 +43,19 @@ def slice_sim_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
                 sim_idx=sim_idx, snapshot=snapshot, config=cfg, logger=logger
             )
             context.log.info(
-                f"Finished slicing {cfg.sim_dirs[sim_idx]} for {snapshot=}"
+                f"Finished slicing {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}"
             )
 
             for idx, fname in enumerate(fnames):
                 yield AssetMaterialization(
                     asset_key=AssetKey(
-                        f"slice_sim_{cfg.sim_dirs[sim_idx]}_{idx}_{snapshot:03d}"
+                        f"slice_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{idx}_{snapshot:03d}"
                     ),
-                    description=f"Slice file {idx} for {cfg.sim_dirs[sim_idx]} for {snapshot=}",
+                    description=f"Slice file {idx} for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}",
                     metadata_entries=[EventMetadataEntry.path(fname, "file path")],
                 )
         else:
-            context.log.info(f"Skipping slicing {cfg.sim_dirs[sim_idx]}")
+            context.log.info(f"Skipping slicing {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}")
 
         yield Output(None)
 
@@ -64,15 +64,15 @@ def slice_sim_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
 
 def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
     @solid(
-        name=str(f"save_coords_{cfg.sim_dirs[sim_idx]}_{snapshot:03d}"),
+        name=str(f"save_coords_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"),
         input_defs=[InputDefinition('ready', dagster_type=Nothing)],
-        description=f"Save coordinates for {cfg.sim_dirs[sim_idx]} for {snapshot=}.",
+        description=f"Save coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}.",
         required_resource_keys={"settings"},
     )
     def _save_coords(context) -> Nothing:
         if context.resources.settings["save_coords"]:
             context.log.info(
-                f"Start saving coordinates for {cfg.sim_dirs[sim_idx]} for {snapshot=}"
+                f"Start saving coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}"
             )
             if cfg.logging:
                 logger = context.log
@@ -84,18 +84,18 @@ def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
             )
 
             context.log.info(
-                f"Finished saving coordinates for {cfg.sim_dirs[sim_idx]} for {snapshot=}"
+                f"Finished saving coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}"
             )
 
             yield AssetMaterialization(
                 asset_key=AssetKey(
-                    f"save_coords_{cfg.sim_dirs[sim_idx]}_{snapshot:03d}"
+                    f"save_coords_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"
                 ),
-                description=f"Coordinates for {cfg.sim_dirs[sim_idx]} for {snapshot=}",
+                description=f"Coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}",
                 metadata_entries=[EventMetadataEntry.path(fname, "file path")],
             )
         else:
-            context.log.info(f"Skipping saving coordinates for {cfg.sim_dirs[sim_idx]}")
+            context.log.info(f"Skipping saving coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}")
 
         yield Output(None)
 
@@ -106,13 +106,13 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
     @solid(
         # needed output is list of AssetKeys from slice_sim
         input_defs=[InputDefinition('ready', dagster_type=Nothing)],
-        name=str(f"map_sim_{cfg.sim_dirs[sim_idx]}_{snapshot:03d}"),
-        description=f"Produce maps of {cfg.sim_dirs[sim_idx]} for {snapshot=}.",
+        name=str(f"map_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"),
+        description=f"Produce maps of {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}.",
         required_resource_keys={"settings"},
     )
     def _map_sim(context) -> Nothing:
         if context.resources.settings["map_sims"]:
-            context.log.info(f"Start mapping simulation {cfg.sim_dirs[sim_idx]}")
+            context.log.info(f"Start mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}")
             if cfg.logging:
                 logger = context.log
             else:
@@ -120,26 +120,36 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
 
             fnames = []
             for slice_axis in cfg.slice_axes:
-                fname = tasks.map_coords(
-                    sim_idx=sim_idx,
-                    config=cfg,
-                    snapshot=snapshot,
-                    slice_axis=slice_axis,
-                    coords_file=coords_file,
-                    logger=logger,
-                )
-                fnames.append(fname)
+                if context.resources.settings["project_full"]:
+                    fname = tasks.map_full(
+                        sim_idx=sim_idx,
+                        config=cfg,
+                        snapshot=snapshot,
+                        slice_axis=slice_axis,
+                        logger=logger,
+                    )
+                    fnames.append(fname)
+                else:
+                    fname = tasks.map_coords(
+                        sim_idx=sim_idx,
+                        config=cfg,
+                        snapshot=snapshot,
+                        slice_axis=slice_axis,
+                        coords_file=coords_file,
+                        logger=logger,
+                    )
+                    fnames.append(fname)
 
-            context.log.info(f"Finished mapping simulation {cfg.sim_dirs[sim_idx]}")
+            context.log.info(f"Finished mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}")
 
             for idx, fname in enumerate(fnames):
                 yield AssetMaterialization(
-                    asset_key=f"map_sim_{cfg.sim_dirs[sim_idx]}_{idx}_{snapshot:03d}",
-                    description=f"Maps file {idx} for {cfg.sim_dirs[sim_idx]}",
+                    asset_key=f"map_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{idx}_{snapshot:03d}",
+                    description=f"Maps file {idx} for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}",
                     metadata_entries=[EventMetadataEntry.path(fname, "file path")],
                 )
         else:
-            context.log.info(f"Skipping mapping simulation {cfg.sim_dirs[sim_idx]}")
+            context.log.info(f"Skipping mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}")
 
         yield Output(None)
 
@@ -190,6 +200,7 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
                     slice_sims=bool,
                     save_coords=bool,
                     map_sims=bool,
+                    project_full=bool,
                 ),
             },
         )
@@ -226,7 +237,7 @@ if __name__ == "__main__":
             "description": "Pipeline to generate observable maps from simulations.",
             "resources": {
                 "settings": {
-                    "slice_sims": True, "save_coords": True, "map_sims": True}
+                    "slice_sims": True, "save_coords": True, "map_sims": True, "project_full": False}
             },
         },
     )

@@ -36,12 +36,19 @@ def attrs(
     }
 
 
-def properties(map_types, map_pix, maxshape):
+def properties(map_types, map_pix, maxshape, full=False):
     """Return the standard properties expected for the slice file."""
+    if full:
+        shape = (map_pix, map_pix)
+        mxshape = (map_pix, map_pix)
+    else:
+        shape = (0, map_pix, map_pix)
+        mxshape = (maxshape, map_pix, map_pix)
+
     props = {
         map_type: {
-            "shape": (0, map_pix, map_pix),
-            "maxshape": (maxshape, map_pix, map_pix),
+            "shape": shape,
+            "maxshape": mxshape,
             "dtype": float,
             "attrs": {
                 "description": MAP_TYPE_DESCRIPTIONS[map_type],
@@ -63,6 +70,7 @@ def get_map_layout(
     n_ngb: int,
     maxshape: int,
     extra: dict = {},
+    full: bool = False,
 ) -> dict:
     """Generate the standard layout for our slice hdf5 files.
 
@@ -88,6 +96,8 @@ def get_map_layout(
         maximum shape for each hdf5 dataset
     extra : dict
         extra information to save at top level of hdf5 file
+    full : bool
+        project full simulation
 
     Returns
     -------
@@ -110,7 +120,8 @@ def get_map_layout(
     props = properties(
         map_types=map_types,
         map_pix=map_pix,
-        maxshape=maxshape
+        maxshape=maxshape,
+        full=full,
     )
 
     for map_type in valid_map_types:
@@ -131,6 +142,7 @@ def create_map_file(
     n_ngb: int,
     maxshape: int,
     extra: dict = {},
+    full: bool = False,
     overwrite: bool = False,
     close: bool = False,
     swmr: bool = False,
@@ -159,6 +171,8 @@ def create_map_file(
         maximum shape for each hdf5 dataset
     extra : dict
         extra information to save at top level of hdf5 file
+    full : bool
+        project full simulation
     overwrite : bool
         overwrite map_file if already exists
     close : bool
@@ -187,6 +201,7 @@ def create_map_file(
             n_ngb=n_ngb,
             maxshape=maxshape,
             extra=extra,
+            full=full,
         )
         map_file = io.create_hdf5(
             fname=map_name,
