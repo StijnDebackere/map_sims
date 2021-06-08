@@ -83,7 +83,7 @@ dependencies:
     - flask-graphql==2.0.1
     - flask-sockets==0.2.1
     - future==0.18.2
-    - gadget==0.0.1
+    - git+https://github.com/StijnDebackere/gadget
     - gevent==21.1.2
     - gevent-websocket==0.10.1
     - gql==2.0.0
@@ -104,7 +104,7 @@ dependencies:
     - jupyter-core==4.7.1
     - mako==1.1.4
     - markupsafe==2.0.1
-    - miratitan==0.0.1
+    - git+https://github.com/StijnDebackere/mira_titan
     - mistune==0.8.4
     - nbconvert==5.6.1
     - nbformat==5.1.3
@@ -113,7 +113,7 @@ dependencies:
     - pendulum==2.1.2
     - promise==2.3
     - protobuf==3.17.2
-    - pygio==0.1
+    - git+https://xgitlab.cels.anl.gov/hacc/genericio.git
     - pygments==2.9.0
     - pyparsing==2.4.7
     - pyrsistent==0.17.3
@@ -135,4 +135,3 @@ dependencies:
     - werkzeug==1.0.1
     - zope-event==4.5.0
     - zope-interface==5.4.0
-prefix: /net/quasar/data3/debackere/miniconda3/envs/simulation_slices
