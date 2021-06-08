@@ -6,7 +6,6 @@ import warnings
 import astropy.units as u
 import h5py
 import numpy as np
-import pandas as pd
 from tqdm import tqdm
 
 from simulation_slices import Config
