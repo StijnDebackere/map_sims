@@ -35,7 +35,7 @@ def slice_sim_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
                 f"Start slicing {cfg.sim_dirs[sim_idx]} for {snapshot=}"
             )
             if cfg.logging:
-                logger = context.log.info
+                logger = context.log
             else:
                 logger = None
 
@@ -75,7 +75,7 @@ def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
                 f"Start saving coordinates for {cfg.sim_dirs[sim_idx]} for {snapshot=}"
             )
             if cfg.logging:
-                logger = context.log.info
+                logger = context.log
             else:
                 logger = None
 
@@ -114,7 +114,7 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
         if context.resources.settings["map_sims"]:
             context.log.info(f"Start mapping simulation {cfg.sim_dirs[sim_idx]}")
             if cfg.logging:
-                logger = context.log.info
+                logger = context.log
             else:
                 logger = None
 
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     execute_pipeline(
         pipeline,
         run_config={
-            "execution": {"multiprocess_executor": {"config": {"max_concurrent": 32}}},
+            "execution": {"multiprocess_executor": {"config": {"max_concurrent": 8}}},
             "loggers": {"console": {"config": {"log_level": "INFO"}}},
             "description": "Pipeline to generate observable maps from simulations.",
             "resources": {
