@@ -237,7 +237,13 @@ if __name__ == "__main__":
             "description": "Pipeline to generate observable maps from simulations.",
             "resources": {
                 "settings": {
-                    "slice_sims": True, "save_coords": True, "map_sims": True, "project_full": False}
+                    "config": {
+                        "slice_sims": True,
+                        "save_coords": True,
+                        "map_sims": True,
+                        "project_full": False,
+                    },
+                },
             },
         },
     )
