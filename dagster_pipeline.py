@@ -172,41 +172,8 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
     return _map_sim
 
 
-# @pipeline(
-#     name="process_bahamas",
-#     mode_defs=[
-#         ModeDefinition(
-#             executor_defs=[multiprocess_executor],
-#             resource_defs={
-#                 "io_manager": fs_io_manager,
-#                 "settings": make_values_resource(
-#                     slice_sims=bool,
-#                     map_sims=bool,
-#                 ),
-#             },
-#         )
-#     ],
-#     description="Pipeline to generate observable maps from simulations.",
-# )
-# def process_bahamas():
-#     solid_output_handles = []
-#     cfg = Config(str(Path(__file__).parent / "simulation_slices/batch_bahamas.toml"))
-
-#     for sim_idx in range(cfg._n_sims):
-#         for idx_snap, snapshot in enumerate(cfg.snapshots[sim_idx]):
-#             slice_sim = slice_sim_solid_factory(
-#                 sim_idx=sim_idx, snapshot=snapshot, cfg=cfg
-#             )
-
-#             coords_file = str(cfg.coords_files[sim_idx][idx_snap])
-#             map_sim = map_sim_solid_factory(
-#                 sim_idx=sim_idx, snapshot=snapshot, coords_file=coords_file, cfg=cfg
-#             )
-#             solid_output_handles.append(map_sim(slice_sim()))
-
-
 @pipeline(
-    name="process_miratitan",
+    name="process_simulations",
     mode_defs=[
         ModeDefinition(
             executor_defs=[multiprocess_executor],
@@ -223,9 +190,15 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
     ],
     description="Pipeline to generate observable maps from simulations.",
 )
-def process_miratitan():
+def pipeline():
     solid_output_handles = []
-    cfg = Config(str(Path(__file__).parent / "simulation_slices/batch_mira.toml"))
+#     cfg = Config(str(Path(__file__).parent / "simulation_slices/batch_mira.toml"))
+    cfg = Config(
+        str(
+            Path(__file__).parent
+            / "simulation_slices/batch_bahamas_full_downsampled.toml"
+        )
+    )
 
     for sim_idx in range(cfg._n_sims):
         for idx_snap, snapshot in enumerate(cfg.snapshots[sim_idx]):
