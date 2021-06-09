@@ -25,7 +25,9 @@ from simulation_slices import Config
 # inspired by https://stackoverflow.com/q/61330816/
 def slice_sim_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
     @solid(
-        name=str(f"slice_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"),
+        name=str(
+            f"slice_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"
+        ),
         description=f"Slice {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}.",
         required_resource_keys={"settings"},
     )
@@ -55,7 +57,9 @@ def slice_sim_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
                     metadata_entries=[EventMetadataEntry.path(fname, "file path")],
                 )
         else:
-            context.log.info(f"Skipping slicing {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}")
+            context.log.info(
+                f"Skipping slicing {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}"
+            )
 
         yield Output(None)
 
@@ -64,8 +68,10 @@ def slice_sim_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
 
 def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
     @solid(
-        name=str(f"save_coords_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"),
-        input_defs=[InputDefinition('ready', dagster_type=Nothing)],
+        name=str(
+            f"save_coords_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"
+        ),
+        input_defs=[InputDefinition("ready", dagster_type=Nothing)],
         description=f"Save coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}.",
         required_resource_keys={"settings"},
     )
@@ -95,7 +101,9 @@ def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
                 metadata_entries=[EventMetadataEntry.path(fname, "file path")],
             )
         else:
-            context.log.info(f"Skipping saving coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}")
+            context.log.info(
+                f"Skipping saving coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}"
+            )
 
         yield Output(None)
 
@@ -105,14 +113,18 @@ def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
 def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Config):
     @solid(
         # needed output is list of AssetKeys from slice_sim
-        input_defs=[InputDefinition('ready', dagster_type=Nothing)],
-        name=str(f"map_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"),
+        input_defs=[InputDefinition("ready", dagster_type=Nothing)],
+        name=str(
+            f"map_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"
+        ),
         description=f"Produce maps of {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}.",
         required_resource_keys={"settings"},
     )
     def _map_sim(context) -> Nothing:
         if context.resources.settings["map_sims"]:
-            context.log.info(f"Start mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}")
+            context.log.info(
+                f"Start mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}"
+            )
             if cfg.logging:
                 logger = context.log
             else:
@@ -140,7 +152,9 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
                     )
                     fnames.append(fname)
 
-            context.log.info(f"Finished mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}")
+            context.log.info(
+                f"Finished mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}"
+            )
 
             for idx, fname in enumerate(fnames):
                 yield AssetMaterialization(
@@ -149,7 +163,9 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
                     metadata_entries=[EventMetadataEntry.path(fname, "file path")],
                 )
         else:
-            context.log.info(f"Skipping mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}")
+            context.log.info(
+                f"Skipping mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}"
+            )
 
         yield Output(None)
 
