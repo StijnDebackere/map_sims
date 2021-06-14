@@ -365,104 +365,84 @@ def save_slice_data(
                     verbose=False,
                     reshape=True,
                 )
-                smoothed_hydrogen = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["smoothed_hydrogen"],
-                    verbose=False,
-                    reshape=True,
-                )
-                smoothed_helium = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["smoothed_helium"],
-                    verbose=False,
-                    reshape=True,
-                )
-                smoothed_carbon = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["smoothed_carbon"],
-                    verbose=False,
-                    reshape=True,
-                )
-                smoothed_nitrogen = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["smoothed_nitrogen"],
-                    verbose=False,
-                    reshape=True,
-                )
-                smoothed_oxygen = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["smoothed_oxygen"],
-                    verbose=False,
-                    reshape=True,
-                )
-                smoothed_neon = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["smoothed_neon"],
-                    verbose=False,
-                    reshape=True,
-                )
-                smoothed_magnesium = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["smoothed_magnesium"],
-                    verbose=False,
-                    reshape=True,
-                )
-                smoothed_silicon = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["smoothed_silicon"],
-                    verbose=False,
-                    reshape=True,
-                )
-                smoothed_iron = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["smoothed_iron"],
-                    verbose=False,
-                    reshape=True,
-                )
-                # electron_number_densities = interp_tables.n_e(
-                #     z=z,
-                #     T=temperatures,
-                #     rho=densities,
-                #     h=h,
-                #     X=smoothed_hydrogen,
-                #     Y=smoothed_helium,
-                # )
-                # luminosities = interp_tables.x_ray_luminosity(
-                #     z=z,
-                #     rho=densities,
-                #     T=temperatures,
-                #     masses=masses,
-                #     hydrogen_mf=smoothed_hydrogen,
-                #     helium_mf=smoothed_helium,
-                #     carbon_mf=smoothed_carbon,
-                #     nitrogen_mf=smoothed_nitrogen,
-                #     oxygen_mf=smoothed_oxygen,
-                #     neon_mf=smoothed_neon,
-                #     magnesium_mf=smoothed_magnesium,
-                #     silicon_mf=smoothed_silicon,
-                #     iron_mf=smoothed_iron,
-                #     h=h,
-                # )
+                try:
+                    smoothed_hydrogen = snap_info.read_single_file(
+                        i=file_num,
+                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_hydrogen"],
+                        verbose=False,
+                        reshape=True,
+                    )
+                    smoothed_helium = snap_info.read_single_file(
+                        i=file_num,
+                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_helium"],
+                        verbose=False,
+                        reshape=True,
+                    )
+                    smoothed_carbon = snap_info.read_single_file(
+                        i=file_num,
+                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_carbon"],
+                        verbose=False,
+                        reshape=True,
+                    )
+                    smoothed_nitrogen = snap_info.read_single_file(
+                        i=file_num,
+                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_nitrogen"],
+                        verbose=False,
+                        reshape=True,
+                    )
+                    smoothed_oxygen = snap_info.read_single_file(
+                        i=file_num,
+                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_oxygen"],
+                        verbose=False,
+                        reshape=True,
+                    )
+                    smoothed_neon = snap_info.read_single_file(
+                        i=file_num,
+                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_neon"],
+                        verbose=False,
+                        reshape=True,
+                    )
+                    smoothed_magnesium = snap_info.read_single_file(
+                            i=file_num,
+                            var=PROPS_TO_BAHAMAS[ptype]["smoothed_magnesium"],
+                            verbose=False,
+                            reshape=True,
+                        )
+                    smoothed_silicon = snap_info.read_single_file(
+                        i=file_num,
+                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_silicon"],
+                        verbose=False,
+                        reshape=True,
+                    )
+                    smoothed_iron = snap_info.read_single_file(
+                        i=file_num,
+                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_iron"],
+                        verbose=False,
+                        reshape=True,
+                    )
+                    elements_found = True
+                    elements = {
+                        "smoothed_hydrogen": smoothed_hydrogen,
+                        "smoothed_helium": smoothed_helium,
+                        "smoothed_carbon": smoothed_carbon,
+                        "smoothed_nitrogen": smoothed_nitrogen,
+                        "smoothed_oxygen": smoothed_oxygen,
+                        "smoothed_neon": smoothed_neon,
+                        "smoothed_magnesium": smoothed_magnesium,
+                        "smoothed_silicon": smoothed_silicon,
+                        "smoothed_iron": smoothed_iron,
+                    }
+                except KeyError:
+                    elements_found = False
+                    elements = {}
+
 
                 # load in remaining data for X-ray luminosities
-
                 properties = {
                     "temperatures": temperatures,
                     "densities": densities,
-                    "smoothed_hydrogen": smoothed_hydrogen,
-                    "smoothed_helium": smoothed_helium,
                     "masses": masses,
-                    "smoothed_hydrogen": smoothed_hydrogen,
-                    "smoothed_helium": smoothed_helium,
-                    "smoothed_carbon": smoothed_carbon,
-                    "smoothed_nitrogen": smoothed_nitrogen,
-                    "smoothed_oxygen": smoothed_oxygen,
-                    "smoothed_neon": smoothed_neon,
-                    "smoothed_magnesium": smoothed_magnesium,
-                    "smoothed_silicon": smoothed_silicon,
-                    "smoothed_iron": smoothed_iron,
-                    # "electron_number_densities": electron_number_densities,
-                    # "luminosities": luminosities,
+                    **elements,
                     **properties,
                 }
 
@@ -540,17 +520,6 @@ def save_slice_data(
                         # get gas properties, list of array
                         temperatures = slice_dict["temperatures"][idx]
                         densities = slice_dict["densities"][idx]
-                        smoothed_hydrogen = slice_dict["smoothed_hydrogen"][idx]
-                        smoothed_helium = slice_dict["smoothed_helium"][idx]
-                        smoothed_carbon = slice_dict["smoothed_carbon"][idx]
-                        smoothed_nitrogen = slice_dict["smoothed_nitrogen"][idx]
-                        smoothed_oxygen = slice_dict["smoothed_oxygen"][idx]
-                        smoothed_neon = slice_dict["smoothed_neon"][idx]
-                        smoothed_magnesium = slice_dict["smoothed_magnesium"][idx]
-                        smoothed_silicon = slice_dict["smoothed_silicon"][idx]
-                        smoothed_iron = slice_dict["smoothed_iron"][idx]
-                        # ne = slice_dict["electron_number_densities"][idx]
-                        # lums = slice_dict["luminosities"][idx]
 
                         io.add_to_hdf5(
                             h5file=h5file,
@@ -564,72 +533,14 @@ def save_slice_data(
                             axis=0,
                             dataset=f'{idx}/{PROPS_PTYPES[ptype]["densities"]}',
                         )
-                        io.add_to_hdf5(
-                            h5file=h5file,
-                            vals=smoothed_hydrogen[0],
-                            axis=0,
-                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_hydrogen"]}',
-                        )
-                        io.add_to_hdf5(
-                            h5file=h5file,
-                            vals=smoothed_helium[0],
-                            axis=0,
-                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_helium"]}',
-                        )
-                        io.add_to_hdf5(
-                            h5file=h5file,
-                            vals=smoothed_carbon[0],
-                            axis=0,
-                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_carbon"]}',
-                        )
-                        io.add_to_hdf5(
-                            h5file=h5file,
-                            vals=smoothed_nitrogen[0],
-                            axis=0,
-                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_nitrogen"]}',
-                        )
-                        io.add_to_hdf5(
-                            h5file=h5file,
-                            vals=smoothed_oxygen[0],
-                            axis=0,
-                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_oxygen"]}',
-                        )
-                        io.add_to_hdf5(
-                            h5file=h5file,
-                            vals=smoothed_neon[0],
-                            axis=0,
-                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_neon"]}',
-                        )
-                        io.add_to_hdf5(
-                            h5file=h5file,
-                            vals=smoothed_magnesium[0],
-                            axis=0,
-                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_magnesium"]}',
-                        )
-                        io.add_to_hdf5(
-                            h5file=h5file,
-                            vals=smoothed_silicon[0],
-                            axis=0,
-                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_silicon"]}',
-                        )
-                        io.add_to_hdf5(
-                            h5file=h5file,
-                            vals=smoothed_iron[0],
-                            axis=0,
-                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["smoothed_iron"]}',
-                        )
-                        # io.add_to_hdf5(
-                        #     h5file=h5file,
-                        #     vals=ne[0],
-                        #     axis=0,
-                        #     dataset=f'{idx}/{PROPS_PTYPES[ptype]["electron_number_densities"]}',
-                        # )
-                        # io.add_to_hdf5(
-                        #     h5file=h5file,
-                        #     vals=lums[0],
-                        #     axis=0,
-                        #     dataset=f'{idx}/{PROPS_PTYPES[ptype]["luminosities"]}',
-                        # )
+                        if elements_found:
+                            for element in elements.keys():
+                                io.add_to_hdf5(
+                                    h5file=h5file,
+                                    vals=slice_dict[element][0],
+                                    axis=0,
+                                    dataset=f'{idx}/{PROPS_PTYPES[ptype][element]}',
+                                )
 
                 h5file.close()
         t1 = time.time()
