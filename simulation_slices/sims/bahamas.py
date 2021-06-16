@@ -535,9 +535,10 @@ def save_slice_data(
                         )
                         if elements_found:
                             for element in elements.keys():
+                                element_vals = slice_dict[element][idx]
                                 io.add_to_hdf5(
                                     h5file=h5file,
-                                    vals=slice_dict[element][0],
+                                    vals=element_vals[0],
                                     axis=0,
                                     dataset=f'{idx}/{PROPS_PTYPES[ptype][element]}',
                                 )
