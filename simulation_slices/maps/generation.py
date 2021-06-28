@@ -19,6 +19,7 @@ def get_map_name(
     slice_axis: int,
     snapshot: int,
     method: str,
+    map_thickness: u.Quantity,
     coords_name: str = "",
     map_name_append: str = "",
     downsample: bool = False,
@@ -30,6 +31,8 @@ def get_map_name(
         coords_name = f"_{coords_name}"
     if downsample:
         coords_name = f"{coords_name}_downsample_{str(downsample_factor).replace('.', 'p')}"
+    if map_thickness.size > 1:
+        map_name_append = f"{map_name_append}_nslices_{map_thickness.shape[0]}"
     if full:
         map_name_append = f"{map_name_append}_full"
 
@@ -79,6 +82,8 @@ def coords_to_map_bin(
     n_pix = map_pix ** 2
     pix_size = map_size / map_pix
 
+    if coords.shape[0] > 3:
+        raise ValueError("dimension needs to be along axis 0")
     # convert the coordinates to the pixel coordinate system
     # O: origin
     # x: map_center
@@ -365,6 +370,7 @@ def save_maps(
         map_name_append=map_name_append,
         downsample=downsample,
         downsample_factor=downsample_factor,
+        map_thickness=map_thickness,
     )
 
     # sort maps for speedup from hdf5 caching

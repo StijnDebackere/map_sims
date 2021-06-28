@@ -83,7 +83,7 @@ class Config(object):
             self.map_full = config["maps"].get("map_full", False)
             if not self.map_full:
                 self.map_size = config["maps"]["map_size"] * u.Unit(config["maps"]["map_units"])
-                self.map_thickness = config["maps"]["map_thickness"] * u.Unit(
+                self.map_thickness = np.atleast_1d(config["maps"]["map_thickness"]) * u.Unit(
                     config["maps"]["map_units"]
                 )
             else:

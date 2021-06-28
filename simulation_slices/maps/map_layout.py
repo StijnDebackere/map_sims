@@ -36,14 +36,18 @@ def attrs(
     }
 
 
-def properties(map_types, map_pix, maxshape, full=False):
+def properties(map_types, map_pix, map_thickness, maxshape, full=False):
     """Return the standard properties expected for the slice file."""
     if full:
         shape = (map_pix, map_pix)
         mxshape = (map_pix, map_pix)
     else:
-        shape = (0, map_pix, map_pix)
-        mxshape = (maxshape, map_pix, map_pix)
+        if map_thickness.size > 1:
+            shape = (0, map_pix, map_pix, map_thickness.shape[0])
+            mxshape = (maxshape, map_pix, map_pix, map_thickness.shape[0])
+        else:
+            shape = (0, map_pix, map_pix)
+            mxshape = (maxshape, map_pix, map_pix)
 
     props = {
         map_type: {
@@ -120,6 +124,7 @@ def get_map_layout(
     props = properties(
         map_types=map_types,
         map_pix=map_pix,
+        map_thickness=map_thickness,
         maxshape=maxshape,
         full=full,
     )
