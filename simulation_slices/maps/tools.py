@@ -174,15 +174,28 @@ def slice_around_center(
 
     Parameters
     ----------
-    center : astropy.units.Quantity
+    center : (dim,) astropy.units.Quantity
         coordinates
-    distance :
+    distance : (dim,) astropy.units.Quantity
+        distance from center along each dimension
+    box_size : astropy.units.Quantity
+        size of the simulation box
+    pix_size : astropy.units.Quantity
+        physical size of a pixel
+
+    Returns
+    -------
+    bounds : (1, 2) or (2, 2) array
+        lower and upper bounds
     """
     center = np.atleast_1d(center)
     distance = np.atleast_1d(distance)
 
+    if len(center.shape) != 1:
+        raise ValueError("center should have shape (ndim,)")
+
     if distance.shape[0] != center.shape[0]:
-        raise ValueError("distance should match shape of center")
+        raise ValueError("distance should match ndim of center along axis 0")
 
     def get_bounds(c, d, box_size, pix_size):
         unit = box_size.unit
@@ -190,7 +203,7 @@ def slice_around_center(
             if pix_size is not None:
                 return np.array([[0, int(box_size / pix_size)]])
             else:
-                return np.array([[0, box_size]]) * unit
+                return np.array([[0, box_size.to_value(unit)]]) * unit
 
         if pix_size is not None:
             lower_lim = 0
