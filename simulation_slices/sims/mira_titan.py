@@ -71,28 +71,28 @@ def save_coords_file(
     fname = (save_dir / f"{coords_fname}_{snapshot:03d}").with_suffix(".hdf5")
 
     group_data = sim_info.read_properties(
-        "fof",
+        "sod",
         [
-            "fof_halo_mass",
-            "fof_halo_center_x",
-            "fof_halo_center_y",
-            "fof_halo_center_z",
+            "sod_halo_mass",
+            "sod_halo_min_pot_x",
+            "sod_halo_min_pot_y",
+            "sod_halo_min_pot_z",
             "fof_halo_tag",
         ],
     )
     coordinates = (
         np.vstack(
             [
-                group_data["fof_halo_center_x"],
-                group_data["fof_halo_center_y"],
-                group_data["fof_halo_center_z"],
+                group_data["sod_halo_min_pot_x"],
+                group_data["sod_halo_min_pot_y"],
+                group_data["sod_halo_min_pot_z"],
             ]
         )
         .T
         .to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
     )
     group_ids = group_data["fof_halo_tag"]
-    masses = group_data["fof_halo_mass"]
+    masses = group_data["sod_halo_mass"]
 
     mass_range = mass_range.to(masses.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
     mass_selection = (masses > np.min(mass_range)) & (masses < np.max(mass_range))
@@ -158,7 +158,7 @@ def save_coords_file(
             "masses": {
                 "data": masses,
                 "attrs": {
-                    "description": "Masses",
+                    "description": "Spherical overdensity masses m200c",
                     "units": "Msun",
                 },
             },
