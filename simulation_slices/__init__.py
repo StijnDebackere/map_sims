@@ -95,18 +95,6 @@ class Config(object):
                 self.coords_dir = config["maps"].get("coords_dir", None)
                 self.coords_name = config["maps"].get("coords_name", None)
 
-        # configuration for observables
-        if "observables" in config.keys():
-            self.obs_dir = config["observables"].get("save_dir", None)
-            self.obs_name_append = config["observables"].get("obs_name_append", "")
-            self.obs_overwrite = config["observables"].get("obs_overwrite", False)
-            self.obs_types = config["observables"].keys() - ["save_dir"]
-            # self.obs_kwargs = {key: config["observables"][key] for key in self.obs_types}
-
-        # self.figure_dir = config["DIRECTORIES"]["FIGURE_DIR"]
-        # self.data_dir = config["DIRECTORIES"]["DATA_DIR"]
-
-        # self.build_config()
 
     def __getitem__(self, key):
         return self.config[key]
@@ -325,28 +313,3 @@ class Config(object):
             self._map_types = np.asarray([val] * self._n_sims).tolist()
         else:
             raise ValueError("map_types should be list or string")
-
-        # if set(val) & set(['gas_mass', 'dm_mass', 'stars_mass', 'bh_mass', 'sz']) != set(val):
-        #     raise ValueError('map_types can only contain 0, 1, 2')
-        # else:
-        #     self._map_types = np.atleast_1d(list(set(val)))
-
-    # def build_config(self):
-    #     self.config = dict(
-    #         dict(
-    #             (
-    #                 str(sim),
-    #                 dict(
-    #                     (
-    #                         ("snapshots", self.snapshots[idx]),
-    #                         ("path", self.sim_paths[idx]),
-    #                         ("slice_dir", self.slice_paths[idx]),
-    #                         ("map_dir", self.map_paths[idx]),
-    #                         ("coords_file", self.coords_files[idx]),
-    #                         ("obs_dir", self.obs_paths[idx]),
-    #                     )
-    #                 ),
-    #             )
-    #             for idx, sim in enumerate(self.sim_dirs)
-    #         )
-    #     )

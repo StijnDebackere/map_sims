@@ -605,18 +605,3 @@ def map_los(
             f"map_los_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
     return fname
-
-
-def analyze_map(
-    snapshots,
-    box_size,
-    coords_name,
-    slice_dir,
-    slice_axes,
-    slice_size,
-    obs_info,
-    save_dir,
-):
-    for obs_type in obs_info["obs_types"]:
-        for map_type in obs_info[obs_type]["map_types"]:
-            analysis.save_observable()

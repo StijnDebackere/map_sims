@@ -174,21 +174,3 @@ def map_types_to_properties(map_types: List[str]) -> dict:
         )
 
     return results
-
-
-def get_obs_name(
-    save_dir: str,
-    slice_axis: int,
-    snapshot: int,
-    method: str,
-    coords_name: str = "",
-    obs_name_append: str = "",
-) -> str:
-    save_dir = util.check_path(save_dir)
-    if coords_name != "":
-        coords_name = f"_{coords_name}"
-    obs_name = (
-        f"{save_dir}/{slice_axis}_obs_{method}{coords_name}"
-        f"{obs_name_append}_{snapshot:03d}.hdf5"
-    )
-    return obs_name
