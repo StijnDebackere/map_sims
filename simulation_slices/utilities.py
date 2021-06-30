@@ -22,37 +22,83 @@ def on_queue(queue, func, *args, **kwargs):
 def groupby(data, index, bins):
     """Group data by index binned into bins.
 
-    Values outside bins are dropped"""
-    if type(index) == type(bins) == u.Quantity:
-        bin_ids = np.digitize(index.to_value(bins.unit), bins.value)
+    Values outside bin_edges are dropped"""
+    if type(index) == type(bin_edges) == u.Quantity:
+        bin_ids = np.digitize(index.to_value(bin_edges.unit), bin_edges.value)
     else:
-        bin_ids = np.digitize(index, bins)
+        bin_ids = np.digitize(index, bin_edges)
 
-    return {i: data[bin_ids == i + 1] for i in range(0, len(bins) - 1)}
+    return {i: data[bin_ids == i + 1] for i in range(0, len(bin_edges) - 1)}
 
 
 def apply_grouped(fun, grouped_data, **kwargs):
-    return {i: fun(gd, **kwargs) for i, gd in grouped_data.items()}
+    return dict(
+        (i, fun(gd, **kwargs)) if gd.size > 0 else (i, np.nan)
+        for i, gd in grouped_data.items()
+    )
 
 
-def bin_centers(bins, log=False):
-    """Return the center position of bins, with bins along axis -1."""
-    if log:
-        if type(bins) is u.Quantity:
-            centers = (
-                (bins[..., 1:] - bins[..., :-1])
-                / (np.log(bins.value[..., 1:]) - np.log(bins.value[..., :-1]))
-            )
+def bin_centers(bin_edges, log=False):
+    """Return the center position of bin_edges, with bin_edges along axis -1."""
+    if len(bin_edges.shape) == 1:
+        if log:
+            if type(bin_edges) is u.Quantity:
+                centers = (
+                    (bin_edges[1:] - bin_edges[:-1])
+                    / (np.log(bin_edges.value[1:]) - np.log(bin_edges.value[:-1]))
+                )
 
+            else:
+                centers = (
+                    (bin_edges[1:] - bin_edges[:-1])
+                    / (np.log(bin_edges[1:]) - np.log(bin_edges[:-1]))
+                )
         else:
-            centers = (
-                (bins[..., 1:] - bins[..., :-1])
-                / (np.log(bins[..., 1:]) - np.log(bins[..., :-1]))
-            )
-    else:
-        centers = 0.5 * (bins[..., :-1] + bins[..., 1:])
+            centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+
+    elif len(bin_edges.shape) == 2:
+        if bin_edges.shape[-1] == 2:
+            if log:
+                if type(bin_edges) is u.Quantity:
+                    centers = (
+                        (bin_edges[:, 1] - bin_edges[:, 0])
+                        / (np.log(bin_edges.value[:, 1]) - np.log(bin_edges.value[:, 0]))
+                    ).reshape(-1)
+                else:
+                    centers = (
+                        (bin_edges[:, 1] - bin_edges[:, 0])
+                        / (np.log(bin_edges[:, 1]) - np.log(bin_edges[:, 0]))
+                    ).reshape(-1)
+            else:
+                centers = 0.5 * (bin_edges[:, 0] + bin_edges[:, 1]).reshape(-1)
 
     return centers
+
+
+def get_xy_quantiles(x, y, x_bin_edges, qs, log=True):
+    """Determine qs quantiles of y(x) in (logarithmic if log is True) bins
+    with x_bin_edges."""
+    x_bins = bin_centers(x_bin_edges, log=log)
+
+    results = []
+    Ns = []
+    for q in qs:
+        grouped_data = groupby(
+            data=y,
+            index=x,
+            bin_edges=x_bin_edges,
+        )
+        results.append(
+            apply_grouped(
+                fun=np.nanquantile,
+                grouped_data=grouped_data,
+                q=q,
+            )
+        )
+        Ns.append([len(data) for bn, data in grouped_data.items()])
+
+    Ns = np.asarray(Ns)
+    return x_bins, results, Ns
 
 
 def arrays_to_coords(*xi):
