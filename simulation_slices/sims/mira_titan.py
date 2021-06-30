@@ -9,6 +9,9 @@ import numpy as np
 from tqdm import tqdm
 
 import simulation_slices.io as io
+import simulation_slices.maps.generation as map_gen
+import simulation_slices.maps.map_layout as map_layout
+import simulation_slices.maps.observables as obs
 import simulation_slices.sims.slicing as slicing
 import simulation_slices.utilities as util
 
@@ -457,5 +460,166 @@ def save_slice_data(
                     )
 
             h5file.close()
+
+    return fnames
+
+
+def save_full_maps(
+    sim_dir: str,
+    snapshot: int,
+    slice_axes: int,
+    box_size: u.Quantity,
+    map_pix: int,
+    save_dir: str,
+    map_name_append: str = "",
+    downsample: bool = False,
+    downsample_factor: float = None,
+    overwrite: bool = False,
+    swmr: bool = False,
+    method: str = None,
+    n_ngb: int = 30,
+    verbose: bool = False,
+    logger: util.LoggerType = None,
+    **kwargs,
+) -> List[str]:
+    """Project full simulation in a map of (map_pix, map_pix) for slice_axes.
+
+    Parameters
+    ----------
+    sim_dir : str
+        directory of the simulation
+    snapshot : int
+        snapshot to look at
+    slice_axes : int
+        axis to slice along [x=0, y=1, z=2]
+    box_size : astropy.units.Quantity
+        size of simulation
+    map_pix : int
+        square root of number of pixels in map
+    save_dir : str
+        directory to save map files to
+    map_name_append : str
+        optional extra to append to filenames
+    overwrite : bool
+        overwrite map_file if already exists
+    swmr : bool
+        enable single writer multiple reader mode for map_file
+    method : str ["sph", "bin"]
+        method for map projection: sph smoothing with n_ngb neighbours or 2D histogram
+    n_ngb : int
+        number of neighbours to determine SPH kernel size
+    verbose : bool
+        show progress bar
+
+    Returns
+    -------
+    saves maps to {save_dir}/{slice_axis}_maps_{coords_name}{map_name_append}_{snapshot:03d}.hdf5
+
+    """
+    slice_axes = np.atleast_1d(slice_axes)
+    sim_info = MiraTitan(
+        sim_dir=sim_dir,
+        box_size=box_size,
+        snapnum=snapshot,
+    )
+    # read in the Mpc unit box_size
+    box_size = sim_info.L
+    h = sim_info.cosmo["h"]
+
+    # ensure that save_dir exists
+    if save_dir is None:
+        save_dir = util.check_path(sim_info.get_fname("snap")).parent / "maps"
+    else:
+        save_dir = util.check_path(save_dir)
+
+    fnames = []
+    map_files = {}
+    for slice_axis in slice_axes:
+        map_name = map_gen.get_map_name(
+            save_dir=save_dir,
+            slice_axis=slice_axis,
+            snapshot=snapshot,
+            method=method,
+            map_thickness=box_size,
+            coords_name="",
+            map_name_append=map_name_append,
+            downsample=downsample,
+            downsample_factor=downsample_factor,
+            full=True,
+        )
+        map_file = map_layout.create_map_file(
+            map_name=map_name,
+            overwrite=overwrite,
+            close=False,
+            # cannot have swmr since we are adding attributes later
+            swmr=False,
+            slice_axis=slice_axis,
+            box_size=box_size,
+            map_types=["dm_mass"],
+            map_size=box_size,
+            map_thickness=box_size,
+            map_pix=map_pix,
+            snapshot=snapshot,
+            n_ngb=n_ngb,
+            maxshape=0,
+            full=True,
+        )
+        map_files[slice_axis] = {
+            "map_name": map_name,
+            "map_file": map_file
+        }
+        fnames.append(map_name)
+
+    # now loop over all snapshot files and add their particle info
+    # to the correct slice
+    iterator = enumerate(sim_info.datatype_info["snap"]["nums"])
+    if verbose:
+        iterator = tqdm(
+            iterator,
+            desc="Projecting particle files",
+            total=len(sim_info.datatype_info["snap"]["nums"]),
+        )
+
+    for idx, file_num in iterator:
+        properties = sim_info.read_properties(
+            datatype="snap", props=["x", "y", "z"], num=file_num
+        )
+
+        # MiraTitan box size is in Mpc, cannot be converted in Config
+        # need to enforce consistent units => get rid of all littleh factors
+        coords = np.vstack([properties["x"], properties["y"], properties["z"]]).to(
+            "Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+        )
+        masses = np.atleast_1d(sim_info.simulation_info["snap"]["m_p"]).to(
+            "Msun", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+        )
+
+        properties = {"masses": masses}
+
+        # write each slice to a separate file
+        for slice_axis in slice_axes:
+            no_slice_axis = np.arange(0, 3) != slice_axis
+            if method == "bin":
+                coords_to_map = map_gen.coords_to_map_bin
+            elif method == "sph":
+                coords_to_map = map_gen.coords_to_map_sph
+                properties = {**properties, "n_ngb": n_ngb}
+
+            mp = coords_to_map(
+                coords=coords[no_slice_axis],
+                map_size=box_size,
+                map_pix=map_pix,
+                box_size=box_size,
+                func=obs.particles_masses,
+                map_center=None,
+                logger=logger,
+                **properties
+            )
+            map_files[slice_axis]["map_file"]["dm_mass"][()] += mp.value
+            if idx == 0:
+                map_files[slice_axis]["map_file"]["dm_mass"].attrs["units"] = str(mp.unit)
+
+    for slice_axis in slice_axes:
+        map_files[slice_axis]["map_file"].close()
 
     return fnames
