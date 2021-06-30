@@ -10,7 +10,6 @@ import numpy as np
 
 from simulation_slices import Config
 import simulation_slices.utilities as util
-import simulation_slices.maps.analysis as analysis
 import simulation_slices.maps.generation as map_gen
 import simulation_slices.sims.bahamas as bahamas
 import simulation_slices.sims.mira_titan as mira_titan

@@ -11,7 +11,7 @@ from tqdm import tqdm
 import simulation_slices.io as io
 import simulation_slices.sims.slicing as slicing
 import simulation_slices.maps.tools as map_tools
-import simulation_slices.maps.generation as gen
+import simulation_slices.maps.generation as map_gen
 import simulation_slices.maps.interpolate_tables as interp_tables
 import simulation_slices.maps.map_layout as map_layout
 import simulation_slices.maps.observables as obs
@@ -639,7 +639,7 @@ def save_maps_los(
         comoving=True,
     )
 
-    map_name = gen.get_map_name(
+    map_name = map_gen.get_map_name(
         save_dir=save_dir,
         slice_axis=slice_axis,
         snapshot=snapshot,
@@ -788,16 +788,16 @@ def save_maps_los(
                 if method is None:
                     arr_size = 2 * coords_2d.shape[-1] * 2 * map_pix ** 2 * 64 * u.bit
                     if arr_size > 15 * u.GB:
-                        coords_to_map = gen.coords_to_map_bin
+                        coords_to_map = map_gen.coords_to_map_bin
                     else:
                         props_map_type = {"n_ngb": n_ngb, **props_map_type}
-                        coords_to_map = gen.coords_to_map_sph
+                        coords_to_map = map_gen.coords_to_map_sph
 
                 elif method == "sph":
                     props_map_type = {"n_ngb": n_ngb, **props_map_type}
-                    coords_to_map = gen.coords_to_map_sph
+                    coords_to_map = map_gen.coords_to_map_sph
                 elif method == "bin":
-                    coords_to_map = gen.coords_to_map_bin
+                    coords_to_map = map_gen.coords_to_map_bin
                 else:
                     raise ValueError(f"{method=} should be 'sph' or 'bin'.")
 
