@@ -192,13 +192,7 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
 )
 def pipeline():
     solid_output_handles = []
-#     cfg = Config(str(Path(__file__).parent / "simulation_slices/batch_mira.toml"))
-    cfg = Config(
-        str(
-            Path(__file__).parent
-            / "simulation_slices/batch_bahamas_full_downsampled.toml"
-        )
-    )
+    cfg = Config("/hpcdata0/simulations/BAHAMAS/extsdeba/batch_files/batch_bahamas_full.toml")
 
     for sim_idx in range(cfg._n_sims):
         for idx_snap, snapshot in enumerate(cfg.snapshots[sim_idx]):
@@ -230,7 +224,7 @@ if __name__ == "__main__":
                         "slice_sims": True,
                         "save_coords": True,
                         "map_sims": True,
-                        "project_full": False,
+                        "project_full": True,
                     },
                 },
             },

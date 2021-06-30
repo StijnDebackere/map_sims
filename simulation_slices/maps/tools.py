@@ -60,7 +60,7 @@ def pixel_to_pix_id(pixel, map_pix):
 
 def pix_id_array_to_map(pix_id_array):
     """Convert map_pix**2 array to (map_pix, map_pix) map with map[i, j]
-    equal to pixel (i, j)."""
+    equal to pixel (i, j) with pix_id = i * map_pix + j."""
     # pix_id_array -> values for pix_ids [0, 1, 2, ..., map_pix**2 - 1]
     pix_id_array = np.atleast_1d(pix_id_array)
     if len(pix_id_array.shape) > 1:
@@ -157,6 +157,7 @@ def distances_from_centers(
 
     # pix_x_range and pix_y_range
     pix_ranges = np.linspace(lower, lower + n_pix - 1, n_pix).T
+    # (n, 2) array with column 0: x and column 1: y
     pix_grid = util.arrays_to_coords(*pix_ranges).astype(int)
 
     distances = pix_dist(a=pix_grid, b=center / pix_size, b_is_pix=False)
