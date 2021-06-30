@@ -124,18 +124,18 @@ def dist(x, y, box_size, axis=0):
 
 
 def distances_from_centers(
-    center, dr, pix_size, box_size,
+    center, map_size, pix_size, box_size,
 ):
     """Calculate the distance for a pixel grid with pix_size of physical
-    size (2dr, 2dr) around center for a simulation with box_size
+    size (map_size, map_size) around center for a simulation with box_size
     (needed for periodic boundary conditions).
 
     Parameters
     ----------
     center : (2, ) astropy.units.Quantity
         center for the grid
-    dr : astropy.units.Quantity
-        minimum radius of the grid
+    map_size : astropy.units.Quantity
+        physical size of the grid
     pix_size : astropy.units.Quantity
         physical size of a pixel
     box_size : astropy.units.Quantity
@@ -152,8 +152,8 @@ def distances_from_centers(
     center = np.atleast_1d(center)
 
     # lower (x, y) for pixel grid => these can exceed box_size since we only care about distances around center
-    n_pix = np.ceil(2 * dr / pix_size).astype(int)
-    lower = np.floor((center - dr) / pix_size).astype(int)
+    n_pix = np.ceil(map_size / pix_size).astype(int)
+    lower = np.floor((center - 0.5 * map_size) / pix_size).astype(int)
 
     # pix_x_range and pix_y_range
     pix_ranges = np.linspace(lower, lower + n_pix - 1, n_pix).T
