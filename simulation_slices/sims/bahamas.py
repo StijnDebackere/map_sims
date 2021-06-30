@@ -13,6 +13,7 @@ import simulation_slices.sims.slicing as slicing
 import simulation_slices.maps.tools as map_tools
 import simulation_slices.maps.generation as gen
 import simulation_slices.maps.interpolate_tables as interp_tables
+import simulation_slices.maps.map_layout as map_layout
 import simulation_slices.maps.observables as obs
 import simulation_slices.utilities as util
 
@@ -549,3 +550,302 @@ def save_slice_data(
             logger.info(f"{file_num=} took {t1 - t0:.2f}s")
 
     return fnames
+
+
+def save_maps_los(
+    sim_dir: str,
+    snapshot: int,
+    centers: u.Quantity,
+    group_ids: np.ndarray,
+    masses: u.Quantity,
+    slice_dir: str,
+    slice_axis: int,
+    num_slices: int,
+    box_size: u.Quantity,
+    map_pix: int,
+    map_size: u.Quantity,
+    map_thickness: u.Quantity,
+    map_types: List[str],
+    save_dir: str,
+    coords_name: str = "",
+    map_name_append: str = "",
+    downsample: bool = False,
+    downsample_factor: float = None,
+    overwrite: bool = False,
+    swmr: bool = False,
+    method: str = None,
+    n_ngb: int = 30,
+    verbose: bool = False,
+    logger: util.LoggerType = None,
+) -> u.Quantity:
+    """Project map around coord in a box of (map_size, map_size, map_thickness)
+    in a map of (map_pix, map_pix) for mass of ptypes.
+
+    Parameters
+    ----------
+    centers : (N, 3) astropy.units.Quantity
+        (x, y, z) coordinates to slice around
+    group_ids : (N,) np.ndarray
+        group id for each coordinate
+    masses : (N,) astropy.units.Quantity
+        masses for each coordinate
+    slice_dir : str
+        directory of the saved simulation slices
+    snapshot : int
+        snapshot to look at
+    slice_axis : int
+        axis to slice along [x=0, y=1, z=2]
+    box_size : astropy.units.Quantity
+        size of simulation
+    num_slices : int
+        total number of slices
+    map_pix : int
+        square root of number of pixels in map
+    map_size : astropy.units.Quantity
+        size of the map
+    map_thickness : astropy.units.Quantity
+        thickness of the map projection
+    map_types : ["gas_mass", "dm_mass", "stars_mass", "bh_mass"]
+        particle types to compute masses for
+    save_dir : str
+        directory to save map files to
+    coords_name : str
+        identifier to append to filenames
+    map_name_append : str
+        optional extra to append to filenames
+    overwrite : bool
+        overwrite map_file if already exists
+    swmr : bool
+        enable single writer multiple reader mode for map_file
+    method : str ["sph", "bin"]
+        method for map projection: sph smoothing with n_ngb neighbours or 2D histogram
+    n_ngb : int
+        number of neighbours to determine SPH kernel size
+    verbose : bool
+        show progress bar
+
+    Returns
+    -------
+    saves maps to {save_dir}/{slice_axis}_maps_{coords_name}{map_name_append}_{snapshot:03d}.hdf5
+    """
+    if not all(["mass" in map_type for map_type in map_types]):
+        raise ValueError("only mass map_types are accepted")
+
+    snap_info = Gadget(
+        model_dir=sim_dir,
+        file_type="snap",
+        snapnum=snapshot,
+        units=True,
+        comoving=True,
+    )
+
+    map_name = gen.get_map_name(
+        save_dir=save_dir,
+        slice_axis=slice_axis,
+        snapshot=snapshot,
+        method=method,
+        coords_name=coords_name,
+        map_name_append=map_name_append,
+        downsample=downsample,
+        downsample_factor=downsample_factor,
+        map_thickness=map_thickness,
+    )
+
+    # sort maps along mass
+    centers = np.atleast_2d(centers).reshape(-1, 3)
+    sort_ids = np.argsort(masses)[::-1]
+    centers_sorted = centers[sort_ids]
+    group_ids_sorted = group_ids[sort_ids]
+    masses_sorted = masses[sort_ids]
+
+    maxshape = centers.shape[0]
+
+    # create index array that cuts out the slice_axis
+    no_slice_axis = np.arange(0, 3) != slice_axis
+
+    map_file = map_layout.create_map_file(
+        map_name=map_name,
+        overwrite=overwrite,
+        close=False,
+        swmr=swmr,
+        slice_axis=slice_axis,
+        box_size=box_size,
+        map_types=map_types,
+        map_size=map_size,
+        map_thickness=map_thickness,
+        map_pix=map_pix,
+        snapshot=snapshot,
+        n_ngb=n_ngb,
+        maxshape=maxshape,
+        extra={
+            "centers": {
+                "data": centers_sorted,
+                "attrs": {
+                    "description": "Halo centers.",
+                    "single_value": False,
+                    "units": str(centers_sorted.unit),
+                },
+            },
+            "group_ids": {
+                "data": group_ids_sorted,
+                "attrs": {
+                    "description": "Halo group ids.",
+                    "single_value": False,
+                },
+            },
+            "masses": {
+                "data": masses_sorted,
+                "attrs": {
+                    "description": "Halo masses.",
+                    "single_value": False,
+                    "units": str(masses_sorted.unit),
+                },
+            },
+        },
+    )
+
+    if not overwrite:
+        min_idx = np.min([map_file[map_type].shape[0] for map_type in map_types])
+        for map_type in map_types:
+            # truncate all map_types to minimum size
+            # might need to recalc some, but is easiest to implement
+            map_file[map_type].resize(min_idx, axis=0)
+    else:
+        min_idx = 0
+
+    # we will save maps in dictionary and write them to disk periodically
+    maps = {map_type: [] for map_type in map_types}
+    pix_size = map_size / map_pix
+    num_maps = 0
+
+
+    # only read in all coordinates once
+    ptypes = [obs.MAP_TYPES_OPTIONS[map_type]["ptype"] for map_type in map_types]
+    coords = {
+        ptype: snap_info.read_var(PROPS_TO_BAHAMAS[ptype]["coordinates"])
+        for ptype in set(ptypes)
+    }
+    maps = {
+        map_type: [] for map_type in map_types
+    }
+    for center, gid in zip(centers_sorted[:1], group_ids_sorted[:1]):
+        num_maps += 1
+        for ptype, map_type in zip(ptypes, map_types):
+            # get rough boundary cuts for the map, allow some extra 2D space
+            distance = np.ones(3) * 0.6 * map_size
+
+            coords_slice = coords[ptype]
+            # we will progressively shrink distance along slice_axis
+            if ptype != "dm":
+                masses_slice = snap_info.read_var(PROPS_TO_BAHAMAS[ptype]["masses"])
+            else:
+                masses_slice = np.atleast_1d(snap_info.masses[PTYPES_TO_BAHAMAS[ptype]])
+
+            map_nslices = np.zeros((map_pix, map_pix, len(map_thickness))) * masses_slice.unit / map_size.unit ** 2
+            # shrink map_thickness, shrinking coords and masses along the way
+            for idx, dl in enumerate(map_thickness[np.argsort(map_thickness)[::-1]]):
+                ts = time.time()
+                distance[slice_axis] = 0.5 * dl
+                bounds = map_tools.slice_around_center(
+                    center=center,
+                    distance=distance,
+                    box_size=box_size,
+                    pix_size=None,
+                )
+
+                sl = np.zeros(coords_slice.shape, dtype=bool)
+                for axis, bnds in bounds.items():
+                    temp_sl = sl[:, axis]
+                    # bounds possibly divided over opposite sides of periodic volume
+                    for bnd in bnds:
+                        if bnd[0].value == 0 * box_size.unit and bnd[1] == box_size:
+                            temp_sl = np.ones_like(temp_sl)
+                        else:
+                            temp_sl = (
+                                # need to be between bounds
+                                (coords_slice[:, axis] >= bnd[0]) & (coords_slice[:, axis] <= bnd[1])
+                                # and don't need to overlap with possible volume on other side of box
+                                | temp_sl
+                            )
+
+                    sl[:, axis] = temp_sl
+
+                # need to be inside bounds for all axes
+                sl = np.all(sl, axis=-1)
+
+                coords_slice = coords_slice[sl]
+                if ptype != "dm":
+                    masses_slice = masses_slice[sl]
+
+                # ignore sliced dimension
+                coords_2d = coords_slice[:, no_slice_axis]
+                map_center = center[no_slice_axis]
+
+                props_map_type = {"masses": masses_slice}
+                # size of array required for SPH smoothing
+                # SPH used up to haloes of 7152 particles for map_pix = 256
+                # enough for the most massive downsampled MiraTitan haloes
+                if method is None:
+                    arr_size = 2 * coords_2d.shape[-1] * 2 * map_pix ** 2 * 64 * u.bit
+                    if arr_size > 15 * u.GB:
+                        coords_to_map = gen.coords_to_map_bin
+                    else:
+                        props_map_type = {"n_ngb": n_ngb, **props_map_type}
+                        coords_to_map = gen.coords_to_map_sph
+
+                elif method == "sph":
+                    props_map_type = {"n_ngb": n_ngb, **props_map_type}
+                    coords_to_map = gen.coords_to_map_sph
+                elif method == "bin":
+                    coords_to_map = gen.coords_to_map_bin
+                else:
+                    raise ValueError(f"{method=} should be 'sph' or 'bin'.")
+
+                mp = coords_to_map(
+                    # coords_to_map expect dimension along axis 0
+                    coords=np.swapaxes(coords_2d, 0, 1),
+                    map_center=map_center,
+                    map_size=map_size,
+                    map_pix=map_pix,
+                    box_size=box_size,
+                    func=obs.particles_masses,
+                    logger=logger,
+                    **props_map_type,
+                )
+                map_nslices[..., idx] = mp
+                tf = time.time()
+                if logger:
+                    logger.info(
+                        f"{gid=} - {map_type=} {dl=} took {tf - ts:.2f}s"
+                    )
+
+            # all map_thicknesses have been applied for map_type
+            maps[map_type].append(map_nslices[None])
+            if num_maps % 10 == 0:
+                tw0 = time.time()
+                # save after each slice_range
+                io.add_to_hdf5(
+                    h5file=map_file,
+                    dataset=map_type,
+                    vals=np.concatenate(maps[map_type], axis=0),
+                    axis=0,
+                )
+                tw1 = time.time()
+                if logger:
+                    logger.info(
+                        f"{gid=} - writing n={len(maps[map_type])} for {map_type=} took {tw1 - tw0:.2f}s"
+                    )
+
+    # write any remaining maps to file
+    for map_type, mps in maps.items():
+        if mps:
+            io.add_to_hdf5(
+                h5file=map_file,
+                dataset=map_type,
+                vals=np.concatenate(mps, axis=0),
+                axis=0,
+            )
+
+    # still need to close the HDF5 files
+    map_file.close()
+    return map_name
