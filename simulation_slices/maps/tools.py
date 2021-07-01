@@ -41,21 +41,60 @@ def pix_dist(a, b, b_is_pix=True):
 
 
 def pix_id_to_pixel(pix_id, map_pix):
-    """Convert pix_id = i * map_pix + j  to pixel (i, j)."""
+    """Convert pix_id = i * map_pix + j to pixel (i, j) for
+    (map_pix, map_pix) array.
+
+    Parameters
+    ----------
+    pix_id : (n,) array-like
+        list of pixel ids that uniquely map to pixel value of (map_pix, map_pix)
+        array
+    map_pix : int
+        side length of map
+
+    Returns
+    -------
+    pixels : (2, n) array-like
+        (i, j) pixel values corresponding to each pix_id
+        row 0: i values
+        row 1: j values
+
+    """
+    pix_id = np.atleast_1d(pix_id)
+    if len(pix_id.shape) > 1 or pix_id.dtype != int:
+        raise ValueError("pix_id should be flat array of ints")
     if ((pix_id >= map_pix**2) | (pix_id < 0)).any():
         raise ValueError('pix_id should be in [0, map_pix**2)')
-    return np.array([pix_id // map_pix, pix_id % map_pix]).T
+    return np.array([pix_id // map_pix, pix_id % map_pix])
 
 
-def pixel_to_pix_id(pixel, map_pix):
-    """Convert pixel (i, j) to pix_id = i * map_pix + j."""
-    pixel = np.atleast_2d(pixel)
-    if pixel.shape[0] != 2 and len(pixel.shape) != 2:
-        raise ValueError('pixel should be (2, n) array')
-    if ((pixel >= map_pix) | (pixel < 0)).any():
+def pixel_to_pix_id(pixels, map_pix):
+    """Convert pixel (i, j) to pix_id = i * map_pix + j for
+    (map_pix, map_pix) array.
+
+    Parameters
+    ----------
+    pixels : (2, n) array-like
+        (i, j) pixel values corresponding to each pix_id
+        row 0: i values
+        row 1: j values
+    map_pix : int
+        side length of map
+
+    Returns
+    -------
+    pix_id : (n,) array-like
+        list of pixel ids = i * map_pix + j that uniquely map to pixel
+        value (i, j) of (map_pix, map_pix) array
+
+    """
+    pixels = np.atleast_2d(pixels)
+    if pixels.shape[0] != 2 or len(pixels.shape) != 2:
+        raise ValueError('pixels should be (2, n) array')
+    if ((pixels >= map_pix) | (pixels < 0)).any():
         raise ValueError('mapping is only 1-1 for i,j in [0, map_pix)')
 
-    return pixel[0] * map_pix + pixel[1]
+    return pixels[0] * map_pix + pixels[1]
 
 
 def pix_id_array_to_map(pix_id_array):
