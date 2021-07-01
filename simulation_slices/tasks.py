@@ -528,7 +528,7 @@ def map_full(
         logger.info(
             f"map_full_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
-    return fname
+    return fnames
 
 
 def map_los(
