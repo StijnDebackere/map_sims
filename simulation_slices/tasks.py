@@ -448,7 +448,6 @@ def map_coords(
 def map_full(
     sim_idx: int,
     snapshot: int,
-    slice_axes: List[int],
     config: Union[Config, str],
     logger: util.LoggerType = None,
 ) -> List[str]:
@@ -472,6 +471,7 @@ def map_full(
             fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_full{config.log_name_append}",
         )
 
+    slice_axes = config.slice_axes
     downsample = config.slice_downsample
     downsample_factor = config.downsample_factor
 
