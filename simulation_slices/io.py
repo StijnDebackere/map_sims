@@ -66,12 +66,17 @@ def create_hdf5(
     h5file = h5py.File(str(fname), mode=mode, libver=libver)
 
     for attr, val in layout["attrs"].items():
-        # attr not yet in h5file
         if attr not in h5file.attrs.keys():
+            # attr not yet in h5file
             h5file.attrs[attr] = val
-        # attr already in file but does not match
-        elif val != h5file.attrs[attr]:
-            raise ValueError(f"{attr=} does not match")
+        else:
+            # attr already in file but does not match
+            if attr == "units":
+                if u.Unit(val) != u.Unit(h5file.attrs[attr]):
+                    raise ValueError(f"{attr=} does not match")
+            else:
+                if val != h5file.attrs[attr]:
+                    raise ValueError(f"{attr=} does not match")
 
     for dset, val in layout["dsets"].items():
         # dset already contains data
@@ -90,7 +95,7 @@ def create_hdf5(
                         if "units" in h5file[dset].attrs.keys():
                             if "units" not in val["attrs"].keys():
                                 raise ValueError(f"{dset=} is not astropy.units.Quantity")
-                            elif val["attrs"]["units"] != h5file[dset].attrs["units"]:
+                            elif u.Unit(val["attrs"]["units"]) != u.Unit(h5file[dset].attrs["units"]):
                                 raise ValueError(f"{dset=} units do not match")
 
                         # load dset since we will compare its attributes later
@@ -151,10 +156,13 @@ def create_hdf5(
                             warnings.warn(f"{attr=} with type={type(attr_val)} cannot be saved, skipping.")
                 # attr present, cannot overwrite
                 else:
-                    try:
-                        check_equal = (attr_val == ds.attrs[attr])
-                    except ValueError:
-                        check_equal = np.all(attr_val, ds.attrs[attr])
+                    if attr == "units":
+                        check_equal = (u.Unit(attr_val) == u.Unit(ds.attrs[attr]))
+                    else:
+                        try:
+                            check_equal = (attr_val == ds.attrs[attr])
+                        except ValueError:
+                            check_equal = np.all(attr_val, ds.attrs[attr])
 
                     if not check_equal:
                         breakpoint()
