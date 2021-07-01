@@ -715,10 +715,7 @@ def save_maps_los(
         min_idx = 0
 
     # we will save maps in dictionary and write them to disk periodically
-    maps = {map_type: [] for map_type in map_types}
     pix_size = map_size / map_pix
-    num_maps = 0
-
 
     # only read in all coordinates once
     ptypes = [obs.MAP_TYPES_OPTIONS[map_type]["ptype"] for map_type in map_types]
@@ -729,7 +726,8 @@ def save_maps_los(
     maps = {
         map_type: [] for map_type in map_types
     }
-    for center, gid in zip(centers_sorted[:1], group_ids_sorted[:1]):
+    num_maps = 0
+    for center, gid in zip(centers_sorted, group_ids_sorted):
         num_maps += 1
         for ptype, map_type in zip(ptypes, map_types):
             # get rough boundary cuts for the map, allow some extra 2D space
