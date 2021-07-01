@@ -99,7 +99,19 @@ def pixel_to_pix_id(pixels, map_pix):
 
 def pix_id_array_to_map(pix_id_array):
     """Convert map_pix**2 array to (map_pix, map_pix) map with map[i, j]
-    equal to pixel (i, j) with pix_id = i * map_pix + j."""
+    equal to pixel (i, j) with pix_id = i * map_pix + j.
+
+    Parameters
+    ----------
+    pix_id_array : (map_pix ** 2,) array-like
+        array of values for pix_id = i * map_pix + j for each pixel (i, j)
+
+    Returns
+    -------
+    array : (map_pix, map_pix) array-like
+        map of pix_id_array values
+
+    """
     # pix_id_array -> values for pix_ids [0, 1, 2, ..., map_pix**2 - 1]
     pix_id_array = np.atleast_1d(pix_id_array)
     if len(pix_id_array.shape) > 1:
@@ -110,8 +122,8 @@ def pix_id_array_to_map(pix_id_array):
         raise ValueError("pix_id_array should have map_pix ** 2 shape")
     map_pix = int(map_pix)
 
-    # this reshapes to (j, i) array -> need to transpose
-    mp = pix_id_array.reshape(map_pix, map_pix).T
+    # pix_ids follow reshape order
+    mp = pix_id_array.reshape(map_pix, map_pix)
     return mp
 
 
