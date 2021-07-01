@@ -131,17 +131,16 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
                 logger = None
 
             fnames = []
-            for slice_axis in cfg.slice_axes:
-                if context.resources.settings["project_full"]:
-                    fname = tasks.map_full(
-                        sim_idx=sim_idx,
-                        config=cfg,
-                        snapshot=snapshot,
-                        slice_axis=slice_axis,
-                        logger=logger,
-                    )
-                    fnames.append(fname)
-                else:
+            if context.resources.settings["project_full"]:
+                fnames = tasks.map_full(
+                    sim_idx=sim_idx,
+                    config=cfg,
+                    snapshot=snapshot,
+                    logger=logger,
+                )
+                fnames.append(*fnames)
+            else:
+                for slice_axis in cfg.slice_axes:
                     fname = tasks.map_coords(
                         sim_idx=sim_idx,
                         config=cfg,
