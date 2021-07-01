@@ -139,6 +139,17 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
                     logger=logger,
                 )
                 fnames.append(*fnames)
+            elif context.resources.settings["project_los"]:
+                for slice_axis in cfg.slice_axes:
+                    fname = tasks.map_los(
+                        sim_idx=sim_idx,
+                        snapshot=snapshot,
+                        slice_axis=slice_axis,
+                        coords_file=coords_file,
+                        config=cfg,
+                        logger=logger,
+                    )
+                    fnames.append(fname)
             else:
                 for slice_axis in cfg.slice_axes:
                     fname = tasks.map_coords(
@@ -183,6 +194,7 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
                     save_coords=bool,
                     map_sims=bool,
                     project_full=bool,
+                    project_los=bool,
                 ),
             },
         )
@@ -220,10 +232,11 @@ if __name__ == "__main__":
             "resources": {
                 "settings": {
                     "config": {
-                        "slice_sims": True,
+                        "slice_sims": False,
                         "save_coords": True,
                         "map_sims": True,
                         "project_full": True,
+                        "project_los": False,
                     },
                 },
             },
