@@ -6,11 +6,11 @@ import simulation_slices.utilities as util
 
 def pix_dist(a, b, b_is_pix=True):
     """Calculate the distance between pixel centers of list of pixels
-    a = (i, j) and b = (k, l).
+    a and b.
 
     Parameters
     ----------
-    a : (n, 2) array-like
+    a : (2, n) array-like
         list of pixels
     b : (2, ) array-like
         pixel offset
@@ -25,17 +25,17 @@ def pix_dist(a, b, b_is_pix=True):
     else:
         b = b.astype(float)
 
-    if len(a.shape) > 2 or a.shape[-1] != 2:
-        raise ValueError("a should be broadcastable to shape (n, 2)")
-    if len(b.shape) > 1 or b.shape[-1] != 2:
+    if len(a.shape) > 2 or a.shape[0] != 2:
+        raise ValueError("a should be broadcastable to shape (2, n)")
+    if len(b.shape) > 1 or b.shape[0] != 2:
         raise ValueError("b should be broadcastable to shape (2,)")
 
     # distance between pixels
     if b_is_pix:
-        dist = np.linalg.norm(a - b, axis=-1)
+        dist = np.linalg.norm(a - b, axis=0)
     # b can be partial pixel coordinate -> need to convert a to pixel centers
     else:
-        dist = np.linalg.norm(a + 0.5 - b, axis=-1)
+        dist = np.linalg.norm(a + 0.5 - b, axis=0)
 
     return dist
 
@@ -202,17 +202,21 @@ def distances_from_centers(
     map_pix = int(box_size / pix_size)
     center = np.atleast_1d(center)
 
+    if len(center.shape) > 1:
+        raise ValueError("center should be 1D array")
+
     # lower (x, y) for pixel grid => these can exceed box_size since we only care about distances around center
     n_pix = np.ceil(map_size / pix_size).astype(int)
     lower = np.floor((center - 0.5 * map_size) / pix_size).astype(int)
 
-    # pix_x_range and pix_y_range
+    # row 0: pix_x_range, row 1: pix_y_range
     pix_ranges = np.linspace(lower, lower + n_pix - 1, n_pix).T
-    # (n, 2) array with column 0: x and column 1: y
-    pix_grid = util.arrays_to_coords(*pix_ranges).astype(int)
+    # arrays_to_coords returns (n, 2) array => transpose to
+    # (2, n) array with row 0: x and row 1: y
+    pix_grid = util.arrays_to_coords(*pix_ranges).astype(int).T
 
     distances = pix_dist(a=pix_grid, b=center / pix_size, b_is_pix=False)
-    return (pix_grid % map_pix).T, distances * pix_size
+    return (pix_grid % map_pix), distances * pix_size
 
 
 def slice_around_center(
@@ -238,7 +242,7 @@ def slice_around_center(
     Returns
     -------
     bounds : (1, 2) or (2, 2) array
-        lower and upper bounds
+        lower and upper bounds on possibly different sides of the box
     """
     center = np.atleast_1d(center)
     distance = np.atleast_1d(distance)
