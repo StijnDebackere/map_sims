@@ -16,7 +16,7 @@ import simulation_slices.sims.mira_titan as mira_titan
 
 
 def get_logger(sim_idx: int, config: Config, fname: str) -> logging.Logger:
-    logger = logging.getLogger(f"{os.getpid()} - batch_run")
+    logger = logging.getLogger(f"{os.getpid()} - tasks")
 
     log_dir = config.log_dir
     # save to log file
@@ -448,7 +448,7 @@ def map_coords(
 def map_full(
     sim_idx: int,
     snapshot: int,
-    slice_axis: int,
+    slice_axes: List[int],
     config: Union[Config, str],
     logger: util.LoggerType = None,
 ) -> List[str]:
@@ -464,7 +464,6 @@ def map_full(
     sim_dir = config.sim_paths[sim_idx]
     sim_suite = config.sim_suite
     box_size = config.box_sizes[sim_idx]
-    ptypes = config.ptypes[sim_idx]
 
     if logger is None and config.logging:
         logger = get_logger(
@@ -473,8 +472,6 @@ def map_full(
             fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_full{config.log_name_append}",
         )
 
-    slice_dir = config.slice_paths[sim_idx]
-    num_slices = config.num_slices
     downsample = config.slice_downsample
     downsample_factor = config.downsample_factor
 
@@ -487,25 +484,44 @@ def map_full(
     map_pix = config.map_pix
     n_ngb = config.n_ngb
 
-    fname = map_gen.project_full(
-        slice_dir=slice_dir,
-        snapshot=snapshot,
-        slice_axis=slice_axis,
-        num_slices=num_slices,
-        downsample=downsample,
-        downsample_factor=downsample_factor,
-        box_size=box_size,
-        map_pix=map_pix,
-        map_types=map_types,
-        save_dir=save_dir,
-        map_name_append=map_name_append,
-        overwrite=map_overwrite,
-        method=map_method,
-        n_ngb=n_ngb,
-        logger=logger,
-        swmr=swmr,
-        verbose=False,
-    )
+    if sim_suite.lower() == "bahamas":
+        fnames = bahamas.save_full_maps(
+            sim_dir=str(sim_dir),
+            snapshot=snapshot,
+            slice_axes=slice_axes,
+            box_size=box_size,
+            map_types=map_types,
+            map_pix=map_pix,
+            save_dir=save_dir,
+            map_name_append=map_name_append,
+            downsample=downsample,
+            downsample_factor=downsample_factor,
+            overwrite=map_overwrite,
+            swmr=swmr,
+            method=map_method,
+            n_ngb=n_ngb,
+            logger=logger,
+            verbose=False,
+        )
+
+    elif sim_suite.lower() == "miratitan":
+        fnames = mira_titan.save_full_maps(
+            sim_dir=str(sim_dir),
+            snapshot=snapshot,
+            slice_axes=slice_axes,
+            box_size=box_size,
+            map_pix=map_pix,
+            save_dir=save_dir,
+            map_name_append=map_name_append,
+            downsample=downsample,
+            downsample_factor=downsample_factor,
+            overwrite=map_overwrite,
+            swmr=swmr,
+            method=map_method,
+            n_ngb=n_ngb,
+            logger=logger,
+            verbose=False,
+        )
 
     end = time.time()
     if logger:
