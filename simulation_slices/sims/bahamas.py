@@ -639,6 +639,7 @@ def save_maps_los(
         comoving=True,
     )
 
+    map_thickness = map_thickness[np.argsort(map_thickness)[::-1]]
     map_name = map_gen.get_map_name(
         save_dir=save_dir,
         slice_axis=slice_axis,
@@ -743,7 +744,7 @@ def save_maps_los(
 
             map_nslices = np.zeros((map_pix, map_pix, len(map_thickness))) * masses_slice.unit / map_size.unit ** 2
             # shrink map_thickness, shrinking coords and masses along the way
-            for idx, dl in enumerate(map_thickness[np.argsort(map_thickness)[::-1]]):
+            for idx, dl in enumerate(map_thickness):
                 ts = time.time()
                 distance[slice_axis] = 0.5 * dl
                 bounds = map_tools.slice_around_center(
