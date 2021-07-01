@@ -257,8 +257,9 @@ class Config(object):
 
     @num_slices.setter
     def num_slices(self, val):
-        if type(val) is not int or val is not None:
-            raise ValueError("num_slices should be int or None")
+        if val is not None:
+            if type(val) is not int:
+                raise ValueError("num_slices should be int or None")
         self._num_slices = val
 
     @property
