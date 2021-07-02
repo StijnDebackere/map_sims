@@ -159,7 +159,11 @@ def save_coords_file(
         n_in_bin = sample_haloes_bins["n_in_bin"]
 
         # group halo indices by mass bins
-        sampled_ids = util.groupby(np.arange(0, masses.shape[0]), masses, mass_bin_edges)
+        sampled_ids = util.groupby(
+            data=np.arange(0, masses.shape[0]),
+            index=masses,
+            bin_edges=mass_bin_edges,
+        )
 
         selection = []
         for i, ids in sampled_ids.items():
@@ -744,7 +748,6 @@ def save_maps_los(
             map_nslices = np.zeros((map_pix, map_pix, len(map_thickness))) * masses_slice.unit / map_size.unit ** 2
             # shrink map_thickness, shrinking coords and masses along the way
             for idx, dl in enumerate(map_thickness):
-                ts = time.time()
                 distance[slice_axis] = 0.5 * dl
                 bounds = map_tools.slice_around_center(
                     center=center,
@@ -813,16 +816,12 @@ def save_maps_los(
                     **props_map_type,
                 )
                 map_nslices[..., idx] = mp
-                tf = time.time()
-                if logger:
-                    logger.info(
-                        f"{gid=} - {map_type=} {dl=} took {tf - ts:.2f}s"
-                    )
 
             # all map_thicknesses have been applied for map_type
             maps[map_type].append(map_nslices[None])
+
+            # save every 10 steps, make sure to erase maps that have already been saved
             if num_maps % 10 == 0:
-                tw0 = time.time()
                 # save after each slice_range
                 io.add_to_hdf5(
                     h5file=map_file,
@@ -830,13 +829,20 @@ def save_maps_los(
                     vals=np.concatenate(maps[map_type], axis=0),
                     axis=0,
                 )
-                tw1 = time.time()
-                if logger:
-                    logger.info(
-                        f"{gid=} - writing n={len(maps[map_type])} for {map_type=} took {tw1 - tw0:.2f}s"
-                    )
+
                 # start again from 0 maps
                 maps[map_type] = []
+
+        # finished running map slices for gid
+        t1 = time.time()
+        if logger:
+            logger.info(
+                f"{gid=} - {map_types=} and {map_thickness=} took {t1 - t0:.2f}s"
+            )
+            if num_maps % 10 == 0:
+                logger.info(
+                    f"{gid=} - saved up to {num_maps=}"
+                )
 
     # write any remaining maps to file
     for map_type, mps in maps.items():
@@ -979,8 +985,8 @@ def save_full_maps(
         )
 
     for idx, file_num in iterator:
+        ts = time.time()
         for map_type in map_types:
-            tl0 = time.time()
             ptype = obs.MAP_TYPES_OPTIONS[map_type]["ptype"]
             dsets = obs.MAP_TYPES_OPTIONS[map_type]["dsets"]
             attrs = obs.MAP_TYPES_OPTIONS[map_type].get("attrs", None)
@@ -1024,15 +1030,8 @@ def save_full_maps(
                 for attr in attrs:
                     properties[attr] = getattr(snap_info, attr)
 
-            tl1 = time.time()
-            if logger:
-                logger.info(
-                    f"{file_num=} - loading properties took {tl1 - tl0:.2f}s"
-                )
-
             # write each slice to a separate file
             for slice_axis in slice_axes:
-                ts0 = time.time()
                 no_slice_axis = np.arange(0, 3) != slice_axis
                 if method == "bin":
                     coords_to_map = map_gen.coords_to_map_bin
@@ -1051,11 +1050,6 @@ def save_full_maps(
                     **properties
                 )
                 map_files[slice_axis]["map"][map_type] += mp.value
-                ts1 = time.time()
-                if logger:
-                    logger.info(
-                        f"{file_num=} - {slice_axis=} and {map_type=} took {ts1 - ts0:.2f}s"
-                    )
 
                 if idx == 0:
                     map_files[slice_axis]["map_file"][map_type].attrs["units"] = str(mp.unit)
@@ -1063,10 +1057,16 @@ def save_full_maps(
                     # save map to map_file and start again at 0
                     map_files[slice_axis]["map_file"][map_type][()] += map_files[slice_axis]["map"][map_type]
                     map_files[slice_axis]["map"][map_type] = np.zeros((map_pix, map_pix), dtype=float)
-                    if logger:
-                        logger.info(
-                            f"{file_num=} - saved up to {idx=} for {slice_axis=} and {map_type=}"
-                        )
+
+        tf = time.time()
+        if logger:
+            logger.info(
+                f"{file_num=} - {map_types=} and {slice_axes=} finished in {tf - ts:.2f}s"
+            )
+            if idx % 10 == 0:
+                logger.info(
+                    f"{file_num=} - saved up to {idx=} for {map_types=} and {slice_axes=}"
+                )
 
     # append final remaining maps to map_file
     for slice_axis in slice_axes:
