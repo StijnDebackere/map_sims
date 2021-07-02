@@ -19,7 +19,7 @@ def on_queue(queue, func, *args, **kwargs):
     queue.put([os.getpid(), res])
 
 
-def groupby(data, index, bins):
+def groupby(data, index, bin_edges):
     """Group data by index binned into bins.
 
     Values outside bin_edges are dropped"""

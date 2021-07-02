@@ -727,7 +727,8 @@ def save_maps_los(
         map_type: [] for map_type in map_types
     }
     num_maps = 0
-    for center, gid in zip(centers_sorted, group_ids_sorted):
+    for idx, (center, gid) in enumerate(zip(centers_sorted, group_ids_sorted)):
+        t0 = time.time()
         num_maps += 1
         for ptype, map_type in zip(ptypes, map_types):
             # get rough boundary cuts for the map, allow some extra 2D space
@@ -834,6 +835,8 @@ def save_maps_los(
                     logger.info(
                         f"{gid=} - writing n={len(maps[map_type])} for {map_type=} took {tw1 - tw0:.2f}s"
                     )
+                # start again from 0 maps
+                maps[map_type] = []
 
     # write any remaining maps to file
     for map_type, mps in maps.items():
