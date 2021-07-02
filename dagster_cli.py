@@ -1,4 +1,5 @@
 import argparse
+import os
 from pathlib import Path
 
 from dagster import (
@@ -30,6 +31,13 @@ parser.add_argument(
     default=8,
     type=int,
     help="maximum number of concurrent processes"
+)
+parser.add_argument(
+    "-h", "--dagster-home",
+    default="/hpcdata0/simulations/BAHAMAS/extsdeba/dagster/",
+    type=str,
+    dest="dagster_home"
+    help="$DAGSTER_HOME location"
 )
 parser.add_argument("--slice-sims", dest="slice_sims", action="store_true")
 parser.add_argument("--no-slice-sims", dest="slice_sims", action="store_false")
@@ -95,8 +103,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     dict_args = vars(args)
 
+    os.environ["DAGSTER_HOME"] = dict_args["dagster_home"]
     reconstructable_pipeline = build_reconstructable_pipeline(
-        "run_dagster",
+        "dagster_cli",
         "pipeline_factory",
         (),
         {"config_filename": dict_args["config_filename"]},
