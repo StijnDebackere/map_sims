@@ -19,25 +19,29 @@ from simulation_slices import Config
 import dagster_solids as solids
 
 
-parser = argparse.ArgumentParser(description='Run a dagster pipeline from config_filename.')
+parser = argparse.ArgumentParser(
+    description="Run a dagster pipeline from config_filename."
+)
 parser.add_argument(
     "config_filename",
     default="/hpcdata0/simulations/BAHAMAS/extsdeba/batch_files/batch_bahamas_test.toml",
     type=str,
-    help="configuration filename"
+    help="configuration filename",
 )
 parser.add_argument(
-    "-n", "--max_cpus",
+    "-n",
+    "--max_cpus",
     default=8,
     type=int,
-    help="maximum number of concurrent processes"
+    help="maximum number of concurrent processes",
 )
 parser.add_argument(
-    "-h", "--dagster-home",
+    "-h",
+    "--dagster-home",
     default="/hpcdata0/simulations/BAHAMAS/extsdeba/dagster/",
     type=str,
-    dest="dagster_home"
-    help="$DAGSTER_HOME location"
+    dest="dagster_home",
+    help="$DAGSTER_HOME location",
 )
 parser.add_argument("--slice-sims", dest="slice_sims", action="store_true")
 parser.add_argument("--no-slice-sims", dest="slice_sims", action="store_false")
