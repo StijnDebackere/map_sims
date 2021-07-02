@@ -36,7 +36,6 @@ parser.add_argument(
     help="maximum number of concurrent processes",
 )
 parser.add_argument(
-    "-h",
     "--dagster-home",
     default="/hpcdata0/simulations/BAHAMAS/extsdeba/dagster/",
     type=str,
