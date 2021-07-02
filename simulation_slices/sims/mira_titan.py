@@ -62,6 +62,7 @@ def save_coords_file(
         sim_dir=sim_dir,
         box_size=box_size,
         snapnum=snapshot,
+        verbose=False,
     )
     h = sim_info.cosmo["h"]
 
@@ -218,6 +219,7 @@ def save_subvolumes(
         sim_dir=sim_dir,
         box_size=box_size,
         snapnum=snapshot,
+        verbose=False,
     )
     h = sim_info.cosmo["h"]
 
@@ -360,6 +362,7 @@ def save_slice_data(
         sim_dir=sim_dir,
         box_size=box_size,
         snapnum=snapshot,
+        verbose=verbose,
     )
     # read in the Mpc unit box_size
     box_size = sim_info.L
@@ -522,6 +525,7 @@ def save_full_maps(
         sim_dir=sim_dir,
         box_size=box_size,
         snapnum=snapshot,
+        verbose=verbose,
     )
     # read in the Mpc unit box_size
     box_size = sim_info.L
