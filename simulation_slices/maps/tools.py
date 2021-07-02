@@ -30,6 +30,7 @@ def pix_dist(a, b, b_is_pix=True):
     if len(b.shape) > 1 or b.shape[0] != 2:
         raise ValueError("b should be broadcastable to shape (2,)")
 
+    b = b.reshape(2, 1)
     # distance between pixels
     if b_is_pix:
         dist = np.linalg.norm(a - b, axis=0)
