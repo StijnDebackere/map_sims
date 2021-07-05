@@ -115,34 +115,51 @@ def coords_to_map_bin(
     # pixels in the map
     pix_ids = tools.pixel_to_pix_id([x_pix[in_map], y_pix[in_map]], map_pix)
 
-    props = dict(
-        [
-            (k, v[..., in_map]) if np.atleast_1d(v).shape[-1] == len(in_map)
-            # if v is a single value, apply it for all coords in pixel
-            else (k, v * np.ones(in_map.sum()))
-            for k, v in props.items()
-        ]
+    # we will need to associate each function value to the correct pixel
+    pix_sort_order = np.argsort(pix_ids)
+
+    # unique_ids: all unique pix_ids that contain particles
+    # loc_ids: location of each pix_id for the sorted list of pix_ids
+    #          e.g. for sorted pix_ids = [0, 0, 0, 1, 1, ..., num_pix_side**2 - 1, ...]
+    #          we would get back [0, 3, ...]
+    # pix_counts: number of times each unique pix_id appears
+    unique_ids, loc_ids, pix_counts = np.unique(
+        pix_ids[pix_sort_order], return_index=True, return_counts=True,
     )
-
-    # calculate func for each particle, we already divide by A_pix
-    func_values = func(**props) / pix_size ** 2
-
-    # now we need to associate each value to the correct pixel
-    sort_order = np.argsort(pix_ids)
-    func_values = func_values[sort_order]
-
-    # get the location of each pixel for the sorted pixel list
-    # e.g. for sorted pix_ids = [0, 0, 0, 1, 1, ..., num_pix_side**2 - 1, ...]
-    # we would get back [0, 3, ...]
-    unique_ids, loc_ids = np.unique(pix_ids[sort_order], return_index=True)
 
     # need to also add the final value for pix_id = num_pix**2 - 1
     pix_range = np.concatenate([loc_ids, [len(pix_ids)]])
 
-    pixel_values = np.zeros(n_pix, dtype=float)
-    pixel_values[unique_ids] = np.array(
-        [np.sum(func_values[i:j].value) for i, j in zip(pix_range[:-1], pix_range[1:])]
-    )
+    # filter out properties with single value
+    unique_props = {}
+    other_props = {}
+    for prop, value in props.items():
+        value_arr = np.atleast_1d(value)
+        if value_arr.shape == (1,):
+            unique_props[prop] = value_arr
+        elif value_arr.shape[-1] == len(in_map):
+            other_props[prop] = value_arr[..., in_map]
+        else:
+            other_props[prop] = value_arr
+
+    # calculate func for each particle, we already divide by A_pix
+    if len(other_props.keys()) == 0:
+        # only have unique properties, speed up code by only summing value
+        func_values = func(**unique_props) / pix_size ** 2
+
+        pixel_values = np.zeros(n_pix, dtype=float)
+        pixel_values[unique_ids] = func_values.value * pix_counts
+    else:
+        func_values = func(**unique_props, **other_props) / pix_size ** 2
+
+        # sort func_values according to pix_ids
+        func_values = func_values[pix_sort_order]
+
+        pixel_values = np.zeros(n_pix, dtype=float)
+        # fill each pixel_value with the matching slice along func_values
+        pixel_values[unique_ids] = np.array(
+            [np.sum(func_values[i:j].value) for i, j in zip(pix_range[:-1], pix_range[1:])]
+        )
 
     # reshape the array to the map we wanted
     # we get (i, j) array with x_pix along rows and y_pix along columns
