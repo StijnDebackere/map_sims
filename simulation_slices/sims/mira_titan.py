@@ -648,7 +648,7 @@ def save_full_maps(
             )
             if idx % 10 == 0:
                 logger.info(
-                    f"{file_num=} - saved up to {idx=} for {map_types=} and {slice_axes=}"
+                    f"{file_num=} - saved up to {idx=} for 'dm_mass' and {slice_axes=}"
                 )
 
     # append final remaining maps to map_file
