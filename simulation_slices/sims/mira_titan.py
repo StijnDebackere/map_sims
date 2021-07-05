@@ -653,9 +653,7 @@ def save_full_maps(
 
     # append final remaining maps to map_file
     for slice_axis in slice_axes:
-        for map_type in map_types:
-            map_files[slice_axis]["map_file"]["dm_mass"][()] += map_files[slice_axis]["map"]
-
+        map_files[slice_axis]["map_file"]["dm_mass"][()] += map_files[slice_axis]["map"]
         map_files[slice_axis]["map_file"].close()
 
     t1 = time.time()
