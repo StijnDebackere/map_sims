@@ -606,6 +606,7 @@ def save_full_maps(
 
         # write each slice to a separate file
         for slice_axis in slice_axes:
+            ts0 = time.time()
             no_slice_axis = np.arange(0, 3) != slice_axis
             if method == "bin":
                 coords_to_map = map_gen.coords_to_map_bin
@@ -632,6 +633,12 @@ def save_full_maps(
                 # save map to map_file and start again at 0
                 map_files[slice_axis]["map_file"]["dm_mass"][()] += map_files[slice_axis]["map"]
                 map_files[slice_axis]["map"] = np.zeros((map_pix, map_pix), dtype=float)
+
+            ts1 = time.time()
+            if logger:
+                logger.info(
+                    f"{file_num=} - {slice_axis=} finished in {ts1 - ts0:.2f}s"
+                )
 
         # finished file_num
         tf = time.time()
