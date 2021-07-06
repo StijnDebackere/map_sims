@@ -121,7 +121,7 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
             else:
                 logger = None
 
-            fnames = []
+            fnames_all = []
             if context.resources.settings["project_full"]:
                 fnames = tasks.map_full(
                     sim_idx=sim_idx,
@@ -129,7 +129,7 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
                     snapshot=snapshot,
                     logger=logger,
                 )
-                fnames.append(*fnames)
+                fnames_all = [*fnames_all, *fnames]
             elif context.resources.settings["project_los"]:
                 for slice_axis in cfg.slice_axes:
                     fname = tasks.map_los(
@@ -140,7 +140,7 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
                         config=cfg,
                         logger=logger,
                     )
-                    fnames.append(fname)
+                    fnames_all.append(fname)
             else:
                 for slice_axis in cfg.slice_axes:
                     fname = tasks.map_coords(
@@ -151,13 +151,13 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
                         coords_file=coords_file,
                         logger=logger,
                     )
-                    fnames.append(fname)
+                    fnames_all.append(fname)
 
             context.log.info(
                 f"Finished mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}"
             )
 
-            for idx, fname in enumerate(fnames):
+            for idx, fname in enumerate(fnames_all):
                 yield AssetMaterialization(
                     asset_key=f"map_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{idx}_{snapshot:03d}",
                     description=f"Maps file {idx} for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}",

@@ -113,7 +113,7 @@ if __name__ == "__main__":
         (),
         {"config_filename": dict_args["config_filename"]},
     )
-    execute_pipeline(
+    result = execute_pipeline(
         reconstructable_pipeline,
         instance=DagsterInstance.get(),
         run_config={
