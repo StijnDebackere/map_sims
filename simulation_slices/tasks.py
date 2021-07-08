@@ -15,35 +15,30 @@ import simulation_slices.sims.bahamas as bahamas
 import simulation_slices.sims.mira_titan as mira_titan
 
 
-def get_logger(sim_idx: int, config: Config, fname: str) -> logging.Logger:
-    logger = logging.getLogger(f"{os.getpid()} - tasks")
-
+def get_logger(sim_idx: int, snapshot: int, config: Config, fname: str) -> logging.Logger:
     log_dir = config.log_dir
-    # save to log file
-    fh = logging.FileHandler(
-        f"{log_dir}/{fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.log"
-    )
+    log_fname = f"{log_dir}/{fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.log"
 
     if config.log_level.lower() == "info":
-        fh.setLevel(logging.INFO)
-        logger.setLevel(logging.INFO)
+        level = logging.INFO
     elif config.log_level.lower() == "debug":
-        fh.setLevel(logging.DEBUG)
-        logger.setLevel(logging.DEBUG)
+        level = logging.DEBUG
     elif config.log_level.lower() == "warning":
-        fh.setLevel(logging.WARNING)
-        logger.setLevel(logging.WARNING)
+        level = logging.WARNING
     elif config.log_level.lower() == "critical":
-        fh.setLevel(logging.CRITICAL)
-        logger.setLevel(logging.CRITICAL)
+        level = logging.CRITICAL
 
-    # set formatting
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s [%(levelname)s] %(funcName)s - %(message)s"
+    logging.basicConfig(
+        filename=log_fname,
+        filemode="w",
+        format="%(asctime)s - %(name)s [%(levelname)s] %(funcName)s - %(message)s",
+        level=level
+
     )
-    fh.setFormatter(formatter)
+    # ensure that we have different loggers for each simulation and snapshot
+    # in multiprocessing, PID can be the same across snapshots and sim_idx
+    logger = logging.getLogger(f"{os.getpid()} - {config.sim_dirs[sim_idx]} - {snapshot:03d}")
 
-    logger.addHandler(fh)
     return logger
 
 
@@ -71,10 +66,12 @@ def slice_sim(
     downsample_factor = config.downsample_factor
 
     if logger is None and config.logging:
+        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_slice_sim{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
+            snapshot=snapshot,
             config=config,
-            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_slice_sim{config.log_name_append}",
+            fname=log_fname,
         )
 
     if sim_suite.lower() == "bahamas":
@@ -108,6 +105,12 @@ def slice_sim(
         logger.info(
             f"slice_sim_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
+        with open(
+            f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.complete",
+            "w"
+        ) as f:
+            pass
+
     return fnames
 
 
@@ -136,10 +139,12 @@ def save_coords(
     sample_haloes_bins = config.sample_haloes_bins
 
     if logger is None and config.logging:
+        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_coords{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
+            snapshot=snapshot,
             config=config,
-            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_coords{config.log_name_append}",
+            fname=log_fname,
         )
 
     if sim_suite.lower() == "bahamas":
@@ -174,6 +179,12 @@ def save_coords(
         logger.info(
             f"save_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
+        with open(
+            f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.complete",
+            "w"
+        ) as f:
+            pass
+
     return fname
 
 
@@ -217,10 +228,12 @@ def save_subvolumes(
     ]
 
     if logger is None and config.logging:
+        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_subvols{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
+            snapshot=snapshot,
             config=config,
-            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_subvols{config.log_name_append}",
+            fname=log_fname,
         )
 
     if sim_suite.lower() == "bahamas":
@@ -256,6 +269,12 @@ def save_subvolumes(
         logger.info(
             f"save_subvols_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
+        with open(
+            f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.complete",
+            "w"
+        ) as f:
+            pass
+
     return fnames, curve_ids
 
 
@@ -283,10 +302,12 @@ def map_subvolumes(
     coords_name = config.coords_name
 
     if logger is None and config.logging:
+        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_subvols{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
+            snapshot=snapshot,
             config=config,
-            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_coords{config.log_name_append}",
+            fname=log_fname,
         )
 
     slice_dir = config.slice_paths[sim_idx]
@@ -354,6 +375,12 @@ def map_subvolumes(
         logger.info(
             f"map_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
+        with open(
+            f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.complete",
+            "w"
+        ) as f:
+            pass
+
     return fnames
 
 
@@ -382,10 +409,12 @@ def map_coords(
     coords_name = config.coords_name
 
     if logger is None and config.logging:
+        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_coords{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
+            snapshot=snapshot,
             config=config,
-            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_coords{config.log_name_append}",
+            fname=log_fname,
         )
 
     slice_dir = config.slice_paths[sim_idx]
@@ -442,6 +471,12 @@ def map_coords(
         logger.info(
             f"map_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
+        with open(
+            f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.complete",
+            "w"
+        ) as f:
+            pass
+
     return fname
 
 
@@ -465,10 +500,12 @@ def map_full(
     box_size = config.box_sizes[sim_idx]
 
     if logger is None and config.logging:
+        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_full{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
+            snapshot=snapshot,
             config=config,
-            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_full{config.log_name_append}",
+            fname=log_fname,
         )
 
     slice_axes = config.slice_axes
@@ -528,6 +565,12 @@ def map_full(
         logger.info(
             f"map_full_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
+        with open(
+            f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.complete",
+            "w"
+        ) as f:
+            pass
+
     return fnames
 
 
@@ -557,10 +600,12 @@ def map_los(
     ptypes = config.ptypes[sim_idx]
 
     if logger is None and config.logging:
+        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_los{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
+            snapshot=snapshot,
             config=config,
-            fname=f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_los{config.log_name_append}",
+            fname=log_fname,
         )
 
     slice_dir = config.slice_paths[sim_idx]
@@ -619,4 +664,10 @@ def map_los(
         logger.info(
             f"map_los_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
+        with open(
+            f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.complete",
+            "w"
+        ) as f:
+            pass
+
     return fname
