@@ -580,6 +580,9 @@ def save_full_maps(
         datatype="snap",
         props=["x", "y", "z"]
     )
+    tr = time.time()
+    if logger:
+        logger.info("properties read in {tr - ts:.2f}s")
 
     # MiraTitan box size is in Mpc, cannot be converted in Config
     # need to enforce consistent units => get rid of all littleh factors
@@ -618,14 +621,14 @@ def save_full_maps(
         ts1 = time.time()
         if logger:
             logger.info(
-                f"{file_num=} - {slice_axis=} finished in {ts1 - ts0:.2f}s"
+                f"{slice_axis=} finished in {ts1 - ts0:.2f}s"
             )
 
     # finished file_num
     tf = time.time()
     if logger:
         logger.info(
-            f"{file_num=} - {slice_axes=} finished in {tf - ts:.2f}s"
+            f"{slice_axes=} finished in {tf - ts:.2f}s"
         )
 
     t1 = time.time()
