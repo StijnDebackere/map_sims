@@ -582,7 +582,7 @@ def save_full_maps(
     )
     tr = time.time()
     if logger:
-        logger.info("properties read in {tr - ts:.2f}s")
+        logger.info(f"properties read in {tr - ts:.2f}s")
 
     # MiraTitan box size is in Mpc, cannot be converted in Config
     # need to enforce consistent units => get rid of all littleh factors

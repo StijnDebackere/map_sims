@@ -121,7 +121,7 @@ def coords_to_map_bin(
     pix_sort_order = np.argsort(pix_ids)
     if logger:
         t1 = time.time()
-        logger.info("Dividing coords into pixels took {t1 - t0:.2f}s")
+        logger.info(f"Dividing coords into pixels took {t1 - t0:.2f}s")
         t0 = time.time()
 
     # unique_ids: all unique pix_ids that contain particles
@@ -135,7 +135,7 @@ def coords_to_map_bin(
 
     if logger:
         t1 = time.time()
-        logger.info("Counting particles per pixel took {t1 - t0:.2f}s")
+        logger.info(f"Counting particles per pixel took {t1 - t0:.2f}s")
         t0 = time.time()
 
     # filter out properties with single value
@@ -174,7 +174,7 @@ def coords_to_map_bin(
 
     if logger:
         t1 = time.time()
-        logger.info("Putting pixel values into map took {t1 - t0:.2f}s")
+        logger.info(f"Putting pixel values into map took {t1 - t0:.2f}s")
 
     # reshape the array to the map we wanted
     # we get (i, j) array with x_pix along rows and y_pix along columns
