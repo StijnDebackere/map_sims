@@ -571,90 +571,62 @@ def save_full_maps(
             full=True,
         )
         map_files[slice_axis] = {
-            "map": np.zeros((map_pix, map_pix), dtype=float),
-            "map_name": map_name,
-            "map_file": map_file
+            "map_file": map_file,
         }
         fnames.append(map_name)
 
-    # now loop over all snapshot files and add their particle info
-    # to the correct slice
-    iterator = enumerate(sim_info.datatype_info["snap"]["nums"])
-    if verbose:
-        iterator = tqdm(
-            iterator,
-            desc="Projecting particle files",
-            total=len(sim_info.datatype_info["snap"]["nums"]),
+    ts = time.time()
+    properties = sim_info.read_properties(
+        datatype="snap",
+        props=["x", "y", "z"]
+    )
+
+    # MiraTitan box size is in Mpc, cannot be converted in Config
+    # need to enforce consistent units => get rid of all littleh factors
+    coords = np.vstack([properties["x"], properties["y"], properties["z"]]).to(
+        "Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+    )
+    masses = np.atleast_1d(sim_info.simulation_info["snap"]["m_p"]).to(
+        "Msun", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+    )
+
+    properties = {"masses": masses}
+
+    # write each slice to a separate file
+    for slice_axis in slice_axes:
+        ts0 = time.time()
+        no_slice_axis = np.arange(0, 3) != slice_axis
+        if method == "bin":
+            coords_to_map = map_gen.coords_to_map_bin
+        elif method == "sph":
+            coords_to_map = map_gen.coords_to_map_sph
+            properties = {**properties, "n_ngb": n_ngb}
+
+        mp = coords_to_map(
+            coords=coords[no_slice_axis],
+            map_size=box_size,
+            map_pix=map_pix,
+            box_size=box_size,
+            func=obs.particles_masses,
+            map_center=None,
+            logger=logger,
+            **properties
         )
+        map_files[slice_axis]["map_file"]["dm_mass"][()] = mp.value
+        map_files[slice_axis]["map_file"]["dm_mass"].attrs["units"] = str(mp.unit)
 
-    for idx, file_num in iterator:
-        ts = time.time()
-        properties = sim_info.read_properties(
-            datatype="snap", props=["x", "y", "z"], num=file_num
-        )
-
-        # MiraTitan box size is in Mpc, cannot be converted in Config
-        # need to enforce consistent units => get rid of all littleh factors
-        coords = np.vstack([properties["x"], properties["y"], properties["z"]]).to(
-            "Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
-        )
-        masses = np.atleast_1d(sim_info.simulation_info["snap"]["m_p"]).to(
-            "Msun", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
-        )
-
-        properties = {"masses": masses}
-
-        # write each slice to a separate file
-        for slice_axis in slice_axes:
-            ts0 = time.time()
-            no_slice_axis = np.arange(0, 3) != slice_axis
-            if method == "bin":
-                coords_to_map = map_gen.coords_to_map_bin
-            elif method == "sph":
-                coords_to_map = map_gen.coords_to_map_sph
-                properties = {**properties, "n_ngb": n_ngb}
-
-            mp = coords_to_map(
-                coords=coords[no_slice_axis],
-                map_size=box_size,
-                map_pix=map_pix,
-                box_size=box_size,
-                func=obs.particles_masses,
-                map_center=None,
-                logger=logger,
-                **properties
-            )
-            map_files[slice_axis]["map"] += mp.value
-            map_files[slice_axis]["map_file"]["dm_mass"][()] += mp.value
-
-            if idx == 0:
-                map_files[slice_axis]["map_file"]["dm_mass"].attrs["units"] = str(mp.unit)
-            if idx % 10 == 0:
-                # save map to map_file and start again at 0
-                map_files[slice_axis]["map_file"]["dm_mass"][()] += map_files[slice_axis]["map"]
-                map_files[slice_axis]["map"] = np.zeros((map_pix, map_pix), dtype=float)
-
-            ts1 = time.time()
-            if logger:
-                logger.info(
-                    f"{file_num=} - {slice_axis=} finished in {ts1 - ts0:.2f}s"
-                )
-
-        # finished file_num
-        tf = time.time()
+        ts1 = time.time()
         if logger:
             logger.info(
-                f"{file_num=} - {slice_axes=} finished in {tf - ts:.2f}s"
+                f"{file_num=} - {slice_axis=} finished in {ts1 - ts0:.2f}s"
             )
-            if idx % 10 == 0:
-                logger.info(
-                    f"{file_num=} - saved up to {idx=} for 'dm_mass' and {slice_axes=}"
-                )
 
-    # append final remaining maps to map_file
-    for slice_axis in slice_axes:
-        map_files[slice_axis]["map_file"]["dm_mass"][()] += map_files[slice_axis]["map"]
-        map_files[slice_axis]["map_file"].close()
+    # finished file_num
+    tf = time.time()
+    if logger:
+        logger.info(
+            f"{file_num=} - {slice_axes=} finished in {tf - ts:.2f}s"
+        )
 
     t1 = time.time()
     if logger:
