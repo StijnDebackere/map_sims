@@ -100,6 +100,8 @@ def coords_to_map_bin(
         # assume coordinates are already with respect to origin
         coords_origin = coords
 
+    if logger:
+        t0 = time.time()
     # get the x and y values of the pixelated maps w.r.t. origin
     x_pix = slicing.get_coords_slices(
         coords=coords_origin, slice_size=pix_size, slice_axis=0
@@ -117,6 +119,10 @@ def coords_to_map_bin(
 
     # we will need to associate each function value to the correct pixel
     pix_sort_order = np.argsort(pix_ids)
+    if logger:
+        t1 = time.time()
+        logger.info("Dividing coords into pixels took {t1 - t0:.2f}s")
+        t0 = time.time()
 
     # unique_ids: all unique pix_ids that contain particles
     # loc_ids: location of each pix_id for the sorted list of pix_ids
@@ -127,8 +133,10 @@ def coords_to_map_bin(
         pix_ids[pix_sort_order], return_index=True, return_counts=True,
     )
 
-    # need to also add the final value for pix_id = num_pix**2 - 1
-    pix_range = np.concatenate([loc_ids, [len(pix_ids)]])
+    if logger:
+        t1 = time.time()
+        logger.info("Counting particles per pixel took {t1 - t0:.2f}s")
+        t0 = time.time()
 
     # filter out properties with single value
     unique_props = {}
@@ -156,10 +164,17 @@ def coords_to_map_bin(
         func_values = func_values[pix_sort_order]
 
         pixel_values = np.zeros(n_pix, dtype=float)
+
+        # need to also add the final value for pix_id = num_pix**2 - 1
+        pix_range = np.concatenate([loc_ids, [len(pix_ids)]])
         # fill each pixel_value with the matching slice along func_values
         pixel_values[unique_ids] = np.array(
             [np.sum(func_values[i:j].value) for i, j in zip(pix_range[:-1], pix_range[1:])]
         )
+
+    if logger:
+        t1 = time.time()
+        logger.info("Putting pixel values into map took {t1 - t0:.2f}s")
 
     # reshape the array to the map we wanted
     # we get (i, j) array with x_pix along rows and y_pix along columns
