@@ -635,4 +635,8 @@ def save_full_maps(
     if logger:
         logger.info(f"Finished {slice_axes=} for {sim_dir=} took {t1 - t0:.2f}s")
 
+    # need to close map_files
+    for slice_axis in slice_axes:
+        map_files[slice_axis]["map_file"].close()
+
     return fnames
