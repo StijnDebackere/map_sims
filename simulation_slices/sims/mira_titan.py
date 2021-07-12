@@ -85,31 +85,33 @@ def save_coords_file(
             "fof_halo_tag",
         ],
     )
-    coordinates = (
-        np.vstack(
-            [
-                group_data["sod_halo_min_pot_x"],
-                group_data["sod_halo_min_pot_y"],
-                group_data["sod_halo_min_pot_z"],
-            ]
-        )
-        .T
-        .to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
-    )
+    coordinates = np.vstack(
+        [
+            group_data["sod_halo_min_pot_x"],
+            group_data["sod_halo_min_pot_y"],
+            group_data["sod_halo_min_pot_z"],
+        ]
+    ).T.to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
     group_ids = group_data["fof_halo_tag"]
     masses = group_data["sod_halo_mass"]
 
-    mass_range = mass_range.to(masses.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+    mass_range = mass_range.to(
+        masses.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+    )
     mass_selection = (masses > np.min(mass_range)) & (masses < np.max(mass_range))
 
     # also select coordinate range
     if coord_range is not None:
-        coord_range = coord_range.to(coordinates.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+        coord_range = coord_range.to(
+            coordinates.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+        )
         coord_selection = np.all(
             [
-                (coordinates[:, i] > np.min(coord_range[i])) & (coordinates[:, i] < np.max(coord_range[i]))
+                (coordinates[:, i] > np.min(coord_range[i]))
+                & (coordinates[:, i] < np.max(coord_range[i]))
                 for i in range(coord_range.shape[0])
-            ], axis=0
+            ],
+            axis=0,
         )
         selection = mass_selection & coord_selection
     else:
@@ -121,7 +123,9 @@ def save_coords_file(
         n_in_bin = sample_haloes_bins["n_in_bin"]
 
         # group halo indices by mass bins
-        sampled_ids = util.groupby(np.arange(0, masses.shape[0]), masses, mass_bin_edges)
+        sampled_ids = util.groupby(
+            np.arange(0, masses.shape[0]), masses, mass_bin_edges
+        )
 
         selection = []
         for i, ids in sampled_ids.items():
@@ -172,7 +176,9 @@ def save_coords_file(
 
     if coord_range is not None:
         layout["dsets"]["coordinates"]["attrs"]["coord_range"] = coord_range.value
-        layout["dsets"]["coordinates"]["attrs"]["coord_range_units"] = str(coord_range.unit)
+        layout["dsets"]["coordinates"]["attrs"]["coord_range_units"] = str(
+            coord_range.unit
+        )
 
     io.create_hdf5(fname=fname, layout=layout, overwrite=True, close=True)
     return str(fname)
@@ -245,23 +251,21 @@ def save_subvolumes(
     if logger:
         logger.debug(f"loading fof data took {tl1 - tl0:.2f}s")
 
-    coordinates = (
-        np.vstack(
-            [
-                group_data["fof_halo_center_x"],
-                group_data["fof_halo_center_y"],
-                group_data["fof_halo_center_z"],
-            ]
-        )
-        .T
-        .to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
-    )
+    coordinates = np.vstack(
+        [
+            group_data["fof_halo_center_x"],
+            group_data["fof_halo_center_y"],
+            group_data["fof_halo_center_z"],
+        ]
+    ).T.to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
     masses = group_data["fof_halo_mass"].to(
         "Msun", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
     )
     group_ids = group_data["fof_halo_tag"].astype(int)
 
-    mass_range = mass_range.to(masses.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+    mass_range = mass_range.to(
+        masses.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+    )
     mass_selection = (masses > np.min(mass_range)) & (masses < np.max(mass_range))
 
     fnames = []
@@ -269,12 +273,16 @@ def save_subvolumes(
     for idx, coord_range in enumerate(coord_ranges):
         tc0 = time.time()
         fname = (save_dir / f"{coords_fnames[idx]}_{snapshot:03d}").with_suffix(".hdf5")
-        coord_range = coord_range.to(coordinates.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+        coord_range = coord_range.to(
+            coordinates.unit, equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+        )
         coord_selection = np.all(
             [
-                (coordinates[:, i] > np.min(coord_range[i])) & (coordinates[:, i] < np.max(coord_range[i]))
+                (coordinates[:, i] > np.min(coord_range[i]))
+                & (coordinates[:, i] < np.max(coord_range[i]))
                 for i in range(coord_range.shape[0])
-            ], axis=0
+            ],
+            axis=0,
         )
         selection = mass_selection & coord_selection
 
@@ -576,10 +584,7 @@ def save_full_maps(
         fnames.append(map_name)
 
     ts = time.time()
-    properties = sim_info.read_properties(
-        datatype="snap",
-        props=["x", "y", "z"]
-    )
+    properties = sim_info.read_properties(datatype="snap", props=["x", "y", "z"])
     tr = time.time()
     if logger:
         logger.info(f"properties read in {tr - ts:.2f}s")
@@ -613,23 +618,19 @@ def save_full_maps(
             func=obs.particles_masses,
             map_center=None,
             logger=logger,
-            **properties
+            **properties,
         )
         map_files[slice_axis]["map_file"]["dm_mass"][()] = mp.value
         map_files[slice_axis]["map_file"]["dm_mass"].attrs["units"] = str(mp.unit)
 
         ts1 = time.time()
         if logger:
-            logger.info(
-                f"{slice_axis=} finished in {ts1 - ts0:.2f}s"
-            )
+            logger.info(f"{slice_axis=} finished in {ts1 - ts0:.2f}s")
 
     # finished file_num
     tf = time.time()
     if logger:
-        logger.info(
-            f"{slice_axes=} finished in {tf - ts:.2f}s"
-        )
+        logger.info(f"{slice_axes=} finished in {tf - ts:.2f}s")
 
     t1 = time.time()
     if logger:
