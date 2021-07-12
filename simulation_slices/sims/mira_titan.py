@@ -641,3 +641,184 @@ def save_full_maps(
         map_files[slice_axis]["map_file"].close()
 
     return fnames
+
+
+def save_maps_los(
+    sim_dir: str,
+    snapshot: int,
+    slice_axis: int,
+    box_size: u.Quantity,
+    map_pix: int,
+    map_thickness: u.Quantity,
+    save_dir: str,
+    coords_name: str = "",
+    map_name_append: str = "",
+    downsample: bool = False,
+    downsample_factor: float = None,
+    overwrite: bool = False,
+    swmr: bool = False,
+    method: str = None,
+    n_ngb: int = 30,
+    verbose: bool = False,
+    logger: util.LoggerType = None,
+    **kwargs,
+) -> List[str]:
+    """Project full simulation in a map of (map_pix, map_pix) for
+    slice_axes for different map_thicknesses.
+
+    Parameters
+    ----------
+    sim_dir : str
+        directory of the simulation
+    snapshot : int
+        snapshot to look at
+    slice_axis : int
+        axis to slice along [x=0, y=1, z=2]
+    box_size : astropy.units.Quantity
+        size of simulation
+    map_pix : int
+        square root of number of pixels in map
+    map_thickness : astropy.units.Quantity
+        thickness of the map projection
+    save_dir : str
+        directory to save map files to
+    map_name_append : str
+        optional extra to append to filenames
+    overwrite : bool
+        overwrite map_file if already exists
+    swmr : bool
+        enable single writer multiple reader mode for map_file
+    method : str ["sph", "bin"]
+        method for map projection: sph smoothing with n_ngb neighbours or 2D histogram
+    n_ngb : int
+        number of neighbours to determine SPH kernel size
+    verbose : bool
+        show progress bar
+
+    Returns
+    -------
+    saves maps to {save_dir}/{slice_axis}_maps_{coords_name}{map_name_append}_{snapshot:03d}.hdf5
+
+    """
+    t0 = time.time()
+    sim_info = MiraTitan(
+        sim_dir=sim_dir,
+        box_size=box_size,
+        snapnum=snapshot,
+        verbose=verbose,
+    )
+    # read in the Mpc unit box_size
+    box_size = sim_info.L
+    h = sim_info.cosmo["h"]
+
+    # ensure that save_dir exists
+    if save_dir is None:
+        save_dir = util.check_path(sim_info.get_fname("snap")).parent / "maps"
+    else:
+        save_dir = util.check_path(save_dir)
+
+    # go from thick to thin
+    map_thickness = np.sort(map_thickness)[::-1]
+
+    map_name = map_gen.get_map_name(
+        save_dir=save_dir,
+        slice_axis=slice_axis,
+        snapshot=snapshot,
+        method=method,
+        map_thickness=map_thickness,
+        coords_name="",
+        map_name_append=map_name_append,
+        downsample=downsample,
+        downsample_factor=downsample_factor,
+        full=True,
+    )
+    map_file = map_layout.create_map_file(
+        map_name=map_name,
+        overwrite=overwrite,
+        close=False,
+        # cannot have swmr since we are adding attributes later
+        swmr=False,
+        slice_axis=slice_axis,
+        box_size=box_size,
+        map_types=["dm_mass"],
+        map_size=box_size,
+        map_thickness=map_thickness,
+        map_pix=map_pix,
+        snapshot=snapshot,
+        n_ngb=n_ngb,
+        maxshape=0,
+        full=True,
+    )
+
+    ts = time.time()
+    properties = sim_info.read_properties(
+        datatype="snap",
+        props=["x", "y", "z"],
+    )
+    tr = time.time()
+    if logger:
+        logger.info(f"properties read in {tr - ts:.2f}s")
+
+    # MiraTitan box size is in Mpc, cannot be converted in Config
+    # need to enforce consistent units => get rid of all littleh factors
+    coords = np.vstack([properties["x"], properties["y"], properties["z"]]).to(
+        "Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+    )
+    masses = np.atleast_1d(sim_info.simulation_info["snap"]["m_p"]).to(
+        "Msun", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
+    )
+
+    properties = {"masses": masses}
+
+    no_slice_axis = np.arange(0, 3) != slice_axis
+    # we will gradually slice down the list of coordinates to only contain
+    # particles within box_size / 2 +/- dl / 2 along slice_axis
+    coords_slice = np.copy(coords)
+    for idx_l, dl in enumerate(map_thickness):
+        ts0 = time.time()
+        if dl >= box_size:
+            coords_slice = coords_slice
+        elif dl < box_size:
+            slice_sel = (
+                coords_slice[slice_axis] >= 0.5 * (box_size - map_thickness)
+            ) & ((coords_slice[slice_axis] <= 0.5 * (box_size + map_thickness)))
+            coords_slice = coords_slice[:, slice_sel]
+
+        if logger:
+            ts1 = time.time()
+            logger.info("{dl=} slicing took {ts1 - ts0:.2f}s")
+
+        if method == "bin":
+            coords_to_map = map_gen.coords_to_map_bin
+        elif method == "sph":
+            coords_to_map = map_gen.coords_to_map_sph
+            properties = {**properties, "n_ngb": n_ngb}
+
+        mp = coords_to_map(
+            coords=coords_slice[no_slice_axis],
+            map_size=box_size,
+            map_pix=map_pix,
+            box_size=box_size,
+            func=obs.particles_masses,
+            map_center=None,
+            logger=logger,
+            **properties,
+        )
+        map_file["dm_mass"][..., idx_l] = mp.value
+        map_file["dm_mass"].attrs["units"] = str(mp.unit)
+
+        if logger:
+            ts1 = time.time()
+            logger.info(f"{dl=} finished in {ts1 - ts0:.2f}s")
+
+    t1 = time.time()
+    if logger:
+        logger.info(
+            f"Finished {slice_axis=}, {map_thickness=} and {snapshot=} for {sim_dir=} in {t1 - t0:.2f}s"
+        )
+
+    fname = map_file.filename
+    # still need to close the HDF5 files
+    map_file.close()
+
+    return fname
