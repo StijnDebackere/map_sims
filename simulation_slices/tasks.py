@@ -2,6 +2,7 @@ import logging
 import os
 from pathlib import Path
 import time
+import traceback
 from typing import List, Optional, Union
 
 import astropy.units as u
@@ -75,30 +76,52 @@ def slice_sim(
         )
 
     if sim_suite.lower() == "bahamas":
-        fnames = bahamas.save_slice_data(
-            sim_dir=str(sim_dir),
-            snapshot=snapshot,
-            ptypes=ptypes,
-            slice_axes=slice_axes,
-            num_slices=num_slices,
-            downsample=downsample,
-            downsample_factor=downsample_factor,
-            save_dir=save_dir,
-            verbose=False,
-            logger=logger,
-        )
+        try:
+            fnames = bahamas.save_slice_data(
+                sim_dir=str(sim_dir),
+                snapshot=snapshot,
+                ptypes=ptypes,
+                slice_axes=slice_axes,
+                num_slices=num_slices,
+                downsample=downsample,
+                downsample_factor=downsample_factor,
+                save_dir=save_dir,
+                verbose=False,
+                logger=logger,
+            )
+        except Exception as e:
+            fnames = []
+
+            if logger:
+                logger.exception("Failed with exception:")
+                with open(
+                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                    "w"
+                ) as f:
+                    f.write(traceback.format_exc())
 
     elif sim_suite.lower() == "miratitan":
-        fnames = mira_titan.save_slice_data(
-            sim_dir=str(sim_dir),
-            box_size=box_size,
-            snapshot=snapshot,
-            slice_axes=slice_axes,
-            num_slices=num_slices,
-            save_dir=save_dir,
-            verbose=False,
-            logger=logger,
-        )
+        try:
+            fnames = mira_titan.save_slice_data(
+                sim_dir=str(sim_dir),
+                box_size=box_size,
+                snapshot=snapshot,
+                slice_axes=slice_axes,
+                num_slices=num_slices,
+                save_dir=save_dir,
+                verbose=False,
+                logger=logger,
+            )
+        except Exception as e:
+            fnames = []
+
+            if logger:
+                logger.exception("Failed with exception:")
+                with open(
+                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                    "w"
+                ) as f:
+                    f.write(traceback.format_exc())
 
     end = time.time()
     if logger:
@@ -148,31 +171,53 @@ def save_coords(
         )
 
     if sim_suite.lower() == "bahamas":
-        fname = bahamas.save_coords_file(
-            sim_dir=str(sim_dir),
-            snapshot=snapshot,
-            mass_dset=mass_dset,
-            coord_dset=coord_dset,
-            mass_range=mass_range,
-            extra_dsets=extra_dsets,
-            save_dir=save_dir,
-            coords_fname=coords_fname,
-            sample_haloes_bins=sample_haloes_bins,
-            logger=logger,
-            verbose=False,
-        )
+        try:
+            fname = bahamas.save_coords_file(
+                sim_dir=str(sim_dir),
+                snapshot=snapshot,
+                mass_dset=mass_dset,
+                coord_dset=coord_dset,
+                mass_range=mass_range,
+                extra_dsets=extra_dsets,
+                save_dir=save_dir,
+                coords_fname=coords_fname,
+                sample_haloes_bins=sample_haloes_bins,
+                logger=logger,
+                verbose=False,
+            )
+        except Exception as e:
+            fname = []
+
+            if logger:
+                logger.exception("Failed with exception:")
+                with open(
+                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                    "w"
+                ) as f:
+                    f.write(traceback.format_exc())
 
     elif sim_suite.lower() == "miratitan":
-        fname = mira_titan.save_coords_file(
-            sim_dir=str(sim_dir),
-            box_size=box_size,
-            snapshot=snapshot,
-            mass_range=mass_range,
-            save_dir=save_dir,
-            coords_fname=coords_fname,
-            sample_haloes_bins=sample_haloes_bins,
-            logger=logger,
-        )
+        try:
+            fname = mira_titan.save_coords_file(
+                sim_dir=str(sim_dir),
+                box_size=box_size,
+                snapshot=snapshot,
+                mass_range=mass_range,
+                save_dir=save_dir,
+                coords_fname=coords_fname,
+                sample_haloes_bins=sample_haloes_bins,
+                logger=logger,
+            )
+        except Exception as e:
+            fname = []
+
+            if logger:
+                logger.exception("Failed with exception:")
+                with open(
+                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                    "w"
+                ) as f:
+                    f.write(traceback.format_exc())
 
     end = time.time()
     if logger:
@@ -237,32 +282,54 @@ def save_subvolumes(
         )
 
     if sim_suite.lower() == "bahamas":
-        fnames = bahamas.save_subvolumes(
-            sim_dir=str(sim_dir),
-            snapshot=snapshot,
-            mass_dset=mass_dset,
-            coord_dset=coord_dset,
-            coord_ranges=coord_ranges,
-            mass_range=mass_range,
-            extra_dsets=extra_dsets,
-            save_dir=save_dir,
-            coords_fnames=coords_fnames,
-            sample_haloes_bins=sample_haloes_bins,
-            logger=logger,
-            verbose=False,
-        )
+        try:
+            fnames = bahamas.save_subvolumes(
+                sim_dir=str(sim_dir),
+                snapshot=snapshot,
+                mass_dset=mass_dset,
+                coord_dset=coord_dset,
+                coord_ranges=coord_ranges,
+                mass_range=mass_range,
+                extra_dsets=extra_dsets,
+                save_dir=save_dir,
+                coords_fnames=coords_fnames,
+                sample_haloes_bins=sample_haloes_bins,
+                logger=logger,
+                verbose=False,
+            )
+        except Exception as e:
+            fnames = []
+
+            if logger:
+                logger.exception("Failed with exception:")
+                with open(
+                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                    "w"
+                ) as f:
+                    f.write(traceback.format_exc())
 
     elif sim_suite.lower() == "miratitan":
-        fnames = mira_titan.save_subvolumes(
-            sim_dir=str(sim_dir),
-            box_size=box_size,
-            snapshot=snapshot,
-            mass_range=mass_range,
-            coord_ranges=coord_ranges,
-            save_dir=save_dir,
-            coords_fnames=coords_fnames,
-            logger=logger,
-        )
+        try:
+            fnames = mira_titan.save_subvolumes(
+                sim_dir=str(sim_dir),
+                box_size=box_size,
+                snapshot=snapshot,
+                mass_range=mass_range,
+                coord_ranges=coord_ranges,
+                save_dir=save_dir,
+                coords_fnames=coords_fnames,
+                logger=logger,
+            )
+        except Exception as e:
+            fnames = []
+
+            if logger:
+                logger.exception("Failed with exception:")
+                with open(
+                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                    "w"
+                ) as f:
+                    f.write(traceback.format_exc())
 
     end = time.time()
     if logger:
@@ -336,36 +403,46 @@ def map_subvolumes(
     fnames = []
     for idx, coords_file in enumerate(coords_files):
         tc0 = time.time()
-        with h5py.File(str(coords_file), "r") as h5file:
-            centers = h5file["coordinates"][:] * u.Unit(
-                h5file["coordinates"].attrs["units"]
-            )
-            group_ids = h5file["group_ids"][:]
-            masses = h5file["masses"][:] * u.Unit(h5file["masses"].attrs["units"])
+        try:
+            with h5py.File(str(coords_file), "r") as h5file:
+                centers = h5file["coordinates"][:] * u.Unit(
+                    h5file["coordinates"].attrs["units"]
+                )
+                group_ids = h5file["group_ids"][:]
+                masses = h5file["masses"][:] * u.Unit(h5file["masses"].attrs["units"])
 
-        fname = map_gen.save_maps(
-            centers=centers,
-            group_ids=group_ids,
-            masses=masses,
-            slice_dir=slice_dir,
-            snapshot=snapshot,
-            slice_axis=slice_axis,
-            num_slices=num_slices,
-            box_size=box_size,
-            map_pix=map_pix,
-            map_size=map_size,
-            map_thickness=map_thickness,
-            map_types=map_types,
-            save_dir=save_dir,
-            coords_name=coords_names[idx],
-            map_name_append=map_name_append,
-            overwrite=map_overwrite,
-            method=map_method,
-            n_ngb=n_ngb,
-            logger=logger,
-            verbose=False,
-        )
-        fnames.append(fname)
+            fname = map_gen.save_maps(
+                centers=centers,
+                group_ids=group_ids,
+                masses=masses,
+                slice_dir=slice_dir,
+                snapshot=snapshot,
+                slice_axis=slice_axis,
+                num_slices=num_slices,
+                box_size=box_size,
+                map_pix=map_pix,
+                map_size=map_size,
+                map_thickness=map_thickness,
+                map_types=map_types,
+                save_dir=save_dir,
+                coords_name=coords_names[idx],
+                map_name_append=map_name_append,
+                overwrite=map_overwrite,
+                method=map_method,
+                n_ngb=n_ngb,
+                logger=logger,
+                verbose=False,
+            )
+            fnames.append(fname)
+        except Exception as e:
+            if logger:
+                logger.exception("Failed with exception:")
+                with open(
+                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                    "w"
+                ) as f:
+                    f.write(traceback.format_exc())
+
         tc1 = time.time()
         if logger:
             logger.debug(f"{curve_ids[idx]=} took {tc1 - tc0:.2f}s")
@@ -433,38 +510,49 @@ def map_coords(
     map_thickness = config.map_thickness
     n_ngb = config.n_ngb
 
-    with h5py.File(str(coords_file), "r") as h5file:
-        centers = h5file["coordinates"][:] * u.Unit(
-            h5file["coordinates"].attrs["units"]
-        )
-        group_ids = h5file["group_ids"][:]
-        masses = h5file["masses"][:] * u.Unit(h5file["masses"].attrs["units"])
+    try:
+        with h5py.File(str(coords_file), "r") as h5file:
+            centers = h5file["coordinates"][:] * u.Unit(
+                h5file["coordinates"].attrs["units"]
+            )
+            group_ids = h5file["group_ids"][:]
+            masses = h5file["masses"][:] * u.Unit(h5file["masses"].attrs["units"])
 
-    fname = map_gen.save_maps(
-        centers=centers,
-        group_ids=group_ids,
-        masses=masses,
-        slice_dir=slice_dir,
-        snapshot=snapshot,
-        slice_axis=slice_axis,
-        num_slices=num_slices,
-        downsample=downsample,
-        downsample_factor=downsample_factor,
-        box_size=box_size,
-        map_pix=map_pix,
-        map_size=map_size,
-        map_thickness=map_thickness,
-        map_types=map_types,
-        save_dir=save_dir,
-        coords_name=coords_name,
-        map_name_append=map_name_append,
-        overwrite=map_overwrite,
-        method=map_method,
-        n_ngb=n_ngb,
-        logger=logger,
-        swmr=swmr,
-        verbose=False,
-    )
+        fname = map_gen.save_maps(
+            centers=centers,
+            group_ids=group_ids,
+            masses=masses,
+            slice_dir=slice_dir,
+            snapshot=snapshot,
+            slice_axis=slice_axis,
+            num_slices=num_slices,
+            downsample=downsample,
+            downsample_factor=downsample_factor,
+            box_size=box_size,
+            map_pix=map_pix,
+            map_size=map_size,
+            map_thickness=map_thickness,
+            map_types=map_types,
+            save_dir=save_dir,
+            coords_name=coords_name,
+            map_name_append=map_name_append,
+            overwrite=map_overwrite,
+            method=map_method,
+            n_ngb=n_ngb,
+            logger=logger,
+            swmr=swmr,
+            verbose=False,
+        )
+    except Exception as e:
+        fname = []
+
+        if logger:
+            logger.exception("Failed with exception:")
+            with open(
+                f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                "w"
+            ) as f:
+                f.write(traceback.format_exc())
 
     end = time.time()
     if logger:
@@ -522,43 +610,65 @@ def map_full(
     n_ngb = config.n_ngb
 
     if sim_suite.lower() == "bahamas":
-        fnames = bahamas.save_full_maps(
-            sim_dir=str(sim_dir),
-            snapshot=snapshot,
-            slice_axes=slice_axes,
-            box_size=box_size,
-            map_types=map_types,
-            map_pix=map_pix,
-            save_dir=save_dir,
-            map_name_append=map_name_append,
-            downsample=downsample,
-            downsample_factor=downsample_factor,
-            overwrite=map_overwrite,
-            swmr=swmr,
-            method=map_method,
-            n_ngb=n_ngb,
-            logger=logger,
-            verbose=False,
-        )
+        try:
+            fnames = bahamas.save_full_maps(
+                sim_dir=str(sim_dir),
+                snapshot=snapshot,
+                slice_axes=slice_axes,
+                box_size=box_size,
+                map_types=map_types,
+                map_pix=map_pix,
+                save_dir=save_dir,
+                map_name_append=map_name_append,
+                downsample=downsample,
+                downsample_factor=downsample_factor,
+                overwrite=map_overwrite,
+                swmr=swmr,
+                method=map_method,
+                n_ngb=n_ngb,
+                logger=logger,
+                verbose=False,
+            )
+        except Exception as e:
+            fnames = []
+
+            if logger:
+                logger.exception("Failed with exception:")
+                with open(
+                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                    "w"
+                ) as f:
+                    f.write(traceback.format_exc())
 
     elif sim_suite.lower() == "miratitan":
-        fnames = mira_titan.save_full_maps(
-            sim_dir=str(sim_dir),
-            snapshot=snapshot,
-            slice_axes=slice_axes,
-            box_size=box_size,
-            map_pix=map_pix,
-            save_dir=save_dir,
-            map_name_append=map_name_append,
-            downsample=downsample,
-            downsample_factor=downsample_factor,
-            overwrite=map_overwrite,
-            swmr=swmr,
-            method=map_method,
-            n_ngb=n_ngb,
-            logger=logger,
-            verbose=False,
-        )
+        try:
+            fnames = mira_titan.save_full_maps(
+                sim_dir=str(sim_dir),
+                snapshot=snapshot,
+                slice_axes=slice_axes,
+                box_size=box_size,
+                map_pix=map_pix,
+                save_dir=save_dir,
+                map_name_append=map_name_append,
+                downsample=downsample,
+                downsample_factor=downsample_factor,
+                overwrite=map_overwrite,
+                swmr=swmr,
+                method=map_method,
+                n_ngb=n_ngb,
+                logger=logger,
+                verbose=False,
+            )
+        except Exception as e:
+            fnames = []
+
+            if logger:
+                logger.exception("Failed with exception:")
+                with open(
+                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                    "w"
+                ) as f:
+                    f.write(traceback.format_exc())
 
     end = time.time()
     if logger:
@@ -593,8 +703,6 @@ def map_los(
     base_dir = config.base_dir
     sim_dir = config.sim_paths[sim_idx]
     sim_suite = config.sim_suite
-    if sim_suite.lower() != "bahamas":
-        return
 
     box_size = config.box_sizes[sim_idx]
     ptypes = config.ptypes[sim_idx]
@@ -632,32 +740,76 @@ def map_los(
         group_ids = h5file["group_ids"][:]
         masses = h5file["masses"][:] * u.Unit(h5file["masses"].attrs["units"])
 
-    fname = bahamas.save_maps_los(
-        sim_dir=sim_dir,
-        snapshot=snapshot,
-        centers=centers,
-        group_ids=group_ids,
-        masses=masses,
-        slice_dir=slice_dir,
-        slice_axis=slice_axis,
-        num_slices=num_slices,
-        downsample=downsample,
-        downsample_factor=downsample_factor,
-        box_size=box_size,
-        map_pix=map_pix,
-        map_size=map_size,
-        map_thickness=map_thickness,
-        map_types=map_types,
-        save_dir=save_dir,
-        coords_name=coords_name,
-        map_name_append=map_name_append,
-        overwrite=map_overwrite,
-        method=map_method,
-        n_ngb=n_ngb,
-        logger=logger,
-        swmr=swmr,
-        verbose=False,
-    )
+
+    if sim_suite.lower() == "bahamas":
+        try:
+            fname = bahamas.save_maps_los(
+                sim_dir=sim_dir,
+                snapshot=snapshot,
+                centers=centers,
+                group_ids=group_ids,
+                masses=masses,
+                slice_dir=slice_dir,
+                slice_axis=slice_axis,
+                num_slices=num_slices,
+                downsample=downsample,
+                downsample_factor=downsample_factor,
+                box_size=box_size,
+                map_pix=map_pix,
+                map_size=map_size,
+                map_thickness=map_thickness,
+                map_types=map_types,
+                save_dir=save_dir,
+                coords_name=coords_name,
+                map_name_append=map_name_append,
+                overwrite=map_overwrite,
+                method=map_method,
+                n_ngb=n_ngb,
+                logger=logger,
+                swmr=swmr,
+                verbose=False,
+            )
+        except Exception as e:
+            fname = []
+
+            if logger:
+                logger.exception("Failed with exception:")
+                with open(
+                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                    "w"
+                ) as f:
+                    f.write(traceback.format_exc())
+
+    elif sim_suite.lower() == "miratitan":
+        try:
+            fname = mira_titan.save_maps_los(
+                sim_dir=sim_dir,
+                snapshot=snapshot,
+                slice_axis=slice_axis,
+                box_size=box_size,
+                map_pix=map_pix,
+                map_thickness=map_thickness,
+                save_dir=save_dir,
+                map_name_append=map_name_append,
+                downsample=downsample,
+                downsample_factor=downsample_factor,
+                overwrite=map_overwrite,
+                swmr=swmr,
+                method=map_method,
+                n_ngb=n_ngb,
+                logger=logger,
+                verbose=False,
+            )
+        except Exception as e:
+            fname = []
+
+            if logger:
+                logger.exception("Failed with exception:")
+                with open(
+                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                    "w"
+                ) as f:
+                    f.write(traceback.format_exc())
 
     end = time.time()
     if logger:

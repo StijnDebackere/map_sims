@@ -651,7 +651,6 @@ def save_maps_los(
     map_pix: int,
     map_thickness: u.Quantity,
     save_dir: str,
-    coords_name: str = "",
     map_name_append: str = "",
     downsample: bool = False,
     downsample_factor: float = None,
@@ -697,7 +696,7 @@ def save_maps_los(
 
     Returns
     -------
-    saves maps to {save_dir}/{slice_axis}_maps_{coords_name}{map_name_append}_{snapshot:03d}.hdf5
+    saves maps to {save_dir}/{slice_axis}_maps_full{map_name_append}_{snapshot:03d}.hdf5
 
     """
     t0 = time.time()
