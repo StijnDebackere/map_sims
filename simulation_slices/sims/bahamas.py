@@ -920,6 +920,7 @@ def save_full_maps(
         snapnum=snapshot,
         units=True,
         comoving=True,
+        verbose=verbose,
     )
 
     # read in the Mpc unit box_size
@@ -965,118 +966,76 @@ def save_full_maps(
             full=True,
         )
         map_files[slice_axis] = {
-            "map": {
-                map_type: np.zeros((map_pix, map_pix), dtype=float)
-                for map_type in map_types
-            },
-            "map_name": map_name,
             "map_file": map_file,
         }
         fnames.append(map_name)
 
-    # now loop over all snapshot files and add their particle info
-    # to the correct slice
-    iterator = enumerate(range(snap_info.num_files))
-    if verbose:
-        iterator = tqdm(
-            iterator,
-            desc="Projecting particle files",
-            total=snap_info.num_files,
-        )
+    ts = time.time()
+    for map_type in map_types:
+        ptype = obs.MAP_TYPES_OPTIONS[map_type]["ptype"]
+        dsets = obs.MAP_TYPES_OPTIONS[map_type]["dsets"]
+        attrs = obs.MAP_TYPES_OPTIONS[map_type].get("attrs", None)
+        func  = obs.MAP_TYPES_OPTIONS[map_type]["func"]
 
-    for idx, file_num in iterator:
-        ts = time.time()
-        for map_type in map_types:
-            ptype = obs.MAP_TYPES_OPTIONS[map_type]["ptype"]
-            dsets = obs.MAP_TYPES_OPTIONS[map_type]["dsets"]
-            attrs = obs.MAP_TYPES_OPTIONS[map_type].get("attrs", None)
-            func  = obs.MAP_TYPES_OPTIONS[map_type]["func"]
+        # only extract extra dsets
+        dsets = list(set(dsets) - set(["coordinates", "masses"]))
 
-            # only extract extra dsets
-            dsets = list(set(dsets) - set(["coordinates", "masses"]))
+        coords = snap_info.read_var(var=PROPS_TO_BAHAMAS[ptype]["coordinates"]).T
 
-            coords = snap_info.read_single_file(
-                i=file_num,
-                var=PROPS_TO_BAHAMAS[ptype]["coordinates"],
-                verbose=False,
-                reshape=True,
-            ).T
+        # dark matter does not have the Mass variable
+        # read in M_sun / h
+        if ptype != "dm":
+            masses = snap_info.read_var(var=PROPS_TO_BAHAMAS[ptype]["masses"])
+        else:
+            masses = np.atleast_1d(snap_info.masses[PTYPES_TO_BAHAMAS[ptype]])
 
-            # dark matter does not have the Mass variable
-            # read in M_sun / h
-            if ptype != "dm":
-                masses = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["masses"],
-                    verbose=False,
-                    reshape=True,
-                )
-            else:
-                masses = np.atleast_1d(snap_info.masses[PTYPES_TO_BAHAMAS[ptype]])
+        properties = {"masses": masses}
+        if len(dsets) > 0:
+            extra_props = {
+                prop: snap_info.read_var(var=PROPS_TO_BAHAMAS[ptype][prop])
+                for prop in dsets
+            }
+            properties = {**properties, **extra_props}
 
-            properties = {"masses": masses}
-            if len(dsets) > 0:
-                extra_props = {
-                    prop: snap_info.read_single_file(
-                        i=file_num,
-                        var=PROPS_TO_BAHAMAS[ptype][prop],
-                        verbose=False,
-                        reshape=True,
-                    ) for prop in dsets
-                }
-                properties = {**properties, **extra_props}
-
-            if attrs is not None:
-                for attr in attrs:
-                    properties[attr] = getattr(snap_info, attr)
-
-            # write each slice to a separate file
-            for slice_axis in slice_axes:
-                no_slice_axis = np.arange(0, 3) != slice_axis
-                if method == "bin":
-                    coords_to_map = map_gen.coords_to_map_bin
-                elif method == "sph":
-                    coords_to_map = map_gen.coords_to_map_sph
-                    properties = {**properties, "n_ngb": n_ngb}
-
-                mp = coords_to_map(
-                    coords=coords[no_slice_axis],
-                    map_size=box_size,
-                    map_pix=map_pix,
-                    box_size=box_size,
-                    func=func,
-                    map_center=None,
-                    logger=logger,
-                    **properties
-                )
-                map_files[slice_axis]["map"][map_type] += mp.value
-
-                if idx == 0:
-                    map_files[slice_axis]["map_file"][map_type].attrs["units"] = str(mp.unit)
-                if idx % 10 == 0:
-                    # save map to map_file and start again at 0
-                    map_files[slice_axis]["map_file"][map_type][()] += map_files[slice_axis]["map"][map_type]
-                    map_files[slice_axis]["map"][map_type] = np.zeros((map_pix, map_pix), dtype=float)
-
-        tf = time.time()
+        if attrs is not None:
+            for attr in attrs:
+                properties[attr] = getattr(snap_info, attr)
         if logger:
-            logger.info(
-                f"{file_num=} - {map_types=} and {slice_axes=} finished in {tf - ts:.2f}s"
+            tf = time.time()
+            logger.info(f"properties read in {tf - ts:.2f}s")
+
+        # write each slice to a separate file
+        for slice_axis in slice_axes:
+            ts0 = time.time()
+            no_slice_axis = np.arange(0, 3) != slice_axis
+            if method == "bin":
+                coords_to_map = map_gen.coords_to_map_bin
+            elif method == "sph":
+                coords_to_map = map_gen.coords_to_map_sph
+                properties = {**properties, "n_ngb": n_ngb}
+
+            mp = coords_to_map(
+                coords=coords[no_slice_axis],
+                map_size=box_size,
+                map_pix=map_pix,
+                box_size=box_size,
+                func=func,
+                map_center=None,
+                logger=logger,
+                **properties
             )
-            if idx % 10 == 0:
-                logger.info(
-                    f"{file_num=} - saved up to {idx=} for {map_types=} and {slice_axes=}"
-                )
+            map_files[slice_axis]["map_file"]["dm_mass"][()] = mp.value
+            map_files[slice_axis]["map_file"]["dm_mass"].attrs["units"] = str(mp.unit)
 
-    # append final remaining maps to map_file
-    for slice_axis in slice_axes:
-        for map_type in map_types:
-            map_files[slice_axis]["map_file"][map_type][()] += map_files[slice_axis]["map"][map_type]
-
-        map_files[slice_axis]["map_file"].close()
+            if logger:
+                ts1 = time.time()
+                logger.info(f"{slice_axis=} for {map_type=} finished in {ts1 - ts0:.2f}s")
 
     t1 = time.time()
     if logger:
         logger.info(f"Finished {map_types=} and {slice_axes=} for {sim_dir=} took {t1 - t0:.2f}s")
+
+    for slice_axis in slice_axes:
+        map_files[slice_axis]["map_file"].close()
 
     return fnames

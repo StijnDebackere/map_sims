@@ -628,10 +628,6 @@ def save_full_maps(
             logger.info(f"{slice_axis=} finished in {ts1 - ts0:.2f}s")
 
     # finished file_num
-    tf = time.time()
-    if logger:
-        logger.info(f"{slice_axes=} finished in {tf - ts:.2f}s")
-
     t1 = time.time()
     if logger:
         logger.info(f"Finished {slice_axes=} for {sim_dir=} took {t1 - t0:.2f}s")
