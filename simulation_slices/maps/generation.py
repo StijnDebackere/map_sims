@@ -60,8 +60,6 @@ def coords_to_map_bin(
     ----------
     coords : (2, N) astropy.units.Quantity
         (x, y) coordinates
-    map_center : (2,) astropy.units.Quantity, optional
-        center of the (x, y) coordinate system
     map_size : astropy.units.Quantity
         size of the map
     map_pix : int
@@ -70,6 +68,9 @@ def coords_to_map_bin(
         size of the box
     func : callable
         function that calculates observable for each particle
+    map_center : (2,) astropy.units.Quantity, optional
+        center of the (x, y) coordinate system
+        if None, (0, 0) is assumed as origin
     props : dict of (..., N) or (1,) arrays
         properties to average, should be the kwargs of func
 
@@ -221,8 +222,6 @@ def coords_to_map_sph(
     ----------
     coords : (2, N) astropy.units.Quantity
         (x, y) coordinates
-    map_center : (2,) astropy.units.Quantity, optional
-        center of the (x, y) coordinate system
     map_size : astropy.units.Quantity
         size of the map
     map_pix : int
@@ -231,6 +230,9 @@ def coords_to_map_sph(
         size of the box
     func : callable
         function that calculates observable for each particle
+    map_center : (2,) astropy.units.Quantity, optional
+        center of the (x, y) coordinate system
+        if None, (0, 0) is assumed as origin
     n_ngb : int
         number of neighbours to determine SPH kernel size
     props : dict of (..., N) or (1,) arrays
@@ -361,10 +363,10 @@ def save_maps(
         snapshot to look at
     slice_axis : int
         axis to slice along [x=0, y=1, z=2]
-    box_size : astropy.units.Quantity
-        size of simulation
     num_slices : int
         total number of slices
+    box_size : astropy.units.Quantity
+        size of simulation
     map_pix : int
         square root of number of pixels in map
     map_size : astropy.units.Quantity
