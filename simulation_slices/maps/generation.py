@@ -340,6 +340,7 @@ def save_maps(
     swmr: bool = False,
     method: str = None,
     n_ngb: int = 30,
+    num_files_to_save: int = 100,
     verbose: bool = False,
     logger: util.LoggerType = None,
 ) -> u.Quantity:
@@ -386,6 +387,8 @@ def save_maps(
         method for map projection: sph smoothing with n_ngb neighbours or 2D histogram
     n_ngb : int
         number of neighbours to determine SPH kernel size
+    num_files_to_save : int
+        number of files after which results are intermittently saved
     verbose : bool
         show progress bar
 
@@ -634,7 +637,7 @@ def save_maps(
                     logger.info(
                         f"{gid=} - full {map_type=} took {tf - tsel0:.2f}s"
                     )
-                if num_maps % 100 == 0:
+                if num_maps % num_files_to_save == 0:
                     tw0 = time.time()
                     # save after each slice_range
                     io.add_to_hdf5(

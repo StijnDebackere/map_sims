@@ -579,6 +579,7 @@ def save_maps_los(
     swmr: bool = False,
     method: str = None,
     n_ngb: int = 30,
+    num_files_to_save: int = 50,
     verbose: bool = False,
     logger: util.LoggerType = None,
 ) -> u.Quantity:
@@ -625,6 +626,8 @@ def save_maps_los(
         method for map projection: sph smoothing with n_ngb neighbours or 2D histogram
     n_ngb : int
         number of neighbours to determine SPH kernel size
+    num_files_to_save : int
+        number of files after which results are intermittently saved
     verbose : bool
         show progress bar
 
@@ -821,7 +824,7 @@ def save_maps_los(
             maps[map_type].append(map_nslices[None])
 
             # save every 10 steps, make sure to erase maps that have already been saved
-            if num_maps % 10 == 0:
+            if num_maps % num_files_to_save == 0:
                 # save after each slice_range
                 io.add_to_hdf5(
                     h5file=map_file,
@@ -839,7 +842,7 @@ def save_maps_los(
             logger.info(
                 f"{gid=} - {map_types=} and {map_thickness=} took {t1 - t0:.2f}s"
             )
-            if num_maps % 10 == 0:
+            if num_maps % num_files_to_save == 0:
                 logger.info(
                     f"{gid=} - saved up to {num_maps=}"
                 )
@@ -874,6 +877,7 @@ def save_full_maps(
     swmr: bool = False,
     method: str = None,
     n_ngb: int = 30,
+    num_files_to_save: int = 50,
     verbose: bool = False,
     logger: util.LoggerType = None,
     **kwargs,
@@ -904,6 +908,8 @@ def save_full_maps(
         method for map projection: sph smoothing with n_ngb neighbours or 2D histogram
     n_ngb : int
         number of neighbours to determine SPH kernel size
+    num_files_to_save : int
+        number of files after which results are intermittently saved
     verbose : bool
         show progress bar
 
@@ -1054,7 +1060,7 @@ def save_full_maps(
 
                 if idx == 0:
                     map_files[slice_axis]["map_file"][map_type].attrs["units"] = str(mp.unit)
-                if idx % 10 == 0:
+                if idx % num_files_to_save == 0:
                     # save map to map_file and start again at 0
                     map_files[slice_axis]["map_file"][map_type][()] += map_files[slice_axis]["map"][map_type]
                     map_files[slice_axis]["map"][map_type] = np.zeros((map_pix, map_pix), dtype=float)
@@ -1064,7 +1070,7 @@ def save_full_maps(
             logger.info(
                 f"{file_num=} - {map_types=} and {slice_axes=} finished in {tf - ts:.2f}s"
             )
-            if idx % 50 == 0:
+            if idx % num_files_to_save == 0:
                 logger.info(
                     f"{file_num=} - saved up to {idx=} for {map_types=} and {slice_axes=}"
                 )
