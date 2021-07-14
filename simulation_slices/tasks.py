@@ -65,9 +65,9 @@ def slice_sim(
     num_slices = config.num_slices
     downsample = config.slice_downsample
     downsample_factor = config.downsample_factor
+    log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_slice_sim{config.log_name_append}"
 
     if logger is None and config.logging:
-        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_slice_sim{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
             snapshot=snapshot,
@@ -93,7 +93,7 @@ def slice_sim(
             fnames = []
 
             if logger:
-                logger.exception("Failed with exception:")
+                logger.error("Failed with exception:", exc_info=True)
                 with open(
                     f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
                     "w"
@@ -116,7 +116,7 @@ def slice_sim(
             fnames = []
 
             if logger:
-                logger.exception("Failed with exception:")
+                logger.error("Failed with exception:", exc_info=True)
                 with open(
                     f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
                     "w"
@@ -160,9 +160,9 @@ def save_coords(
     save_dir = config.coords_paths[sim_idx]
     coords_fname = config.coords_name
     sample_haloes_bins = config.sample_haloes_bins
+    log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_coords{config.log_name_append}"
 
     if logger is None and config.logging:
-        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_coords{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
             snapshot=snapshot,
@@ -189,7 +189,7 @@ def save_coords(
             fname = []
 
             if logger:
-                logger.exception("Failed with exception:")
+                logger.error("Failed with exception:", exc_info=True)
                 with open(
                     f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
                     "w"
@@ -212,7 +212,7 @@ def save_coords(
             fname = []
 
             if logger:
-                logger.exception("Failed with exception:")
+                logger.error("Failed with exception:", exc_info=True)
                 with open(
                     f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
                     "w"
@@ -271,9 +271,9 @@ def save_subvolumes(
         f"{config.coords_name}_ndiv_{n_divides:d}_id_{curve_id:d}"
         for curve_id in curve_ids
     ]
+    log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_subvols{config.log_name_append}"
 
     if logger is None and config.logging:
-        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_subvols{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
             snapshot=snapshot,
@@ -301,7 +301,7 @@ def save_subvolumes(
             fnames = []
 
             if logger:
-                logger.exception("Failed with exception:")
+                logger.error("Failed with exception:", exc_info=True)
                 with open(
                     f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
                     "w"
@@ -324,7 +324,7 @@ def save_subvolumes(
             fnames = []
 
             if logger:
-                logger.exception("Failed with exception:")
+                logger.error("Failed with exception:", exc_info=True)
                 with open(
                     f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
                     "w"
@@ -367,9 +367,9 @@ def map_subvolumes(
     ptypes = config.ptypes[sim_idx]
 
     coords_name = config.coords_name
+    log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_subvols{config.log_name_append}"
 
     if logger is None and config.logging:
-        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_subvols{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
             snapshot=snapshot,
@@ -436,7 +436,7 @@ def map_subvolumes(
             fnames.append(fname)
         except Exception as e:
             if logger:
-                logger.exception("Failed with exception:")
+                logger.error("Failed with exception:", exc_info=True)
                 with open(
                     f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
                     "w"
@@ -484,9 +484,9 @@ def map_coords(
     ptypes = config.ptypes[sim_idx]
 
     coords_name = config.coords_name
+    log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_coords{config.log_name_append}"
 
     if logger is None and config.logging:
-        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_coords{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
             snapshot=snapshot,
@@ -547,7 +547,7 @@ def map_coords(
         fname = []
 
         if logger:
-            logger.exception("Failed with exception:")
+            logger.error("Failed with exception:", exc_info=True)
             with open(
                 f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
                 "w"
@@ -586,9 +586,9 @@ def map_full(
     sim_dir = config.sim_paths[sim_idx]
     sim_suite = config.sim_suite
     box_size = config.box_sizes[sim_idx]
+    log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_full{config.log_name_append}"
 
     if logger is None and config.logging:
-        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_full{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
             snapshot=snapshot,
@@ -633,7 +633,7 @@ def map_full(
             fnames = []
 
             if logger:
-                logger.exception("Failed with exception:")
+                logger.error("Failed with exception:", exc_info=True)
                 with open(
                     f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
                     "w"
@@ -663,7 +663,7 @@ def map_full(
             fnames = []
 
             if logger:
-                logger.exception("Failed with exception:")
+                logger.error("Failed with exception:", exc_info=True)
                 with open(
                     f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
                     "w"
@@ -706,9 +706,9 @@ def map_los(
 
     box_size = config.box_sizes[sim_idx]
     ptypes = config.ptypes[sim_idx]
+    log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_los{config.log_name_append}"
 
     if logger is None and config.logging:
-        log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_map_los{config.log_name_append}"
         logger = get_logger(
             sim_idx=sim_idx,
             snapshot=snapshot,
@@ -773,7 +773,7 @@ def map_los(
             fname = []
 
             if logger:
-                logger.exception("Failed with exception:")
+                logger.error("Failed with exception:", exc_info=True)
                 with open(
                     f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
                     "w"
@@ -804,7 +804,7 @@ def map_los(
             fname = []
 
             if logger:
-                logger.exception("Failed with exception:")
+                logger.error("Failed with exception:", exc_info=True)
                 with open(
                     f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
                     "w"

@@ -119,10 +119,10 @@ def coords_to_map_bin(
 
     # we will need to associate each function value to the correct pixel
     pix_sort_order = np.argsort(pix_ids)
-    if logger:
-        t1 = time.time()
-        logger.debug(f"Dividing coords into pixels took {t1 - t0:.2f}s")
-        t0 = time.time()
+    # if logger:
+    #     t1 = time.time()
+    #     logger.debug(f"Dividing coords into pixels took {t1 - t0:.2f}s")
+    #     t0 = time.time()
 
     # unique_ids: all unique pix_ids that contain particles
     # loc_ids: location of each pix_id for the sorted list of pix_ids
@@ -133,10 +133,10 @@ def coords_to_map_bin(
         pix_ids[pix_sort_order], return_index=True, return_counts=True,
     )
 
-    if logger:
-        t1 = time.time()
-        logger.debug(f"Counting particles per pixel took {t1 - t0:.2f}s")
-        t0 = time.time()
+    # if logger:
+    #     t1 = time.time()
+    #     logger.debug(f"Counting particles per pixel took {t1 - t0:.2f}s")
+    #     t0 = time.time()
 
     # filter out properties with single value
     unique_props = {}
@@ -172,9 +172,9 @@ def coords_to_map_bin(
             [np.sum(func_values[i:j].value) for i, j in zip(pix_range[:-1], pix_range[1:])]
         )
 
-    if logger:
-        t1 = time.time()
-        logger.debug(f"Putting pixel values into map took {t1 - t0:.2f}s")
+    # if logger:
+    #     t1 = time.time()
+    #     logger.debug(f"Putting pixel values into map took {t1 - t0:.2f}s")
 
     # reshape the array to the map we wanted
     # we get (i, j) array with x_pix along rows and y_pix along columns

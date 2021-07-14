@@ -27,10 +27,9 @@ def slice_sim_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
             context.log.info(
                 f"Start slicing {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}"
             )
-            if cfg.logging:
-                logger = context.log
-            else:
-                logger = None
+            # dagster logger cannot log errors with exception info
+            # run our own logger if cfg.logging
+            logger = None
 
             fnames = tasks.slice_sim(
                 sim_idx=sim_idx, snapshot=snapshot, config=cfg, logger=logger
@@ -71,10 +70,9 @@ def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
             context.log.info(
                 f"Start saving coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}"
             )
-            if cfg.logging:
-                logger = context.log
-            else:
-                logger = None
+            # dagster logger cannot log errors with exception info
+            # run our own logger if cfg.logging
+            logger = None
 
             fname = tasks.save_coords(
                 sim_idx=sim_idx, snapshot=snapshot, config=cfg, logger=logger
@@ -116,10 +114,9 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
             context.log.info(
                 f"Start mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}"
             )
-            if cfg.logging:
-                logger = context.log
-            else:
-                logger = None
+            # dagster logger cannot log errors with exception info
+            # run our own logger if cfg.logging
+            logger = None
 
             fnames_all = []
             if context.resources.settings["project_full"]:
