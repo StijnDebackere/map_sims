@@ -12,6 +12,7 @@ from dagster import (
 )
 from dagster.core.definitions.reconstructable import build_reconstructable_pipeline
 from dagster.core.storage.fs_io_manager import fs_io_manager
+from numpy.random import SeedSequence, default_rng
 
 import simulation_slices.tasks as tasks
 from simulation_slices import Config
@@ -24,7 +25,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument(
     "config_filename",
-    default="/hpcdata0/simulations/BAHAMAS/extsdeba/batch_files/batch_bahamas_test.toml",
+    default="/hpcdata0/simulations/BAHAMAS/extsdeba/batch_files/batch_bahamas_full.toml",
     type=str,
     help="configuration filename",
 )
@@ -42,24 +43,15 @@ parser.add_argument(
     dest="dagster_home",
     help="$DAGSTER_HOME location",
 )
-parser.add_argument("--slice-sims", dest="slice_sims", action="store_true")
-parser.add_argument("--no-slice-sims", dest="slice_sims", action="store_false")
-parser.set_defaults(slice_sims=False)
 parser.add_argument("--save-coords", dest="save_coords", action="store_true")
 parser.add_argument("--no-save-coords", dest="save_coords", action="store_false")
 parser.set_defaults(save_coords=False)
 parser.add_argument("--map-sims", dest="map_sims", action="store_true")
 parser.add_argument("--no-map-sims", dest="map_sims", action="store_false")
 parser.set_defaults(map_sims=True)
-parser.add_argument("--project-full", dest="project_full", action="store_true")
-parser.add_argument("--no-project-full", dest="project_full", action="store_false")
-parser.set_defaults(project_full=True)
-parser.add_argument("--project-los", dest="project_los", action="store_true")
-parser.add_argument("--no-project-los", dest="project_los", action="store_false")
-parser.set_defaults(project_los=False)
 
 
-def pipeline_factory(config_filename: str):
+def pipeline_factory(config_filename: str, n_cpus: int):
     @pipeline(
         name="process_simulations",
         mode_defs=[
@@ -68,11 +60,8 @@ def pipeline_factory(config_filename: str):
                 resource_defs={
                     "io_manager": fs_io_manager,
                     "settings": make_values_resource(
-                        slice_sims=bool,
                         save_coords=bool,
                         map_sims=bool,
-                        project_full=bool,
-                        project_los=bool,
                     ),
                 },
             )
@@ -80,24 +69,31 @@ def pipeline_factory(config_filename: str):
         description="Pipeline to generate observable maps from simulations.",
     )
     def pipeline_with_config():
-        solid_output_handles = []
         cfg = Config(config_filename)
 
+        ss = SeedSequence(42)
+        n_calls = cfg.snapshots.size * len(cfg.slice_axes)
+        spawned = ss.spawn(n_calls)
+
+        i = 0
         for sim_idx in range(cfg._n_sims):
             for idx_snap, snapshot in enumerate(cfg.snapshots[sim_idx]):
-                slice_sim = solids.slice_sim_solid_factory(
-                    sim_idx=sim_idx, snapshot=snapshot, cfg=cfg
-                )
                 save_coords = solids.save_coords_solid_factory(
                     sim_idx=sim_idx, snapshot=snapshot, cfg=cfg
                 )
+                coords = save_coords()
 
-                coords_file = str(cfg.coords_files[sim_idx][idx_snap])
-                map_sim = solids.map_sim_solid_factory(
-                    sim_idx=sim_idx, snapshot=snapshot, coords_file=coords_file, cfg=cfg
-                )
-
-                solid_output_handles.append(map_sim(save_coords(slice_sim())))
+                for slice_axis in cfg.slice_axes:
+                    rng = default_rng(spawned[i])
+                    map_sim = solids.map_sim_solid_factory(
+                        sim_idx=sim_idx,
+                        snapshot=snapshot,
+                        slice_axis=slice_axis,
+                        rng=rng,
+                        cfg=cfg,
+                    )
+                    mapped = map_sim(coords)
+                    i += 1
 
     return pipeline_with_config
 
@@ -111,7 +107,10 @@ if __name__ == "__main__":
         "dagster_cli",
         "pipeline_factory",
         (),
-        {"config_filename": dict_args["config_filename"]},
+        {
+            "config_filename": dict_args["config_filename"],
+            "n_cpus": dict_args["max_cpus"],
+        },
     )
     result = execute_pipeline(
         reconstructable_pipeline,
@@ -124,15 +123,12 @@ if __name__ == "__main__":
                     }
                 }
             },
-            # "loggers": {"console": {"config": {"log_level": "INFO"}}},
+            "loggers": {"console": {"config": {"log_level": "INFO"}}},
             "resources": {
                 "settings": {
                     "config": {
-                        "slice_sims": dict_args["slice_sims"],
                         "save_coords": dict_args["save_coords"],
                         "map_sims": dict_args["map_sims"],
-                        "project_full": dict_args["project_full"],
-                        "project_los": dict_args["project_los"],
                     },
                 },
             },

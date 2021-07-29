@@ -8,54 +8,12 @@ from dagster import (
     EventMetadataEntry,
     Nothing,
 )
-
+from numpy.random import Generator
 import simulation_slices.tasks as tasks
 from simulation_slices import Config
 
 
 # inspired by https://stackoverflow.com/q/61330816/
-def slice_sim_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
-    @solid(
-        name=str(
-            f"slice_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"
-        ),
-        description=f"Slice {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}.",
-        required_resource_keys={"settings"},
-    )
-    def _slice_sim(context) -> Nothing:
-        if context.resources.settings["slice_sims"]:
-            context.log.info(
-                f"Start slicing {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}"
-            )
-            # dagster logger cannot log errors with exception info
-            # run our own logger if cfg.logging
-            logger = None
-
-            fnames = tasks.slice_sim(
-                sim_idx=sim_idx, snapshot=snapshot, config=cfg, logger=logger
-            )
-            context.log.info(
-                f"Finished slicing {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}"
-            )
-
-            for idx, fname in enumerate(fnames):
-                yield AssetMaterialization(
-                    asset_key=AssetKey(
-                        f"slice_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{idx}_{snapshot:03d}"
-                    ),
-                    description=f"Slice file {idx} for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}",
-                    metadata_entries=[EventMetadataEntry.path(fname, "file path")],
-                )
-        else:
-            context.log.info(
-                f"Skipping slicing {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}"
-            )
-
-        yield Output(None)
-
-    return _slice_sim
-
-
 def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
     @solid(
         name=str(
@@ -99,62 +57,51 @@ def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
     return _save_coords
 
 
-def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Config):
+def map_sim_solid_factory(
+    sim_idx: int,
+    snapshot: int,
+    slice_axis: int,
+    cfg: Config,
+    rng: Optional[Generator] = None,
+):
     @solid(
         # needed output is list of AssetKeys from slice_sim
         input_defs=[InputDefinition("ready", dagster_type=Nothing)],
         name=str(
-            f"map_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"
+            f"map_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}"
+            f"_snap_{snapshot:03d}_slice_{slice_axis}"
         ),
-        description=f"Produce maps of {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}.",
+        description=str(
+            f"Produce maps of {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} "
+            f"for {snapshot=} and {slice_axis=}."
+        ),
         required_resource_keys={"settings"},
     )
     def _map_sim(context) -> Nothing:
         if context.resources.settings["map_sims"]:
             context.log.info(
-                f"Start mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}"
+                f"Start mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} "
+                f"{snapshot=:03d} and {slice_axis=}"
             )
             # dagster logger cannot log errors with exception info
             # run our own logger if cfg.logging
             logger = None
 
-            fnames_all = []
-            if context.resources.settings["project_full"]:
-                fnames = tasks.map_full(
-                    sim_idx=sim_idx,
-                    config=cfg,
-                    snapshot=snapshot,
-                    logger=logger,
-                )
-                fnames_all = [*fnames_all, *fnames]
-            elif context.resources.settings["project_los"]:
-                for slice_axis in cfg.slice_axes:
-                    fname = tasks.map_los(
-                        sim_idx=sim_idx,
-                        snapshot=snapshot,
-                        slice_axis=slice_axis,
-                        coords_file=coords_file,
-                        config=cfg,
-                        logger=logger,
-                    )
-                    fnames_all.append(fname)
-            else:
-                for slice_axis in cfg.slice_axes:
-                    fname = tasks.map_coords(
-                        sim_idx=sim_idx,
-                        config=cfg,
-                        snapshot=snapshot,
-                        slice_axis=slice_axis,
-                        coords_file=coords_file,
-                        logger=logger,
-                    )
-                    fnames_all.append(fname)
-
-            context.log.info(
-                f"Finished mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}"
+            fnames = tasks.map_full(
+                sim_idx=sim_idx,
+                snapshot=snapshot,
+                slice_axis=slice_axis,
+                config=cfg,
+                logger=logger,
+                rng=rng,
             )
 
-            for idx, fname in enumerate(fnames_all):
+            context.log.info(
+                f"Finished mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} "
+                f"{snapshot=:03d} and {slice_axis=}"
+            )
+
+            for idx, fname in enumerate(fnames):
                 yield AssetMaterialization(
                     asset_key=f"map_sim_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{idx}_{snapshot:03d}",
                     description=f"Maps file {idx} for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}",
@@ -162,7 +109,8 @@ def map_sim_solid_factory(sim_idx: int, snapshot: int, coords_file: str, cfg: Co
                 )
         else:
             context.log.info(
-                f"Skipping mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}"
+                f"Skipping mapping simulation {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} "
+                f"{snapshot=:03d} and {slice_axis=}"
             )
 
         yield Output(None)

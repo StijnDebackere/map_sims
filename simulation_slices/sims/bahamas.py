@@ -9,7 +9,6 @@ import numpy as np
 from tqdm import tqdm
 
 import simulation_slices.io as io
-import simulation_slices.sims.slicing as slicing
 import simulation_slices.maps.tools as map_tools
 import simulation_slices.maps.generation as map_gen
 import simulation_slices.maps.interpolate_tables as interp_tables
@@ -44,31 +43,106 @@ PROPS_TO_BAHAMAS["gas"] = {
     "smoothed_iron": f"PartType0/SmoothedElementAbundance/Iron",
     **PROPS_TO_BAHAMAS["gas"],
 }
-
-# get correct properties from BAHAMAS ptypes
-PROPS_PTYPES = {
-    ptype: {"coordinates": f"{ptype}/coordinates", "masses": f"{ptype}/masses"}
-    for ptype in ["gas", "dm", "stars", "bh"]
-}
-PROPS_PTYPES["gas"] = {
-    "temperatures": f"gas/temperatures",
-    "densities": f"gas/densities",
-    "electron_number_densities": f"gas/electron_number_densities",
-    "luminosities": f"gas/luminosities",
-    "smoothed_hydrogen": f"gas/smoothed_hydrogen",
-    "smoothed_helium": f"gas/smoothed_helium",
-    "smoothed_carbon": f"gas/smoothed_carbon",
-    "smoothed_nitrogen": f"gas/smoothed_nitrogen",
-    "smoothed_oxygen": f"gas/smoothed_oxygen",
-    "smoothed_neon": f"gas/smoothed_neon",
-    "smoothed_magnesium": f"gas/smoothed_magnesium",
-    "smoothed_silicon": f"gas/smoothed_silicon",
-    "smoothed_iron": f"gas/smoothed_iron",
-    **PROPS_PTYPES["gas"],
+# conversion between expected attributes and BAHAMAS hdf5 datasets
+ATTRS_TO_BAHAMAS = {
+    "z": "Header/Redshift",
+    "h": "Header/HubbleParam",
 }
 
 
-def save_coords_file(
+def get_file_nums(
+    sim_dir: str,
+    snapshot: int,
+) -> List[int]:
+    snap_info = Gadget(
+        model_dir=sim_dir,
+        file_type="snap",
+        snapnum=snapshot,
+        units=True,
+        comoving=True,
+        verbose=False,
+    )
+    return list(range(0, snap_info.num_files))
+
+
+def read_particle_properties(
+    sim_dir: str,
+    snapshot: int,
+    ptype: str,
+    properties: List[str] = None,
+    file_num: int = None,
+    verbose: bool = False,
+) -> dict:
+    ptype_options = PTYPES_TO_BAHAMAS.keys()
+
+    if properties is None:
+        return {}
+
+    if ptype not in ptype_options:
+        raise ValueError(f"{ptype=} should be in {ptype_options=}")
+
+    snap_info = Gadget(
+        model_dir=sim_dir,
+        file_type="snap",
+        snapnum=snapshot,
+        units=True,
+        comoving=True,
+        verbose=verbose,
+    )
+    props = {}
+    if ptype == "dm" and "masses" in properties:
+        properties.pop(properties.index("masses"))
+        props["masses"] = np.atleast_1d(snap_info.masses[PTYPES_TO_BAHAMAS[ptype]])
+
+    for prop in properties:
+        if file_num is None:
+            props[prop] = snap_info.read_var(var=PROPS_TO_BAHAMAS[ptype][prop])
+        else:
+            props[prop] = snap_info.read_single_file(
+                var=PROPS_TO_BAHAMAS[ptype][prop],
+                i=file_num,
+            )
+
+    return props
+
+
+def read_simulation_attributes(
+    sim_dir: str,
+    snapshot: int,
+    attributes: List[str] = None,
+    file_num: int = None,
+    ptype: str = None,
+    verbose: bool = False,
+) -> dict:
+    attr_options = ATTRS_TO_BAHAMAS.keys()
+
+    if attributes is None:
+        return {}
+
+    valid_attrs = set(attributes) & set(attr_options)
+    if not valid_attrs:
+        raise ValueError(f"{attributes=} should be in {attr_options=}")
+
+    snap_info = Gadget(
+        model_dir=sim_dir,
+        file_type="snap",
+        snapnum=snapshot,
+        units=True,
+        comoving=True,
+        verbose=verbose,
+    )
+
+    if file_num is None:
+        file_num = 0
+
+    attrs = {
+        attr: snap_info.read_attr(ATTRS_TO_BAHAMAS[attr], ids=file_num)
+        for attr in valid_attrs
+    }
+    return attrs
+
+
+def save_halo_coords_file(
     sim_dir: str,
     snapshot: int,
     coord_dset: str,
@@ -113,6 +187,9 @@ def save_coords_file(
         fname of saved coordinates
 
     """
+    if logger:
+        logger.info(f"Start saving coordinates for {sim_dir=} and {snapshot=}")
+
     group_info = Gadget(
         model_dir=sim_dir, file_type="subh", snapnum=snapshot, units=True, comoving=True
     )
@@ -179,702 +256,46 @@ def save_coords_file(
     masses = masses[selection]
     group_ids = group_ids[selection].astype(int)
 
+    if logger:
+        logger.info(f"coordinates and masses sliced")
 
     extra = {
-        extra_dset: {
-            "data": group_info.read_var(extra_dset, verbose=verbose).value[selection],
-            "attrs": {
-                "units": str(group_info.get_units(extra_dset, 0, verbose=verbose).unit),
-                **group_info.read_attrs(
-                    extra_dset, ids=0, verbose=verbose, dtype=object
-                ),
-            },
-        }
+        extra_dset: group_info.read_var(extra_dset, verbose=verbose)[selection]
         for extra_dset in (extra_dsets or {})
     }
 
-    layout = {
+    data = {
         "attrs": {
             "description": "File with selected coordinates for maps.",
         },
-        "dsets": {
-            "coordinates": {
-                "data": coordinates.to_value("Mpc / littleh"),
-                "attrs": {
-                    "description": "Coordinates in cMpc/h",
-                    "units": "Mpc / littleh",
-                    "mass_dset": mass_dset,
-                    "mass_range": mass_range.value,
-                    "mass_range_units": str(mass_range.unit),
-                },
-            },
-            "group_ids": {
-                "data": group_ids,
-                "attrs": {
-                    "description": "Group IDs starting at 0",
-                },
-            },
-            "masses": {
-                "data": masses.to_value("Msun / littleh"),
-                "attrs": {
-                    "description": "Masses in Msun / h",
-                    "units": "Msun / littleh",
-                    },
-            },
-            **extra,
-        },
+        "coordinates": coordinates,
+        "mass_dset": mass_dset,
+        "mass_range": mass_range,
+        "group_ids": group_ids,
+        "masses": masses,
+        **extra,
     }
 
     if coord_range is not None:
-        layout["dsets"]["coordinates"]["attrs"]["coord_range"] = coord_range.value
-        layout["dsets"]["coordinates"]["attrs"]["coord_range_units"] = str(coord_range.unit)
+        data["coord_range"] = coord_range
 
-    io.create_hdf5(fname=fname, layout=layout, overwrite=True, close=True)
+    io.dict_to_hdf5(fname=fname, data=data, overwrite=True)
+    if logger:
+        logger.info(f"Finished saving coordinates for {sim_dir=} and {snapshot=}")
+
     return str(fname)
-
-
-def save_slice_data(
-    sim_dir: str,
-    snapshot: int,
-    slice_axes: List[int],
-    num_slices: int,
-    ptypes: List[str],
-    downsample: bool = False,
-    downsample_factor: float = None,
-    save_dir: Optional[str] = None,
-    verbose: Optional[bool] = False,
-    logger: util.LoggerType = None,
-) -> List[str]:
-    """For snapshot of simulation in sim_dir, slice the particle data for
-    all ptypes along the slice_axis. Slices are saved in the Snapshots
-    directory by default.
-
-    Parameters
-    ----------
-    sim_dir : str
-        path of the MiraTitanU directory
-    snapshot : int
-        snapshot to look at
-    slice_axes : list of int
-        axes to slice along [x=0, y=1, z=2]
-    num_slices : int
-        number of slices to divide box in
-    ptypes : iterable of ['gas', 'dm', 'bh', 'stars']
-        particle types to read in
-    save_dir : str or None
-        location to save to, defaults to snapshot_xxx/slices/
-    verbose : bool
-        print progress bar
-    logger : logging.Logger
-        optional logging
-
-    Returns
-    -------
-    fnames : list of saved filenames
-    saves particles for each slice in the snapshot_xxx/slices/
-    directory
-
-    """
-    slice_axes = np.atleast_1d(slice_axes)
-    snap_info = Gadget(
-        model_dir=sim_dir,
-        file_type="snap",
-        snapnum=snapshot,
-        units=True,
-        comoving=True,
-    )
-    box_size = snap_info.boxsize
-
-    # ensure that save_dir exists
-    if save_dir is None:
-        save_dir = util.check_path(snap_info.filename).parent / "slices"
-    else:
-        save_dir = util.check_path(save_dir)
-
-    # crude estimate of maximum number of particles in each slice
-    N_tot = sum(snap_info.num_part_tot)
-    if downsample:
-        N_tot = downsample_factor * N_tot
-    maxshape = int(2 * N_tot / num_slices)
-
-    a = snap_info.a
-    z = 1 / a - 1
-    h = snap_info.h
-
-    fnames = []
-    for slice_axis in slice_axes:
-        # create the hdf5 file to fill up
-        fname = slicing.create_slice_file(
-            save_dir=save_dir,
-            snapshot=snapshot,
-            box_size=box_size,
-            z=z,
-            a=a,
-            h=h,
-            ptypes=ptypes,
-            num_slices=num_slices,
-            slice_axis=slice_axis,
-            maxshape=maxshape,
-            downsample=downsample,
-            downsample_factor=downsample_factor,
-        )
-        fnames.append(fname)
-
-    # now loop over all snapshot files and add their particle info
-    # to the correct slice
-
-    if verbose:
-        num_files_range = tqdm(
-            range(snap_info.num_files), desc="Slicing particle files"
-        )
-    else:
-        num_files_range = range(snap_info.num_files)
-
-    for file_num in num_files_range:
-        t0 = time.time()
-        for ptype in ptypes:
-            # need to put particles along columns for hdf5 optimal usage
-            # read everything in Mpc / h
-            coords = snap_info.read_single_file(
-                i=file_num,
-                var=PROPS_TO_BAHAMAS[ptype]["coordinates"],
-                verbose=False,
-                reshape=True,
-            ).T
-
-            # dark matter does not have the Mass variable
-            # read in M_sun / h
-            if ptype != "dm":
-                masses = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["masses"],
-                    verbose=False,
-                    reshape=True,
-                )
-            else:
-                masses = np.atleast_1d(snap_info.masses[PTYPES_TO_BAHAMAS[ptype]])
-
-            properties = {"coordinates": coords, "masses": masses}
-            # only gas particles have extra properties saved
-            if ptype == "gas":
-                # load in particledata for SZ & X-ray
-                temperatures = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["temperatures"],
-                    verbose=False,
-                    reshape=True,
-                )
-                densities = snap_info.read_single_file(
-                    i=file_num,
-                    var=PROPS_TO_BAHAMAS[ptype]["densities"],
-                    verbose=False,
-                    reshape=True,
-                )
-                try:
-                    smoothed_hydrogen = snap_info.read_single_file(
-                        i=file_num,
-                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_hydrogen"],
-                        verbose=False,
-                        reshape=True,
-                    )
-                    smoothed_helium = snap_info.read_single_file(
-                        i=file_num,
-                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_helium"],
-                        verbose=False,
-                        reshape=True,
-                    )
-                    smoothed_carbon = snap_info.read_single_file(
-                        i=file_num,
-                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_carbon"],
-                        verbose=False,
-                        reshape=True,
-                    )
-                    smoothed_nitrogen = snap_info.read_single_file(
-                        i=file_num,
-                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_nitrogen"],
-                        verbose=False,
-                        reshape=True,
-                    )
-                    smoothed_oxygen = snap_info.read_single_file(
-                        i=file_num,
-                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_oxygen"],
-                        verbose=False,
-                        reshape=True,
-                    )
-                    smoothed_neon = snap_info.read_single_file(
-                        i=file_num,
-                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_neon"],
-                        verbose=False,
-                        reshape=True,
-                    )
-                    smoothed_magnesium = snap_info.read_single_file(
-                            i=file_num,
-                            var=PROPS_TO_BAHAMAS[ptype]["smoothed_magnesium"],
-                            verbose=False,
-                            reshape=True,
-                        )
-                    smoothed_silicon = snap_info.read_single_file(
-                        i=file_num,
-                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_silicon"],
-                        verbose=False,
-                        reshape=True,
-                    )
-                    smoothed_iron = snap_info.read_single_file(
-                        i=file_num,
-                        var=PROPS_TO_BAHAMAS[ptype]["smoothed_iron"],
-                        verbose=False,
-                        reshape=True,
-                    )
-                    elements_found = True
-                    elements = {
-                        "smoothed_hydrogen": smoothed_hydrogen,
-                        "smoothed_helium": smoothed_helium,
-                        "smoothed_carbon": smoothed_carbon,
-                        "smoothed_nitrogen": smoothed_nitrogen,
-                        "smoothed_oxygen": smoothed_oxygen,
-                        "smoothed_neon": smoothed_neon,
-                        "smoothed_magnesium": smoothed_magnesium,
-                        "smoothed_silicon": smoothed_silicon,
-                        "smoothed_iron": smoothed_iron,
-                    }
-                except KeyError:
-                    elements_found = False
-                    elements = {}
-
-
-                # load in remaining data for X-ray luminosities
-                properties = {
-                    "temperatures": temperatures,
-                    "densities": densities,
-                    "masses": masses,
-                    **elements,
-                    **properties,
-                }
-
-            if downsample:
-                n_part = properties["coordinates"].shape[-1]
-                ids = np.random.choice(
-                    n_part, replace=False, size=int(n_part * downsample_factor)
-                )
-
-                # rescale masses
-                properties["masses"] = properties["masses"] / downsample_factor
-                if properties["masses"].shape[0] == 1:
-                    properties = dict(
-                        (k, v[..., ids]) if k != "masses" else (k, v)
-                        for k, v in properties.items()
-                    )
-                else:
-                    properties = {k: v[..., ids] for k, v in properties.items()}
-
-            # write each slice to a separate file
-            for slice_axis in slice_axes:
-                slice_dict = slicing.slice_particle_list(
-                    box_size=box_size,
-                    num_slices=num_slices,
-                    slice_axis=slice_axis,
-                    properties=properties,
-                )
-
-                fname = slicing.slice_file_name(
-                    save_dir=save_dir,
-                    slice_axis=slice_axis,
-                    num_slices=num_slices,
-                    snapshot=snapshot,
-                    downsample=downsample,
-                    downsample_factor=downsample_factor,
-                )
-                h5file = h5py.File(fname, "r+")
-
-                # append results to hdf5 file
-                for idx, (coord, masses) in enumerate(
-                    zip(slice_dict["coordinates"], slice_dict["masses"])
-                ):
-                    if not coord:
-                        continue
-
-                    coord_dset = f'{idx}/{PROPS_PTYPES[ptype]["coordinates"]}'
-                    io.add_to_hdf5(
-                        h5file=h5file,
-                        dataset=coord_dset,
-                        vals=coord[0],
-                        axis=1,
-                    )
-
-                    # add masses
-                    mass_dset = f'{idx}/{PROPS_PTYPES[ptype]["masses"]}'
-                    if ptype == "dm":
-                        # only want to add single value for dm mass
-                        if h5file[mass_dset].shape[0] == 0:
-                            io.add_to_hdf5(
-                                h5file=h5file,
-                                dataset=mass_dset,
-                                vals=np.unique(masses[0]),
-                                axis=0,
-                            )
-                    else:
-                        io.add_to_hdf5(
-                            h5file=h5file,
-                            dataset=mass_dset,
-                            vals=masses[0],
-                            axis=0,
-                        )
-
-                    # add extra gas properties
-                    if ptype == "gas":
-                        # get gas properties, list of array
-                        temperatures = slice_dict["temperatures"][idx]
-                        densities = slice_dict["densities"][idx]
-
-                        io.add_to_hdf5(
-                            h5file=h5file,
-                            vals=temperatures[0],
-                            axis=0,
-                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["temperatures"]}',
-                        )
-                        io.add_to_hdf5(
-                            h5file=h5file,
-                            vals=densities[0],
-                            axis=0,
-                            dataset=f'{idx}/{PROPS_PTYPES[ptype]["densities"]}',
-                        )
-                        if elements_found:
-                            for element in elements.keys():
-                                element_vals = slice_dict[element][idx]
-                                io.add_to_hdf5(
-                                    h5file=h5file,
-                                    vals=element_vals[0],
-                                    axis=0,
-                                    dataset=f'{idx}/{PROPS_PTYPES[ptype][element]}',
-                                )
-
-                h5file.close()
-        t1 = time.time()
-        if logger:
-            logger.info(f"{file_num=} took {t1 - t0:.2f}s")
-
-    return fnames
-
-
-def save_maps_los(
-    sim_dir: str,
-    snapshot: int,
-    centers: u.Quantity,
-    group_ids: np.ndarray,
-    masses: u.Quantity,
-    slice_dir: str,
-    slice_axis: int,
-    num_slices: int,
-    box_size: u.Quantity,
-    map_pix: int,
-    map_size: u.Quantity,
-    map_thickness: u.Quantity,
-    map_types: List[str],
-    save_dir: str,
-    coords_name: str = "",
-    map_name_append: str = "",
-    downsample: bool = False,
-    downsample_factor: float = None,
-    overwrite: bool = False,
-    swmr: bool = False,
-    method: str = None,
-    n_ngb: int = 30,
-    num_files_to_save: int = 50,
-    verbose: bool = False,
-    logger: util.LoggerType = None,
-) -> u.Quantity:
-    """Project map around coord in a box of (map_size, map_size, map_thickness)
-    in a map of (map_pix, map_pix) for mass of ptypes.
-
-    Parameters
-    ----------
-    centers : (N, 3) astropy.units.Quantity
-        (x, y, z) coordinates to slice around
-    group_ids : (N,) np.ndarray
-        group id for each coordinate
-    masses : (N,) astropy.units.Quantity
-        masses for each coordinate
-    slice_dir : str
-        directory of the saved simulation slices
-    snapshot : int
-        snapshot to look at
-    slice_axis : int
-        axis to slice along [x=0, y=1, z=2]
-    box_size : astropy.units.Quantity
-        size of simulation
-    num_slices : int
-        total number of slices
-    map_pix : int
-        square root of number of pixels in map
-    map_size : astropy.units.Quantity
-        size of the map
-    map_thickness : astropy.units.Quantity
-        thickness of the map projection
-    map_types : ["gas_mass", "dm_mass", "stars_mass", "bh_mass"]
-        particle types to compute masses for
-    save_dir : str
-        directory to save map files to
-    coords_name : str
-        identifier to append to filenames
-    map_name_append : str
-        optional extra to append to filenames
-    overwrite : bool
-        overwrite map_file if already exists
-    swmr : bool
-        enable single writer multiple reader mode for map_file
-    method : str ["sph", "bin"]
-        method for map projection: sph smoothing with n_ngb neighbours or 2D histogram
-    n_ngb : int
-        number of neighbours to determine SPH kernel size
-    num_files_to_save : int
-        number of files after which results are intermittently saved
-    verbose : bool
-        show progress bar
-
-    Returns
-    -------
-    saves maps to {save_dir}/{slice_axis}_maps_{coords_name}{map_name_append}_{snapshot:03d}.hdf5
-    """
-    if not all(["mass" in map_type for map_type in map_types]):
-        raise ValueError("only mass map_types are accepted")
-
-    snap_info = Gadget(
-        model_dir=sim_dir,
-        file_type="snap",
-        snapnum=snapshot,
-        units=True,
-        comoving=True,
-    )
-
-    map_thickness = map_thickness[np.argsort(map_thickness)[::-1]]
-    map_name = map_gen.get_map_name(
-        save_dir=save_dir,
-        slice_axis=slice_axis,
-        snapshot=snapshot,
-        method=method,
-        coords_name=coords_name,
-        map_name_append=map_name_append,
-        downsample=downsample,
-        downsample_factor=downsample_factor,
-        map_thickness=map_thickness,
-    )
-
-    # sort maps along mass
-    centers = np.atleast_2d(centers).reshape(-1, 3)
-    sort_ids = np.argsort(masses)[::-1]
-    centers_sorted = centers[sort_ids]
-    group_ids_sorted = group_ids[sort_ids]
-    masses_sorted = masses[sort_ids]
-
-    maxshape = centers.shape[0]
-
-    # create index array that cuts out the slice_axis
-    no_slice_axis = np.arange(0, 3) != slice_axis
-
-    map_file = map_layout.create_map_file(
-        map_name=map_name,
-        overwrite=overwrite,
-        close=False,
-        swmr=swmr,
-        slice_axis=slice_axis,
-        box_size=box_size,
-        map_types=map_types,
-        map_size=map_size,
-        map_thickness=map_thickness,
-        map_pix=map_pix,
-        snapshot=snapshot,
-        n_ngb=n_ngb,
-        maxshape=maxshape,
-        extra={
-            "centers": {
-                "data": centers_sorted,
-                "attrs": {
-                    "description": "Halo centers.",
-                    "single_value": False,
-                    "units": str(centers_sorted.unit),
-                },
-            },
-            "group_ids": {
-                "data": group_ids_sorted,
-                "attrs": {
-                    "description": "Halo group ids.",
-                    "single_value": False,
-                },
-            },
-            "masses": {
-                "data": masses_sorted,
-                "attrs": {
-                    "description": "Halo masses.",
-                    "single_value": False,
-                    "units": str(masses_sorted.unit),
-                },
-            },
-        },
-    )
-
-    if not overwrite:
-        min_idx = np.min([map_file[map_type].shape[0] for map_type in map_types])
-        for map_type in map_types:
-            # truncate all map_types to minimum size
-            # might need to recalc some, but is easiest to implement
-            map_file[map_type].resize(min_idx, axis=0)
-    else:
-        min_idx = 0
-
-    # we will save maps in dictionary and write them to disk periodically
-    pix_size = map_size / map_pix
-
-    # only read in all coordinates once
-    ptypes = [obs.MAP_TYPES_OPTIONS[map_type]["ptype"] for map_type in map_types]
-    coords = {
-        ptype: snap_info.read_var(PROPS_TO_BAHAMAS[ptype]["coordinates"])
-        for ptype in set(ptypes)
-    }
-    maps = {
-        map_type: [] for map_type in map_types
-    }
-    num_maps = 0
-    for idx, (center, gid) in enumerate(zip(centers_sorted, group_ids_sorted)):
-        t0 = time.time()
-        num_maps += 1
-        for ptype, map_type in zip(ptypes, map_types):
-            # get rough boundary cuts for the map, allow some extra 2D space
-            distance = np.ones(3) * 0.6 * map_size
-
-            coords_slice = coords[ptype]
-            # we will progressively shrink distance along slice_axis
-            if ptype != "dm":
-                masses_slice = snap_info.read_var(PROPS_TO_BAHAMAS[ptype]["masses"])
-            else:
-                masses_slice = np.atleast_1d(snap_info.masses[PTYPES_TO_BAHAMAS[ptype]])
-
-            map_nslices = np.zeros((map_pix, map_pix, len(map_thickness))) * masses_slice.unit / map_size.unit ** 2
-            # shrink map_thickness, shrinking coords and masses along the way
-            for idx, dl in enumerate(map_thickness):
-                distance[slice_axis] = 0.5 * dl
-                bounds = map_tools.slice_around_center(
-                    center=center,
-                    distance=distance,
-                    box_size=box_size,
-                    pix_size=None,
-                )
-
-                sl = np.zeros(coords_slice.shape, dtype=bool)
-                for axis, bnds in bounds.items():
-                    temp_sl = sl[:, axis]
-                    # bounds possibly divided over opposite sides of periodic volume
-                    for bnd in bnds:
-                        if bnd[0].value == 0 * box_size.unit and bnd[1] == box_size:
-                            temp_sl = np.ones_like(temp_sl)
-                        else:
-                            temp_sl = (
-                                # need to be between bounds
-                                (coords_slice[:, axis] >= bnd[0]) & (coords_slice[:, axis] <= bnd[1])
-                                # and don't need to overlap with possible volume on other side of box
-                                | temp_sl
-                            )
-
-                    sl[:, axis] = temp_sl
-
-                # need to be inside bounds for all axes
-                sl = np.all(sl, axis=-1)
-
-                coords_slice = coords_slice[sl]
-                if ptype != "dm":
-                    masses_slice = masses_slice[sl]
-
-                # ignore sliced dimension
-                coords_2d = coords_slice[:, no_slice_axis]
-                map_center = center[no_slice_axis]
-
-                props_map_type = {"masses": masses_slice}
-                # size of array required for SPH smoothing
-                # SPH used up to haloes of 7152 particles for map_pix = 256
-                # enough for the most massive downsampled MiraTitan haloes
-                if method is None:
-                    arr_size = 2 * coords_2d.shape[-1] * 2 * map_pix ** 2 * 64 * u.bit
-                    if arr_size > 15 * u.GB:
-                        coords_to_map = map_gen.coords_to_map_bin
-                    else:
-                        props_map_type = {"n_ngb": n_ngb, **props_map_type}
-                        coords_to_map = map_gen.coords_to_map_sph
-
-                elif method == "sph":
-                    props_map_type = {"n_ngb": n_ngb, **props_map_type}
-                    coords_to_map = map_gen.coords_to_map_sph
-                elif method == "bin":
-                    coords_to_map = map_gen.coords_to_map_bin
-                else:
-                    raise ValueError(f"{method=} should be 'sph' or 'bin'.")
-
-                mp = coords_to_map(
-                    # coords_to_map expect dimension along axis 0
-                    coords=np.swapaxes(coords_2d, 0, 1),
-                    map_center=map_center,
-                    map_size=map_size,
-                    map_pix=map_pix,
-                    box_size=box_size,
-                    func=obs.particles_masses,
-                    logger=logger,
-                    **props_map_type,
-                )
-                map_nslices[..., idx] = mp
-
-            # all map_thicknesses have been applied for map_type
-            maps[map_type].append(map_nslices[None])
-
-            # save every 10 steps, make sure to erase maps that have already been saved
-            if num_maps % num_files_to_save == 0:
-                # save after each slice_range
-                io.add_to_hdf5(
-                    h5file=map_file,
-                    dataset=map_type,
-                    vals=np.concatenate(maps[map_type], axis=0),
-                    axis=0,
-                )
-
-                # start again from 0 maps
-                maps[map_type] = []
-
-        # finished running map slices for gid
-        t1 = time.time()
-        if logger:
-            logger.info(
-                f"{gid=} - {map_types=} and {map_thickness=} took {t1 - t0:.2f}s"
-            )
-            if num_maps % num_files_to_save == 0:
-                logger.info(
-                    f"{gid=} - saved up to {num_maps=}"
-                )
-
-    # write any remaining maps to file
-    for map_type, mps in maps.items():
-        if mps:
-            io.add_to_hdf5(
-                h5file=map_file,
-                dataset=map_type,
-                vals=np.concatenate(mps, axis=0),
-                axis=0,
-            )
-
-    # still need to close the HDF5 files
-    map_file.close()
-    return map_name
 
 
 def save_full_maps(
     sim_dir: str,
     snapshot: int,
-    slice_axes: int,
+    slice_axes: List[int],
     box_size: u.Quantity,
     map_types: List[str],
     map_pix: int,
     save_dir: str,
     map_name_append: str = "",
-    downsample: bool = False,
-    downsample_factor: float = None,
     overwrite: bool = False,
-    swmr: bool = False,
     method: str = None,
     n_ngb: int = 30,
     num_files_to_save: int = 50,

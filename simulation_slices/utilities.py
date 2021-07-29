@@ -14,6 +14,32 @@ import numpy as np
 LoggerType = Union[logging.Logger, DagsterLogManager]
 
 
+def get_logger(log_dir: str, fname: str, level: str = "INFO") -> logging.Logger:
+    log_fname = f"{log_dir}/{fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.log"
+
+    if level.lower() == "info":
+        level = logging.INFO
+    elif level.lower() == "debug":
+        level = logging.DEBUG
+    elif level.lower() == "warning":
+        level = logging.WARNING
+    elif level.lower() == "critical":
+        level = logging.CRITICAL
+
+    logging.basicConfig(
+        filename=log_fname,
+        filemode="w",
+        format="%(asctime)s - %(name)s [%(levelname)s] %(funcName)s - %(message)s",
+        level=level,
+        force=True,
+    )
+    # ensure that we have different loggers for each simulation and snapshot
+    # in multiprocessing, PID can be the same across snapshots and sim_idx
+    logger = logging.getLogger(f"{os.getpid()}")
+
+    return logger
+
+
 def on_queue(queue, func, *args, **kwargs):
     res = time_this(func, pid=True)(*args, **kwargs)
     queue.put([os.getpid(), res])
@@ -201,63 +227,6 @@ def curve_to_coord_ids(curve_ids, coord_shape):
         coord_ids[:, dim] = coord_ids[:, dim] // dim_factor[dim]
 
     return coord_ids
-
-
-def get_subvolume_ranges(
-    box_size: u.Quantity,
-    n_divides: List[int],
-    n_sub: int = 100,
-    curve_ids: List[int] = None,
-):
-    """Divide simulation of box_size into n_divides along axes,
-    choose n_sub volumes.
-
-    Parameters
-    ----------
-    box_size : astropy.units.Quantity
-        box size
-    n_divides : int or (3,) int array-like
-        number of divisions of L along each dimension
-    n_sub : int
-        number of subvolume ranges to return
-    curve_ids : array-like or None
-        choice of curve_ids to get ranges for
-
-    Returns
-    -------
-    coord_ranges : (n_sub, 3, 2) astropy.units.Quantity
-        coordinate range for each n_sub
-    curve_ids : (n_sub,) array-like
-        unique space-filling curve id for each subvolume
-    """
-    n_divides = np.atleast_1d(n_divides).reshape(-1)
-    delta_L = box_size / n_divides
-
-    if n_divides.shape[0] == 1:
-        n_divides = np.repeat(n_divides, 3)
-
-    if n_divides.shape[0] != 3:
-        raise ValueError("need n_divides for 3 dimensions.")
-
-    if curve_ids is not None:
-        coord_ids = curve_to_coord_ids(curve_ids=curve_ids, coord_shape=n_divides)
-        coord_ranges = np.zeros((len(curve_ids), 3, 2), dtype=float) * delta_L.unit
-
-    else:
-        # we want non-overlapping subvolumes
-        all_coord_ids = arrays_to_coords(*[np.arange(0, ndiv) for ndiv in n_divides])
-        chosen_ids = np.random.choice(all_coord_ids.shape[0], replace=False, size=n_sub)
-
-        coord_ids = all_coord_ids[chosen_ids]
-        curve_ids = coord_ids_to_curve(coord_ids, n_divides)
-        coord_ranges = np.zeros((n_sub, 3, 2), dtype=float) * delta_L.unit
-
-
-    for idx, coord_id in enumerate(coord_ids):
-        coord_range = np.array([coord_id * delta_L, (coord_id + 1) * delta_L]).T
-        coord_ranges[idx] = coord_range * delta_L.unit
-
-    return coord_ranges, curve_ids
 
 
 def time_this(pid=False, logger=None):

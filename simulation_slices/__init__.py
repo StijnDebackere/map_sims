@@ -23,29 +23,21 @@ class Config(object):
         self.sim_dirs = config["sims"]["sim_dirs"]
         self.sim_suite = config["sims"]["sim_suite"]
         self.snapshots = config["sims"]["snapshots"]
+        self.slice_axes = config["sims"].get("slice_axes", None)
         self.ptypes = config["sims"]["ptypes"]
         self.box_sizes = config["sims"]["box_sizes"] * u.Unit(
             config["sims"]["box_sizes_units"]
         )
 
         # optional setup
+        self.iterate_files = config["setup"]["iterate_files"]
+        self.scramble_files = config["setup"]["scramble_files"]
         self.swmr = config["setup"].get("swmr", False)
         self.logging = config["setup"].get("logging", False)
         if self.logging:
             self.log_dir = config["setup"]["log_dir"]
             self.log_level = config["setup"]["log_level"]
             self.log_name_append = config["setup"].get("log_name_append", "")
-
-        # optional slice info
-        if "slices" in config.keys():
-            self.num_slices = config["slices"].get("num_slices", None)
-            self.slice_axes = config["slices"].get("slice_axes", None)
-            self.slice_dir = config["slices"].get("save_dir", None)
-            self.slice_downsample = config["slices"].get("slice_downsample", False)
-            self.downsample_factor = config["slices"].get("slice_downsample_factor", None)
-            if self.slice_downsample and self.downsample_factor is not None:
-                if self.downsample_factor <= 0. or self.downsample_factor >= 1:
-                    raise ValueError(f"{self.downsample_factor=} should be in range (0, 1).")
 
         # optional info for save_coords
         if "coords" in config.keys():
@@ -81,14 +73,14 @@ class Config(object):
             self.map_pix = config["maps"]["map_pix"]
 
             self.map_full = config["maps"].get("map_full", False)
+            self.map_thickness = np.atleast_1d(config["maps"]["map_thickness"]) * u.Unit(
+                config["maps"]["map_units"]
+            )
+
             if not self.map_full:
                 self.map_size = config["maps"]["map_size"] * u.Unit(config["maps"]["map_units"])
-                self.map_thickness = np.atleast_1d(config["maps"]["map_thickness"]) * u.Unit(
-                    config["maps"]["map_units"]
-                )
             else:
                 self.map_size = self.box_sizes
-                self.map_thickness = self.box_sizes
 
             self.n_ngb = config["maps"].get("n_ngb", None)
             if getattr(self, "coords_dir", None) is None:

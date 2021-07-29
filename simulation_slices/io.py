@@ -1,201 +1,279 @@
+from typing import Any, Tuple
+import logging
 import sys
-import warnings
 
 import astropy.units as u
-import numpy as np
 import h5py
 
-import simulation_slices.utilities as util
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+    ]
+)
 
 
-def create_hdf5(
+def to_schema(
+    value: Any,
+) -> Tuple[Any, dict]:
+    """Convert value to a type that can be saved to hdf5, with necessary
+    attributes to reconstruct the default type."""
+    if isinstance(value, u.Quantity):
+        val = value.value
+        attrs = {
+            "instance": str(u.Quantity),
+            "unit": str(value.unit),
+        }
+    elif value is None:
+        val = "NULL"
+        attrs = {
+            "instance": str(None),
+        }
+    else:
+        # try simply saving
+        val = value
+        attrs = {
+            "instance": str(type(value)),
+        }
+
+    return val, attrs
+
+
+def from_schema(
+    value: Any,
+    attrs: dict
+) -> Any:
+    """Convert value saved to hdf5 according to schema, to the known
+    type."""
+    if attrs["instance"] == str(u.Quantity):
+        val = value * u.Unit(str(attrs["unit"]))
+
+    elif attrs["instance"] == str(None):
+        val = None
+
+    else:
+        val = value
+
+    return val
+
+
+def write_to_hdf5(
+    h5file: h5py.File,
+    path: str,
+    value: Any,
+    overwrite: bool,
+) -> None:
+    """Save value to h5file[path] following our hdf5 schema."""
+    val, attrs = to_schema(value=value)
+
+    # check whether path exists and check whether to overwrite
+    if path in h5file:
+        if isinstance(h5file[path], h5py.Dataset):
+            if not overwrite:
+                logging.warn(f"{path} is already a Dataset in {h5file.filename}, skipping")
+            else:
+                logging.warn(f"{path} is already a Dataset in {h5file.filename}, overwriting")
+                del h5file[path]
+                h5file[path] = val
+                for k, v in attrs.items():
+                    h5file[path].attrs[k] = v
+
+        elif isinstance(h5file[path], h5py.Group):
+            if not overwrite:
+                logging.warn(f"{path} is already a Group in {h5file.filename}, skipping")
+            else:
+                logging.warn(f"{path} is already a Group in {h5file.filename}, overwriting")
+                del h5file[path]
+                h5file[path] = val
+                for k, v in attrs.items():
+                    h5file[path].attrs[k] = v
+
+        else:
+            # should not get here...
+            breakpoint()
+
+    # add path to h5file
+    else:
+        # initial path could already be in
+        base_path = "/".join(path.split("/")[:-1])
+        if base_path in h5file and isinstance(h5file[base_path], h5py.Dataset):
+            if not overwrite:
+                logging.warn(f"{base_path} is already a Dataset in {h5file.filename}, skipping")
+            else:
+                logging.warn(f"{base_path} is already a Dataset in {h5file.filename}, overwriting")
+                del h5file[base_path]
+                h5file[path] = val
+        else:
+            try:
+                h5file[path] = val
+                for k, v in attrs.items():
+                    h5file[path].attrs[k] = v
+            except (TypeError, OSError) as e:
+                breakpoint()
+
+    return
+
+
+def read_from_hdf5(
+    h5file: h5py.File,
+    path: str,
+) -> Any:
+    """Read value from h5file[path] following our hdf5 schema."""
+    if not isinstance(h5file[path], h5py.Dataset):
+        raise ValueError(f"{path} should be a h5py.Dataset, not {type(h5file[path])}")
+
+    value = h5file[path][()]
+    attrs = {k: v for k, v in h5file[path].attrs.items()}
+    val = from_schema(value=value, attrs=attrs)
+
+    return val
+
+
+def recursively_save_dict_hdf5(
+    data: dict,
+    h5file: h5py.File,
+    path: str,
+    overwrite: bool,
+) -> None:
+    """Extract data recursively into h5file.
+
+    Parameters
+    ----------
+    data : dict
+        data at path
+    h5file : h5py.File
+        hdf5 file to save data to
+    path : str
+        current path position in h5file
+    overwrite : bool
+        overwrite existing Groups and Datasets
+
+    """
+    for key, val in data.items():
+        new_path = f"{path}/{key}"
+        if type(val) is dict:
+            recursively_save_dict_hdf5(h5file=h5file, path=new_path, data=val, overwrite=overwrite)
+        else:
+            write_to_hdf5(h5file=h5file, path=new_path, value=val, overwrite=overwrite)
+
+
+def recursively_fill_dict_hdf5(
+    h5file: h5py.File,
+    path: str = "/",
+):
+    """Extract h5file recursively.
+
+    Parameters
+    ----------
+    h5file : h5py.File
+        hdf5 file to load data from
+    path : str
+        current path position in h5file
+
+    Returns
+    -------
+    data : dict
+        extracted dict at path
+
+    """
+    data = {}
+
+    for key, val in h5file[path].items():
+        new_path = f"{path.rstrip('/')}/{key}"
+        if isinstance(val, h5py.Group):
+            data[key] = recursively_fill_dict_hdf5(
+                h5file=h5file,
+                path=new_path,
+            )
+        elif isinstance(val, h5py.Dataset):
+            breakpoint()
+            data[key] = read_from_hdf5(h5file=h5file, path=new_path)
+        else:
+            # don't know how we would end up here, best to debug...
+            breakpoint()
+
+    return data
+
+
+def dict_to_hdf5(
     fname: str,
-    layout: dict,
-    close: bool = False,
+    data: dict,
+    attrs: dict = None,
     overwrite: bool = False,
-    swmr: bool = False,
-) -> h5py.File:
-    """Create an hdf5 file with layout given by dictionary
+) -> None:
+    """Convert a possibly nested dict to a hdf5 file.
 
     Parameters
     ----------
     fname : str
-        filename
-    layout : dict
-        - 'attrs' : dict
-            - 'attr' : value
-        - 'dsets' : dict
-            - 'dset' : dict
-                Either:
-                - 'shape' : tuple
-                - 'maxshape' : tuple
-                - 'dtype' : dtype
-                - 'attrs' : dict
-                    - 'attr' : value
-                Or:
-                - 'data': array-like
-                - 'attrs' : dict
-                    - 'attr' : value
-    close : bool
-        return closed file
+        filename to save data to
+    data : dict
+        possibly nested dictionary, also possibly containing astropy.units.Quantity objects
+    attrs : dict, optional
+        non-nested dict with metadata attributes to save to fname
+        WARNING: if included as key in data, it will be popped!
     overwrite : bool
-        overwrite dsets if present in fname
-    swmr : bool
-        return file in single write multiple read mode
+        overwrite existing Datasets/Groups if fname already exists
+
+    """
+    # attributes are either passed as kwarg or in data
+    if attrs is None:
+        if "attrs" in data.keys():
+            logging.warn(f"popping attrs from data keys")
+            attrs = data.pop("attrs")
+        else:
+            attrs = {}
+    else:
+        if "attrs" in data.keys():
+            raise ValueError(f"attrs both included in data and as kwarg, choose one")
+
+    with h5py.File(fname, mode="a") as f:
+        for k, v in attrs.items():
+            f.attrs[k] = v
+
+        recursively_save_dict_hdf5(h5file=f, path="", data=data, overwrite=overwrite)
+
+
+def hdf5_to_dict(fname: str) -> dict:
+    """Load an hdf5 file into a nested dict, possibly containing
+    astropy.units.Quantity objects.
+
+    Parameters
+    ----------
+    fname : str
+        filename to load data from
 
     Returns
     -------
-    h5file : hdf5 file
-        (closed) file with given layout
+    data : dict
+        groups and datasets from fname
+
     """
-    fname = util.check_path(fname)
-    if overwrite:
-        # truncate file if overwriting
-        mode = "w"
-    else:
-        if swmr:
-            raise ValueError("cannot enable swmr and not overwrite.")
-        mode = "a"
+    with h5py.File(fname, "r") as f:
+        data = recursively_fill_dict_hdf5(h5file=f, path="/")
+        if "attrs" in data.keys():
+            raise ValueError("attrs is a reserved key for loading hdf5 attributes")
 
-    if swmr:
-        libver = "v110"
-    else:
-        libver = "earliest"
+        data["attrs"] = {k: v for k, v in f.attrs.items()}
 
-    # create hdf5 file and generate the required datasets
-    h5file = h5py.File(str(fname), mode=mode, libver=libver)
+    return data
 
-    for attr, val in layout["attrs"].items():
-        if attr not in h5file.attrs.keys():
-            # attr not yet in h5file
-            h5file.attrs[attr] = val
+
+def merge_dicts(a, b):
+    """Merge possibly nested dictionaries a and b. For matching keys, a
+    takes precedence."""
+    for key, val in a.items():
+        if type(val) == dict:
+            if key in b and type(b[key] == dict):
+                merge_dicts(a[key], b[key])
         else:
-            # attr already in file but does not match
-            if attr == "units":
-                if u.Unit(val) != u.Unit(h5file.attrs[attr]):
-                    raise ValueError(f"{attr=} does not match")
-            else:
-                if val != h5file.attrs[attr]:
-                    raise ValueError(f"{attr=} does not match")
+            if key in b:
+                logging.warn(f"{key=} in b already in a, skipping")
 
-    for dset, val in layout["dsets"].items():
-        # dset already contains data
-        if "data" in val.keys():
-            # dset already in h5file, cannot overwrite
-            if dset in h5file.keys():
-                if type(val["data"]) is u.Quantity:
-                    if np.allclose(val["data"].to_value(h5file[dset].attrs["units"]), h5file[dset][()]):
-                        # load dset since we will compare its attributes later
-                        ds = h5file[dset]
-                    else:
-                        raise ValueError(f"{dset=} does not match")
-                else:
-                    if np.allclose(val["data"], h5file[dset][()]):
-                        # val can still be unit, but loaded from hdf5 file
-                        if "units" in h5file[dset].attrs.keys():
-                            if "units" not in val["attrs"].keys():
-                                raise ValueError(f"{dset=} is not astropy.units.Quantity")
-                            elif u.Unit(val["attrs"]["units"]) != u.Unit(h5file[dset].attrs["units"]):
-                                raise ValueError(f"{dset=} units do not match")
+    for key, val in b.items():
+        if not key in a:
+            a[key] = val
 
-                        # load dset since we will compare its attributes later
-                        ds = h5file[dset]
-                    else:
-                        raise ValueError(f"{dset=} does not match")
-
-            # dset not yet in h5file
-            else:
-                if type(val["data"]) is u.Quantity:
-                    ds = h5file.create_dataset(
-                        dset,
-                        data=val["data"].value,
-                    )
-                    ds.attrs["units"] = str(val["data"].unit)
-
-                else:
-                    ds = h5file.create_dataset(
-                        dset,
-                        data=val["data"],
-                    )
-
-        # dset only contains shape information of data to be added
-        else:
-            # dset already in h5file, cannot overwrite
-            if dset in h5file.keys():
-                if h5file[dset].shape != val["shape"]:
-                    raise ValueError(f"{dset=} shape={val['shape']} does not match {h5file[dset].shape}")
-                if h5file[dset].maxshape != val["maxshape"]:
-                    raise ValueError(f"{dset=} maxshape={val['maxshape']} does not match {h5file[dset].maxshape}")
-                if h5file[dset].dtype != val["dtype"]:
-                    raise ValueError(f"{dset=} dtype={val['dtype']} does not match {h5file[dset].dtype}")
-                # load dset since we will compare its attributes later
-                ds = h5file[dset]
-
-            # dset not yet in h5file
-            else:
-                ds = h5file.create_dataset(
-                    dset,
-                    shape=val["shape"],
-                    dtype=val["dtype"],
-                    maxshape=val["maxshape"],
-                )
-
-        if "attrs" in val.keys():
-            for attr, attr_val in val["attrs"].items():
-                # add attr if not present
-                if attr not in ds.attrs.keys():
-                    if type(attr_val) is u.Quantity:
-                        ds.attrs[attr] = attr_val.value
-                        ds.attrs[f"{attr}_units"] = str(attr_val.unit)
-                    elif callable(attr_val):
-                        ds.attrs[attr] = attr_val.__name__
-                    else:
-                        try:
-                            ds.attrs[attr] = attr_val
-                        except TypeError:
-                            warnings.warn(f"{attr=} with type={type(attr_val)} cannot be saved, skipping.")
-                # attr present, cannot overwrite
-                else:
-                    if attr == "units":
-                        check_equal = (u.Unit(attr_val) == u.Unit(ds.attrs[attr]))
-                    else:
-                        try:
-                            check_equal = (attr_val == ds.attrs[attr])
-                        except ValueError:
-                            check_equal = np.all(attr_val, ds.attrs[attr])
-
-                    if not check_equal:
-                        breakpoint()
-                        raise ValueError(f"{attr=} does not match for dset={val}")
-    if close:
-        h5file.close()
-    else:
-        if swmr:
-            h5file.swmr_mode = True
-
-    return h5file
-
-
-def add_to_hdf5(h5file: h5py.File, dataset: str, vals: u.Quantity, axis: int):
-    """Append vals to axis of dataset of h5file."""
-    try:
-        dset = h5file[dataset]
-    except KeyError:
-        breakpoint()
-        raise KeyError(f"{dataset} not found in {h5file.filename}")
-
-    if "units" in dset.attrs.keys():
-        unit = dset.attrs["units"]
-
-    else:
-        unit = str(vals.unit)
-        dset.attrs["units"] = unit
-
-    dset.resize(dset.shape[axis] + vals.shape[axis], axis=axis)
-    sl = [slice(None)] * len(dset.shape)
-    sl[axis] = slice(dset.shape[axis] - vals.shape[axis], dset.shape[axis])
-    sl = tuple(sl)
-
-    dset[sl] = vals.to_value(unit)
-    if h5file.swmr_mode:
-        dset.flush()
+    return a

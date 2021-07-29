@@ -10,7 +10,7 @@ def pix_dist(a, b, b_is_pix=True):
 
     Parameters
     ----------
-    a : (2, n) array-like
+    a : (n, 2) array-like
         list of pixels
     b : (2, ) array-like
         pixel offset
@@ -25,18 +25,17 @@ def pix_dist(a, b, b_is_pix=True):
     else:
         b = b.astype(float)
 
-    if len(a.shape) > 2 or a.shape[0] != 2:
-        raise ValueError("a should be broadcastable to shape (2, n)")
+    if len(a.shape) > 2 or a.shape[1] != 2:
+        raise ValueError("a should be broadcastable to shape (n, 2)")
     if len(b.shape) > 1 or b.shape[0] != 2:
         raise ValueError("b should be broadcastable to shape (2,)")
 
-    b = b.reshape(2, 1)
     # distance between pixels
     if b_is_pix:
-        dist = np.linalg.norm(a - b, axis=0)
+        dist = np.linalg.norm(a - b, axis=1)
     # b can be partial pixel coordinate -> need to convert a to pixel centers
     else:
-        dist = np.linalg.norm(a + 0.5 - b, axis=0)
+        dist = np.linalg.norm(a + 0.5 - b, axis=1)
 
     return dist
 
@@ -75,10 +74,10 @@ def pixel_to_pix_id(pixels, map_pix):
 
     Parameters
     ----------
-    pixels : (2, n) array-like
+    pixels : (n, 2) array-like
         (i, j) pixel values corresponding to each pix_id
-        row 0: i values
-        row 1: j values
+        column 0: i values
+        column 1: j values
     map_pix : int
         side length of map
 
@@ -90,12 +89,12 @@ def pixel_to_pix_id(pixels, map_pix):
 
     """
     pixels = np.atleast_2d(pixels)
-    if pixels.shape[0] != 2 or len(pixels.shape) != 2:
-        raise ValueError('pixels should be (2, n) array')
+    if pixels.shape[1] != 2 or len(pixels.shape) != 2:
+        raise ValueError('pixels should be (n, 2) array')
     if ((pixels >= map_pix) | (pixels < 0)).any():
         raise ValueError('mapping is only 1-1 for i,j in [0, map_pix)')
 
-    return pixels[0] * map_pix + pixels[1]
+    return pixels[:, 0] * map_pix + pixels[:, 1]
 
 
 def pix_id_array_to_map(pix_id_array):
@@ -128,6 +127,34 @@ def pix_id_array_to_map(pix_id_array):
     return mp
 
 
+def get_coords_slices(
+    coords: u.Quantity, slice_size: u.Quantity, slice_axis: int
+) -> np.ndarray:
+    """For the list of periodic coords recover the slice_idx for the given
+    slice_size and slice_axis.
+
+    Parameters
+    ----------
+    coords : (n, ndim) astropy.units.Quantity
+        coordinates
+    slice_size : astropy.units.Quantity
+        size of the slices
+    slice_axis : int
+        dimension along which box has been sliced
+
+    Returns
+    -------
+    slice_idx : (N,) array
+        index of the slice for each coordinate
+
+    """
+    if len(coords.shape) > 2 or coords.shape[1] > 3:
+        raise ValueError("coords should be of shape (n, ndim)")
+
+    slice_idx = (coords[:, slice_axis] // slice_size).astype(int)
+    return slice_idx
+
+
 def min_diff(x, y, box_size):
     """Return the minimum vector x - y, taking into account periodic boundary
     conditions.
@@ -140,7 +167,6 @@ def min_diff(x, y, box_size):
         coordinates
     box_size : float
         periodicity of the box
-    axis : axis along which dimensions are defined
 
     Returns
     -------
@@ -151,7 +177,7 @@ def min_diff(x, y, box_size):
     return np.mod(x - y + box_size / 2, box_size) - box_size / 2
 
 
-def dist(x, y, box_size, axis=0):
+def dist(x, y, box_size, axis=-1):
     """Return the distance |x-y| taking into account periodic boundary
     conditions.
 
@@ -163,7 +189,8 @@ def dist(x, y, box_size, axis=0):
         coordinates
     box_size : float
         periodicity of the box
-    axis : axis along which dimensions are defined
+    axis : int
+        axis along which dimensions are defined
 
     Returns
     -------
@@ -195,7 +222,7 @@ def distances_from_centers(
 
     Returns
     -------
-    pix_grid : (2, n) array-like
+    pix_grid : (n, 2) array-like
         x, y pixel coordinates for the pixel grid
     distances : (n, ) array-like
         physical distance from center for each pixel in pix_grid
@@ -212,9 +239,8 @@ def distances_from_centers(
 
     # row 0: pix_x_range, row 1: pix_y_range
     pix_ranges = np.linspace(lower, lower + n_pix - 1, n_pix).T
-    # arrays_to_coords returns (n, 2) array => transpose to
-    # (2, n) array with row 0: x and row 1: y
-    pix_grid = util.arrays_to_coords(*pix_ranges).astype(int).T
+    # column 0: pix_x, column 1: pix_y
+    pix_grid = util.arrays_to_coords(*pix_ranges).astype(int)
 
     distances = pix_dist(a=pix_grid, b=center / pix_size, b_is_pix=False)
     return (pix_grid % map_pix), distances * pix_size

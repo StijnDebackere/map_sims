@@ -7,6 +7,7 @@ import numpy as np
 import simulation_slices.maps.interpolate_tables as interp_tables
 import simulation_slices.utilities as util
 
+
 def particles_masses(masses, **kwargs):
     """Return the list of masses."""
     return masses
@@ -64,40 +65,32 @@ def particles_lum_x_ray(
     )
 
 
-# for the given map type, define the properties to be loaded from the slice file
-# dsets and attrs will be extracted into a dictionary
+# for the given map type, define the properties to be loaded from the simulation
+# properties and attributes will be extracted into a dictionary
 MAP_TYPES_OPTIONS = {
-    # no way to work this in cleanly with our remaining tools...
-    # combining different keys in func() for coords_to_map is not
-    # straigthforward: simply add up all other masses to get this
-    # one
-    # 'total_mass': {
-    #     'keys': ['gas', 'dm', 'stars', 'bh'],
-    #     'dsets': ['coords', 'masses'],
-    # },
     "gas_mass": {
         "ptype": "gas",
-        "dsets": ["coordinates", "masses"],
+        "properties": ["coordinates", "masses"],
         "func": particles_masses,
     },
     "dm_mass": {
         "ptype": "dm",
-        "dsets": ["coordinates", "masses"],
+        "properties": ["coordinates", "masses"],
         "func": particles_masses,
     },
     "stars_mass": {
         "ptype": "stars",
-        "dsets": ["coordinates", "masses"],
+        "properties": ["coordinates", "masses"],
         "func": particles_masses,
     },
     "bh_mass": {
         "ptype": "bh",
-        "dsets": ["coordinates", "masses"],
+        "properties": ["coordinates", "masses"],
         "func": particles_masses,
     },
     "y_sz": {
         "ptype": "gas",
-        "dsets": [
+        "properties": [
             "coordinates",
             "masses",
             "temperatures",
@@ -105,12 +98,12 @@ MAP_TYPES_OPTIONS = {
             "smoothed_hydrogen",
             "smoothed_helium",
         ],
-        "attrs": ["z", "h"],
+        "attributes": ["z", "h"],
         "func": particles_y_sz,
     },
     "lum_x_ray": {
         "ptype": "gas",
-        "dsets": [
+        "properties": [
             "coordinates",
             "masses",
             "temperatures",
@@ -125,7 +118,7 @@ MAP_TYPES_OPTIONS = {
             "smoothed_silicon",
             "smoothed_iron",
         ],
-        "attrs": ["z", "h"],
+        "attributes": ["z", "h"],
         "func": particles_lum_x_ray,
     },
 }
@@ -145,8 +138,8 @@ def map_types_to_properties(map_types: List[str]) -> dict:
         dictionary with all required datasets to be loaded for each ptype
         for the given map_types
         - ptype:
-            - dsets: [dsets]
-            - attrs: [attrs]
+            - properties: [properties]
+            - attributes: [attributes]
     """
     if type(map_types) is not list:
         map_types = [map_types]
@@ -162,15 +155,15 @@ def map_types_to_properties(map_types: List[str]) -> dict:
         # create or add to ptype for map_type
         results[ptype] = results.get(ptype, {})
 
-        dsets = MAP_TYPES_OPTIONS[map_type].get("dsets", [])
-        attrs = MAP_TYPES_OPTIONS[map_type].get("attrs", [])
+        properties = MAP_TYPES_OPTIONS[map_type].get("properties", [])
+        attributes = MAP_TYPES_OPTIONS[map_type].get("attributes", [])
 
-        # only append dsets that are not in results[key] already
-        results[ptype]["dsets"] = list(
-            set(dsets) | set(results[ptype].get("dsets", []))
+        # only append properties that are not in results[key] already
+        results[ptype]["properties"] = list(
+            set(properties) | set(results[ptype].get("properties", []))
         )
-        results[ptype]["attrs"] = list(
-            set(attrs) | set(results[ptype].get("attrs", []))
+        results[ptype]["attributes"] = list(
+            set(attributes) | set(results[ptype].get("attributes", []))
         )
 
     return results
