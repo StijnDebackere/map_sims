@@ -19,6 +19,13 @@ parser.add_argument(
     type=int,
     help="snapshot to evaluate",
 )
+parser.add_argument(
+    "-i", "--sim_ids",
+    default=[0],
+    type=int,
+    nargs="+",
+    help="simulation ids for config_filename to load",
+)
 parser.add_argument("--project-full", dest="project_full", action="store_true")
 parser.add_argument("--no-project-full", dest="project_full", action="store_false")
 parser.set_defaults(project_full=True)
@@ -34,10 +41,11 @@ if __name__ == "__main__":
     # ensure that mira_titan does not claim all resources
     os.environ["OMP_NUM_THREADS"] = "1"
     snapshot = dict_args["snapshot"]
+    sim_ids = dict_args["sim_ids"]
 
     cfg = tasks.Config(dict_args["config_filename"])
     slice_axes = cfg.slice_axes
-    for sim_idx in range(cfg._n_sims):
+    for sim_idx in sim_ids:
         if dict_args["save_coords"]:
             results_coords = tasks.save_coords(
                 sim_idx=sim_idx,
