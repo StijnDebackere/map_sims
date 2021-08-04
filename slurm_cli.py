@@ -33,8 +33,10 @@ if __name__ == "__main__":
 
     # ensure that mira_titan does not claim all resources
     os.environ["OMP_NUM_THREADS"] = "1"
-    cfg = tasks.Config(dict_args["config_filename"])
     snapshot = dict_args["snapshot"]
+
+    cfg = tasks.Config(dict_args["config_filename"])
+    slice_axes = cfg.slice_axes
     for sim_idx in range(cfg._n_sims):
         if dict_args["save_coords"]:
             results_coords = tasks.save_coords(
@@ -44,9 +46,12 @@ if __name__ == "__main__":
                 logger=None,
             )
         if dict_args["project_full"]:
-            results_full = tasks.map_full(
-                sim_idx=sim_idx,
-                config=cfg,
-                snapshot=snapshot,
-                logger=None,
-            )
+            for slice_axis in slice_axes:
+                results_full = tasks.map_full(
+                    sim_idx=sim_idx,
+                    config=cfg,
+                    snapshot=snapshot,
+                    slice_axis=slice_axis,
+                    logger=None,
+                    rng=None,
+                )
