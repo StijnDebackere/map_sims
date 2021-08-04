@@ -58,7 +58,7 @@ def read_particle_properties(
         )
         props["coordinates"] = np.vstack(
             [data["x"], data["y"], data["z"]]
-        ).to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
+        ).T.to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
 
     if "masses" in valid_props:
         props["masses"] = np.atleast_1d(sim_info.simulation_info["snap"]["m_p"]).to(
