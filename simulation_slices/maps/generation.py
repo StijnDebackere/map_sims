@@ -479,11 +479,14 @@ def save_map_full(
                     **props,
                 )
 
+                if logger:
+                    tf1 = time.time()
+                    logger.info(f"{idx/len(file_nums)}: {file_num=} {dl=} calculated in {tf1 - tl0:.2f}s")
+
                 # save result
                 result = {
                     map_type: {
                         idx_l: mp,
-                        "map_thickness": dl,
                     }
                 }
                 # only add result, should not be part of map_name yet so safe to overwrite
