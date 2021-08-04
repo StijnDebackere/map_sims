@@ -413,13 +413,6 @@ def save_map_full(
     if verbose:
         file_nums = tqdm(file_nums, desc="Iterating snapshots")
 
-    results = {
-        map_type: np.zeros(
-            (map_thickness.shape[0], map_pix, map_pix),
-            dtype=float,
-        ) for map_type in map_types
-    }
-
     # extract all necessary properties for each map_type
     for idx, file_num in enumerate(file_nums):
         for map_type in map_types:
@@ -485,35 +478,29 @@ def save_map_full(
                     logger=logger,
                     **props,
                 )
-                if not isinstance(results[map_type], u.Quantity):
-                    results[map_type] *= mp.unit
 
-                results[map_type][idx_l] += mp
+                # save result
+                result = {
+                    map_type: {
+                        idx_l: mp,
+                        "map_thickness": dl,
+                    }
+                }
+                # only add result, should not be part of map_name yet so safe to overwrite
+                io.dict_to_hdf5(
+                    fname=map_name,
+                    data=result,
+                    overwrite=True,
+                )
 
                 if logger:
                     tl1 = time.time()
-                    logger.info(f"{idx/len(file_nums)}: {file_num=} {dl=} finished in {tl1 - tl0:.2f}s")
+                    logger.info(f"{idx/len(file_nums)}: {file_num=} {dl=} saved in {tl1 - tl0:.2f}s")
 
             if logger:
                 tm1 = time.time()
                 logger.info(f"{idx/len(file_nums)}: {file_num=} {map_type=} finished in {tm1 - tm0:.2f}s")
 
-        if idx % save_num_files == 0:
-            # incrementally overwrite data as progressing along files
-            io.dict_to_hdf5(
-                fname=map_name,
-                data=results,
-                overwrite=True,
-            )
-            if logger:
-                logger.info(f"Saved {map_types=} up to {idx=}")
-
-    # save final results
-    io.dict_to_hdf5(
-        fname=map_name,
-        data=results,
-        overwrite=True,
-    )
     if logger:
         t1 = time.time()
         logger.info(
