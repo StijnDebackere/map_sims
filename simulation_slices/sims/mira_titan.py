@@ -178,9 +178,9 @@ def save_halo_coords_file(
     ).T.to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
     com = np.vstack(
         [
-            group_data["sod_halo_com_x"],
-            group_data["sod_halo_com_y"],
-            group_data["sod_halo_com_z"],
+            group_data["sod_halo_mean_x"],
+            group_data["sod_halo_mean_y"],
+            group_data["sod_halo_mean_z"],
         ]
     ).T.to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))
 
