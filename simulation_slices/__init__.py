@@ -50,6 +50,7 @@ class Config(object):
             self.coords_name = config["coords"].get("coords_name", None)
             self.coord_dset = config["coords"].get("coord_dset", None)
 
+            self.halo_sample = config["coords"].get("halo_sample", None)
             self.mass_dset = config["coords"].get("mass_dset", None)
             self.extra_dsets = config["coords"].get("extra_dsets", None)
             if "sample_haloes_bins" in config["coords"].keys():

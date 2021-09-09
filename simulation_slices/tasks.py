@@ -67,6 +67,7 @@ def save_coords(
     save_dir = config.coords_paths[sim_idx]
     coords_fname = config.coords_name
     sample_haloes_bins = config.sample_haloes_bins
+    halo_sample = config.halo_sample
     log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_coords{config.log_name_append}"
 
     if logger is None and config.logging:
@@ -112,6 +113,7 @@ def save_coords(
                 save_dir=save_dir,
                 coords_fname=coords_fname,
                 sample_haloes_bins=sample_haloes_bins,
+                halo_sample=halo_sample,
                 logger=logger,
             )
         except Exception as e:
