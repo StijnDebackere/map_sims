@@ -230,6 +230,7 @@ def save_halo_coords_file(
                 selection.append(np.random.choice(ids, size=n, replace=False))
         selection = np.concatenate(selection)
 
+    # make relaxation cut
     halo_sample_options = ["relaxed", "unrelaxed"]
     if halo_sample is not None:
         if halo_sample == "relaxed":
@@ -258,7 +259,6 @@ def save_halo_coords_file(
             "description": "File with selected coordinates for maps.",
         },
         "coordinates": coordinates,
-        "mass_dset": mass_dset,
         "mass_range": mass_range,
         "group_ids": group_ids,
         "masses": masses,
@@ -266,6 +266,10 @@ def save_halo_coords_file(
 
     if coord_range is not None:
         data["coord_range"] = coord_range
+    if halo_sample is not None:
+        data["halo_sample"] = halo_sample
+    if sample_haloes_bins is not None:
+        data["sample_haloes_bins"] = sample_haloes_bins
 
     io.dict_to_hdf5(fname=fname, data=data, overwrite=True)
     return str(fname)
