@@ -101,6 +101,44 @@ def read_simulation_attributes(
     return attrs
 
 
+def read_simulation_cosmo(
+    sim_dir: str,
+    snapshot: int,
+    cosmo: List[str] = None,
+    ptype: str = None,
+    file_num: int = None,
+    verbose: bool = False,
+) -> dict:
+    cosmo_options = [
+        "omega_m",
+        "omega_b",
+        "omega_nu",
+        "sigma_8",
+        "A_s",
+        "h",
+        "n_s",
+        "w0",
+        "wa",
+    ]
+    if cosmo is None:
+        return {}
+
+    valid_cosmo = set(cosmo) & set(cosmo_options)
+    if not valid_cosmo:
+        ValueError(f"{cosmo.keys()=} should be in {cosmo_options=}")
+
+    sim = sim_dir.split("/")[-1]
+    cosmo_prms = mira_titan.cosmo.cosmo_dict(
+        cosmo=mira_titan.cosmo.GRID_COSMO[sim]
+    )
+
+    prms = {}
+    for prm in valid_cosmo:
+        prms[prm] = cosmo_prms[prm]
+
+    return prms
+
+
 def save_halo_coords_file(
     sim_dir: str,
     snapshot: int,
@@ -161,9 +199,9 @@ def save_halo_coords_file(
             "sod_halo_min_pot_x",
             "sod_halo_min_pot_y",
             "sod_halo_min_pot_z",
-            "sod_halo_com_x",
-            "sod_halo_com_y",
-            "sod_halo_com_z",
+            "sod_halo_mean_x",
+            "sod_halo_mean_y",
+            "sod_halo_mean_z",
             "fof_halo_tag",
         ],
     )
