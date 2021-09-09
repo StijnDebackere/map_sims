@@ -24,5 +24,10 @@ export N_STOP=$3
 # run the cli script to generate the full maps for each snapshot for all sims
 # snapshots are passed through SBATCH array
 eval srun -n1 --exclusive python map_sims_cli.py $BATCH_FILE ${SLURM_ARRAY_TASK_ID} \
-     -i {$N_START..$N_STOP} &
+     -i {$N_START..$N_STOP} \
+     --save-coords \
+     # --no-save-coords \
+     # --project-full \
+     --no-project-full \
+     &
 wait
