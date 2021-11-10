@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from pathlib import Path
 import subprocess
 
 import numpy as np
@@ -50,9 +51,10 @@ def main():
         else:
             n_stop = (i + 1) * n_ids_per_task
         # sbatch_single argument INCLUDES final idx
-        subprocess.run(
-            ["sbatch", "sbatch_single.sh", cfg_fname, n_start, n_stop - 1, f"--array={','.join(snapshots)}", f"--ntasks=len(snapshots)"]
-        )
+        subprocess.run([
+            "sbatch", "sbatch_single.sh", cfg_fname, str(n_start), str(n_stop - 1),
+            f"--array={','.join(snapshots)}", f"--ntasks={len(snapshots)}"
+        ])
 
         print(f"Submitted sbatch run for {cfg_fname=} and sims={','.join(sims[n_start:n_stop])} and snapshots={','.join(snapshots)}")
 
