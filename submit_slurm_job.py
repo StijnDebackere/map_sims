@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from os import environ
 from pathlib import Path
 import subprocess
 
@@ -52,17 +53,20 @@ def main():
         else:
             n_stop = (i + 1) * n_ids_per_task
         # sbatch_single argument INCLUDES final idx
-        subprocess.run([
-            "sbatch", "sbatch_single.sh", cfg_fname, str(n_start), str(n_stop - 1),
-            f"--array={','.join(snapshots)}",
-            f"--ntasks={len(snapshots)}",
-            "--partition=all",
-            "--cpus-per-task=1",
-            "--mem-per-cpu=30000",
-            f"--output={cfg_path}/batch-%j.out",
-            f"--error={cfg_path}/batch-%j.err",
-            "--time=30-00:00:00",
-        ])
+        subprocess.run(
+            [
+                "sbatch", "sbatch_single.sh", cfg_fname, str(n_start), str(n_stop - 1),
+                f"--array={','.join(snapshots)}",
+                f"--ntasks={len(snapshots)}",
+                "--partition=all",
+                "--cpus-per-task=1",
+                "--mem-per-cpu=30000",
+                f"--output={cfg_path}/batch-%j.out",
+                f"--error={cfg_path}/batch-%j.err",
+                "--time=30-00:00:00",
+            ],
+            env=environ,
+        )
 
         print(f"Submitted sbatch run for {cfg_fname=} and sims={','.join(sims[n_start:n_stop])} and snapshots={','.join(snapshots)}")
 
