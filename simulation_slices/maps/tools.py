@@ -127,6 +127,26 @@ def pix_id_array_to_map(pix_id_array):
     return mp
 
 
+def shift_image(image: u.Quantity, shift: u.Quantity, pix_size: u.Quantity) -> u.Quantity:
+    """Shift image center by vector shift along each axis."""
+    dims = image.shape
+
+    indices = np.meshgrid(
+        *[
+            np.fft.fftfreq(n, d=pix_size)
+            for n in dims
+        ],
+        indexing="ij",
+    )
+
+    # align dimension axis with shift
+    k_i = np.swapaxes(2 * np.pi * np.array(indices), axis1=0, axis2=-1) / pix_size.unit
+    image_fft_shift = np.fft.fft2(np.fft.ifftshift(image)) * np.exp(1j * np.sum(k_i * shift, axis=-1))
+
+    image_shifted = np.fft.fftshift(np.abs(np.fft.ifft2(image_fft_shift)))
+    return image_shifted
+
+
 def get_coords_slices(
     coords: u.Quantity, slice_size: u.Quantity, slice_axis: int
 ) -> np.ndarray:
@@ -250,7 +270,65 @@ def distances_from_centers(
     return (pix_grid % map_pix), distances * pix_size
 
 
-def slice_around_center(
+def slice_map_around_center(
+    center: u.Quantity,
+    map_full: u.Quantity,
+    map_cutout_size: u.Quantity,
+    pix_size: u.Quantity,
+    box_size: u.Quantity,
+    shift_to_center: bool = False,
+) -> Tuple[u.Quantity, u.Quantity]:
+    """Slice (map_cutout_size, map_cutout_size) region from map_full with
+    pix_size around center (in units of pix_size).
+
+    Parameters
+    ----------
+    center: astropy.units.Quantity
+        coordinate to center on
+    map_full : astropy.units.Quantity
+        map to slice from
+    map_cutout_size : astropy.units.Quantity
+        size of cutout region
+    pix_size : astropy.units.Quantity
+        size of each pixel in map_full
+    box_size : astropy.units.Quantity
+        periodic side length
+    shift_to_center : bool
+        perform subpixel shift to fully center on center
+
+    Returns
+    -------
+    map_cutout : (map_cutout_size // pix_size, map_cutout_size // pix_size) astropy.units.Quantity
+        map_full cutout around center
+    dists : (map_cutout_size // pix_size, map_cutout_size // pix_size) astropy.units.Quantity
+        distance from pixel to center
+    """
+    if shift_to_center:
+        shift = (center / pix_size % 1) * pix_size
+        map_cutout_extra = map_cutout_size + np.max(shift)
+    else:
+        map_cutout_extra = 1 * map_cutout_size
+
+    pix, dists = distances_from_centers(
+        center=center, map_size=map_cutout_extra, pix_size=pix_size, box_size=box_size
+    )
+    n_pix = int(pix.shape[0] ** 0.5)
+    map_cutout = map_full[pix[:, 0], pix[:, 1]].reshape(n_pix, n_pix)
+
+    if shift_to_center:
+        # shifts are always sub-pixel => distances
+        map_cutout = shift_image(map_cutout, shift=shift, pix_size=pix_size)
+        map_cutout = map_cutout[1:-1, 1:-1]
+        dists = pix_dist(
+            a=tools.arrays_to_coords(*[np.arange(i) for i in map_cutout.shape]),
+            b=np.array(map_cutout.shape) / 2,
+            b_is_pix=True,
+        ) * pix_size
+
+    return map_cutout, dists.reshape(map_cutout.shape)
+
+
+def get_slice_around_center(
     center: u.Quantity,
     distance: u.Quantity,
     box_size: u.Quantity,
