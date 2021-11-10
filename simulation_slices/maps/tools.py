@@ -223,7 +223,7 @@ def distances_from_centers(
     Returns
     -------
     pix_grid : (n, 2) array-like
-        x, y pixel coordinates for the pixel grid
+        x, y pixel coordinates for the pixel grid with center at n // 2
     distances : (n, ) array-like
         physical distance from center for each pixel in pix_grid
     """
@@ -233,12 +233,16 @@ def distances_from_centers(
     if len(center.shape) > 1:
         raise ValueError("center should be 1D array")
 
-    # lower (x, y) for pixel grid => these can exceed box_size since we only care about distances around center
-    n_pix = np.ceil(map_size / pix_size).astype(int)
-    lower = np.floor((center - 0.5 * map_size) / pix_size).astype(int)
+    # find the pixel containing the central coordinate
+    pix_center = np.floor(center / pix_size).astype(int)
+    n_pix_half = np.ceil(0.5 * map_size / pix_size).astype(int)
 
     # row 0: pix_x_range, row 1: pix_y_range
-    pix_ranges = np.linspace(lower, lower + n_pix - 1, n_pix).T
+    pix_ranges = np.linspace(
+        pix_center - n_pix_half,
+        pix_center + n_pix_half,
+        2 * n_pix_half + 1,
+    ).T
     # column 0: pix_x, column 1: pix_y
     pix_grid = util.arrays_to_coords(*pix_ranges).astype(int)
 
