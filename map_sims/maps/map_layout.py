@@ -4,7 +4,7 @@ from typing import List
 import astropy.units as u
 import h5py
 
-import simulation_slices.io as io
+import map_sims.io as io
 
 MAP_TYPE_DESCRIPTIONS = {
     "gas_mass": "Projected gas mass.",

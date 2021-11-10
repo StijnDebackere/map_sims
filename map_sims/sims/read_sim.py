@@ -3,9 +3,9 @@ from typing import List, Optional, Tuple
 import astropy.units as u
 import numpy as np
 
-import simulation_slices.sims.bahamas as bahamas
-import simulation_slices.sims.mira_titan as mira_titan
-import simulation_slices.utilities as util
+import map_sims.sims.bahamas as bahamas
+import map_sims.sims.mira_titan as mira_titan
+import map_sims.utilities as util
 
 
 SIM_SUITE_OPTIONS = ["bahamas", "miratitan"]
@@ -21,8 +21,6 @@ def snap_to_z(
 
     if sim_suite.lower() == "bahamas":
         z = np.array([bahamas.SNAP_TO_Z[snap] for snap in snapshots])
-
-    elif sim_suite.lower() == "miratitan":
         z = np.array([bahamas.STEP_TO_Z[snap] for snap in snapshots])
 
     return z
@@ -101,5 +99,33 @@ def read_simulation_attributes(
         attrs = bahamas.read_simulation_attributes(**kwargs)
     elif sim_suite.lower() == "miratitan":
         attrs = mira_titan.read_simulation_attributes(**kwargs)
+
+    return attrs
+
+
+def read_simulation_cosmo(
+    sim_suite: str,
+    sim_dir: str,
+    snapshot: int,
+    cosmo: List[str],
+    ptype: str = None,
+    file_num: int = None,
+    verbose: bool = False,
+) -> dict:
+    if sim_suite.lower() not in SIM_SUITE_OPTIONS:
+        raise ValueError(f"sim_suite should be in {SIM_SUITE_OPTIONS=}")
+
+    kwargs = {
+        "sim_dir": sim_dir,
+        "snapshot": snapshot,
+        "ptype": ptype,
+        "cosmo": cosmo,
+        "file_num": file_num,
+        "verbose": verbose,
+    }
+    if sim_suite.lower() == "bahamas":
+        attrs = bahamas.read_simulation_cosmo(**kwargs)
+    elif sim_suite.lower() == "miratitan":
+        attrs = mira_titan.read_simulation_cosmo(**kwargs)
 
     return attrs

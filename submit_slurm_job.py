@@ -7,7 +7,7 @@ import subprocess
 
 import numpy as np
 
-from simulation_slices import Config
+from map_sims import Config
 
 
 parser = argparse.ArgumentParser(

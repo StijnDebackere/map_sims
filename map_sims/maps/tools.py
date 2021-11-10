@@ -1,7 +1,7 @@
 import astropy.units as u
 import numpy as np
 
-import simulation_slices.utilities as util
+import map_sims.utilities as util
 
 
 def pix_dist(a, b, b_is_pix=True):

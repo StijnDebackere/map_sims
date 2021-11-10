@@ -8,13 +8,13 @@ import h5py
 import numpy as np
 from tqdm import tqdm
 
-import simulation_slices.io as io
-import simulation_slices.maps.tools as map_tools
-import simulation_slices.maps.generation as map_gen
-import simulation_slices.maps.interpolate_tables as interp_tables
-import simulation_slices.maps.map_layout as map_layout
-import simulation_slices.maps.observables as obs
-import simulation_slices.utilities as util
+import map_sims.io as io
+import map_sims.maps.tools as map_tools
+import map_sims.maps.generation as map_gen
+import map_sims.maps.interpolate_tables as interp_tables
+import map_sims.maps.map_layout as map_layout
+import map_sims.maps.observables as obs
+import map_sims.utilities as util
 
 
 # conversion between BAHAMAS particle types and expected ones
@@ -157,6 +157,44 @@ def read_simulation_attributes(
     return attrs
 
 
+def read_simulation_cosmo(
+    sim_dir: str,
+    snapshot: int,
+    cosmo: List[str] = None,
+    ptype: str = None,
+    file_num: int = None,
+    verbose: bool = False,
+) -> dict:
+    cosmo_options = [
+        "omega_m",
+        "omega_b",
+        "omega_nu",
+        "sigma_8",
+        "A_s",
+        "h",
+        "n_s",
+        "w0",
+        "wa",
+    ]
+    if cosmo is None:
+        return {}
+
+    valid_cosmo = set(cosmo) & set(cosmo_options)
+    if not valid_cosmo:
+        ValueError(f"{cosmo.keys()=} should be in {cosmo_options=}")
+
+    sim = sim_dir.split("/")[-1]
+    cosmo_prms = mira_titan.cosmo.cosmo_dict(
+        cosmo=mira_titan.cosmo.GRID_COSMO[sim]
+    )
+
+    prms = {}
+    for prm in valid_cosmo:
+        prms[prm] = cosmo_prms[prm]
+
+    return prms
+
+
 def save_halo_coords_file(
     sim_dir: str,
     snapshot: int,
@@ -167,6 +205,7 @@ def save_halo_coords_file(
     extra_dsets: List[str] = None,
     save_dir: Optional[str] = None,
     coords_fname: Optional[str] = "",
+    halo_sample: Optional[str] = None,
     verbose: Optional[bool] = False,
     sample_haloes_bins: Optional[dict] = None,
     logger: util.LoggerType = None,
@@ -266,6 +305,22 @@ def save_halo_coords_file(
             else:
                 selection.append(np.random.choice(ids, size=n, replace=False))
         selection = np.concatenate(selection)
+
+    halo_sample_options = ["relaxed", "unrelaxed"]
+    if halo_sample is not None:
+        if halo_sample == "relaxed":
+            # Neto+2007 relaxation criterion
+            relaxed = (
+                np.sqrt(np.sum((com - coordinates) ** 2, axis=-1)) / radii
+            ) < 0.07
+            selection = selection & relaxed
+        elif halo_sample == "unrelaxed":
+            unrelaxed = (
+                np.sqrt(np.sum((com - coordinates) ** 2, axis=-1)) / radii
+            ) >= 0.07
+            selection = selection & unrelaxed
+        else:
+            raise ValueError(f"{halo_sample=} not in {halo_sample_options=}")
 
     coordinates = coordinates[selection]
     masses = masses[selection]

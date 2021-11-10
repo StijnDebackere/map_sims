@@ -1,4 +1,4 @@
-name: simulation_slices
+name: map_sims
 channels:
   - anaconda
   - defaults

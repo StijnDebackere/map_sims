@@ -7,12 +7,12 @@ from numpy.random import Generator
 from scipy.spatial import KDTree
 from tqdm import tqdm
 
-import simulation_slices.io as io
-import simulation_slices.maps.map_layout as map_layout
-import simulation_slices.maps.observables as obs
-import simulation_slices.maps.tools as map_tools
-import simulation_slices.sims.read_sim as read_sim
-import simulation_slices.utilities as util
+import map_sims.io as io
+import map_sims.maps.map_layout as map_layout
+import map_sims.maps.observables as obs
+import map_sims.maps.tools as map_tools
+import map_sims.sims.read_sim as read_sim
+import map_sims.utilities as util
 
 
 def get_map_name(

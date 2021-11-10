@@ -14,8 +14,8 @@ from dagster.core.definitions.reconstructable import build_reconstructable_pipel
 from dagster.core.storage.fs_io_manager import fs_io_manager
 from numpy.random import SeedSequence, default_rng
 
-import simulation_slices.tasks as tasks
-from simulation_slices import Config
+import map_sims.tasks as tasks
+from map_sims import Config
 
 import dagster_solids as solids
 

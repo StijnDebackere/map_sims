@@ -4,7 +4,7 @@ import astropy.units as u
 import numpy as np
 import toml
 
-import simulation_slices.maps.observables as obs
+import map_sims.maps.observables as obs
 
 
 CONFIG_FILE = str(Path(__file__).parent / "batch.toml")

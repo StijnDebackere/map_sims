@@ -10,8 +10,8 @@ from mira_titan import MiraTitan
 import numpy as np
 from tqdm import tqdm
 
-import simulation_slices.io as io
-import simulation_slices.utilities as util
+import map_sims.io as io
+import map_sims.utilities as util
 
 
 STEP_TO_Z = {

@@ -4,7 +4,7 @@ from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 import numpy as np
 from plotting_tools.axes import set_spines_labels
 
-from simulation_slices import Config
+from map_sims import Config
 
 
 FIGURE_DIR = Config().figure_dir

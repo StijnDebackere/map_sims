@@ -8,7 +8,7 @@ from dagster import (
 )
 from dagster.core.storage.fs_io_manager import fs_io_manager
 
-from simulation_slices import Config
+from map_sims import Config
 
 import dagster_solids as solids
 

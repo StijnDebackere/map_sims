@@ -1,7 +1,7 @@
 import argparse
 import os
 
-import simulation_slices.tasks as tasks
+import map_sims.tasks as tasks
 
 
 parser = argparse.ArgumentParser(

@@ -4,8 +4,8 @@ import astropy.constants as c
 import astropy.units as u
 import numpy as np
 
-import simulation_slices.maps.interpolate_tables as interp_tables
-import simulation_slices.utilities as util
+import map_sims.maps.interpolate_tables as interp_tables
+import map_sims.utilities as util
 
 
 def particles_masses(masses, **kwargs):

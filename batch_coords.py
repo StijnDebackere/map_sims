@@ -4,9 +4,9 @@ import os
 
 import astropy.units as u
 import numpy as np
-import simulation_slices.utilities as util
-import simulation_slices.sims.bahamas as bahamas
-import simulation_slices.sims.mira_titan as mira_titan
+import map_sims.utilities as util
+import map_sims.sims.bahamas as bahamas
+import map_sims.sims.mira_titan as mira_titan
 
 
 parser = argparse.ArgumentParser(

@@ -10,11 +10,11 @@ import h5py
 import numpy as np
 from numpy.random import Generator
 
-from simulation_slices import Config
-import simulation_slices.utilities as util
-import simulation_slices.maps.generation as map_gen
-import simulation_slices.sims.bahamas as bahamas
-import simulation_slices.sims.mira_titan as mira_titan
+from map_sims import Config
+import map_sims.utilities as util
+import map_sims.maps.generation as map_gen
+import map_sims.sims.bahamas as bahamas
+import map_sims.sims.mira_titan as mira_titan
 
 
 def get_logger(sim_idx: int, snapshot: int, config: Config, fname: str) -> logging.Logger:

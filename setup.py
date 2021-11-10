@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="simulation_slices",
+    name="map_sims",
     version="0.0.1",
     author="Stijn Debackere",
     author_email="debackere@strw.leidenuniv.nl",
@@ -12,7 +12,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="",
-    packages=['simulation_slices'],
+    packages=['map_sims'],
     install_requires=[
         "astropy",
         "dagster",

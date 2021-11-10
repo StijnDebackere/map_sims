@@ -9,8 +9,8 @@ from dagster import (
     Nothing,
 )
 from numpy.random import Generator
-import simulation_slices.tasks as tasks
-from simulation_slices import Config
+import map_sims.tasks as tasks
+from map_sims import Config
 
 
 # inspired by https://stackoverflow.com/q/61330816/
