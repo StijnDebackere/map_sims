@@ -9,11 +9,6 @@ import numpy as np
 from tqdm import tqdm
 
 import map_sims.io as io
-import map_sims.maps.tools as map_tools
-import map_sims.maps.generation as map_gen
-import map_sims.maps.interpolate_tables as interp_tables
-import map_sims.maps.map_layout as map_layout
-import map_sims.maps.observables as obs
 import map_sims.utilities as util
 
 

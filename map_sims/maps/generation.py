@@ -10,7 +10,7 @@ from tqdm import tqdm
 import map_sims.io as io
 import map_sims.maps.map_layout as map_layout
 import map_sims.maps.observables as obs
-import map_sims.maps.tools as map_tools
+import map_sims.maps.operations as map_ops
 import map_sims.sims.read_sim as read_sim
 import map_sims.utilities as util
 
@@ -93,11 +93,11 @@ def coords_to_map_bin(
     # | x |
     # O---
     if map_center is not None:
-        map_origin = map_tools.min_diff(np.atleast_1d(map_center), map_size / 2, box_size)
+        map_origin = map_ops.min_diff(np.atleast_1d(map_center), map_size / 2, box_size)
 
         # compute the offsets w.r.t the map_origin, taking into account
         # periodic boundary conditions
-        coords_origin = map_tools.min_diff(coords, map_origin, box_size)
+        coords_origin = map_ops.min_diff(coords, map_origin, box_size)
     else:
         # assume coordinates are already with respect to origin
         coords_origin = coords
@@ -105,10 +105,10 @@ def coords_to_map_bin(
     if logger:
         t0 = time.time()
     # get the x and y values of the pixelated maps w.r.t. origin
-    x_pix = map_tools.get_coords_slices(
+    x_pix = map_ops.get_coords_slices(
         coords=coords_origin, slice_size=pix_size, slice_axis=0
     )
-    y_pix = map_tools.get_coords_slices(
+    y_pix = map_ops.get_coords_slices(
         coords=coords_origin, slice_size=pix_size, slice_axis=1
     )
     pixels = np.concatenate([x_pix[..., None], y_pix[..., None]], axis=-1)
@@ -118,7 +118,7 @@ def coords_to_map_bin(
 
     # map (i, j) pixels to 1D pixel id = i * num_pix + j for all the
     # pixels in the map
-    pix_ids = map_tools.pixel_to_pix_id(pixels[in_map], map_pix)
+    pix_ids = map_ops.pixel_to_pix_id(pixels[in_map], map_pix)
 
     # we will need to associate each function value to the correct pixel
     pix_sort_order = np.argsort(pix_ids)
@@ -182,7 +182,7 @@ def coords_to_map_bin(
     # reshape the array to the map we wanted
     # we get (i, j) array with x_pix along rows and y_pix along columns
     # ensure correct units
-    mapped = map_tools.pix_id_array_to_map(pixel_values) * func_values.unit
+    mapped = map_ops.pix_id_array_to_map(pixel_values) * func_values.unit
     return mapped
 
 
@@ -260,11 +260,11 @@ def coords_to_map_sph(
     # | x |
     # O---
     if map_center is not None:
-        map_origin = map_tools.min_diff(np.atleast_1d(map_center), 0.5 * map_size, box_size)
+        map_origin = map_ops.min_diff(np.atleast_1d(map_center), 0.5 * map_size, box_size)
 
         # compute the offsets w.r.t the map_origin, taking into account
         # periodic boundary conditions
-        coords_origin = map_tools.min_diff(coords, map_origin, box_size)
+        coords_origin = map_ops.min_diff(coords, map_origin, box_size)
     else:
         # assume coords already centered
         coords_origin = coords
