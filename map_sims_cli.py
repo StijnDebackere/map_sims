@@ -24,7 +24,7 @@ parser.add_argument(
     default=[0],
     type=int,
     nargs="+",
-    help="simulation ids for config_filename to load",
+    help="index of config_file.sim_dirs to load",
 )
 parser.add_argument("--project-full", dest="project_full", action="store_true")
 parser.add_argument("--no-project-full", dest="project_full", action="store_false")
@@ -44,12 +44,14 @@ if __name__ == "__main__":
     sim_ids = dict_args["sim_ids"]
 
     cfg = tasks.Config(dict_args["config_filename"])
+    sims = cfg.sim_dirs[sim_ids]
     slice_axes = cfg.slice_axes
 
-    print(f"Running {sim_ids=} with {dict_args['save_coords']=} and {dict_args['project_full']=}")
+
+    print(f"Running {sims=} with {dict_args['save_coords']=} and {dict_args['project_full']=}")
     for sim_idx in sim_ids:
         if dict_args["save_coords"]:
-            print(f"Saving coords for {sim_idx=} and {snapshot=} with {cfg.coords_name=}")
+            print(f"Saving coords for {sims[sim_idx]=} and {snapshot=} with {cfg.coords_name=}")
             results_coords = tasks.save_coords(
                 sim_idx=sim_idx,
                 snapshot=snapshot,
@@ -57,7 +59,7 @@ if __name__ == "__main__":
                 logger=None,
             )
         if dict_args["project_full"]:
-            print(f"Saving map_full for {sim_idx=} and {snapshot=} with {cfg.coords_name=}")
+            print(f"Saving map_full for {sims[sim_idx]=} and {snapshot=} with {cfg.coords_name=}")
             for slice_axis in slice_axes:
                 results_full = tasks.map_full(
                     sim_idx=sim_idx,
