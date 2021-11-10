@@ -44,9 +44,9 @@ if __name__ == "__main__":
     sim_ids = dict_args["sim_ids"]
 
     cfg = tasks.Config(dict_args["config_filename"])
-    sims = cfg.sim_dirs[sim_ids]
+    # convert to strings instead of PosixPaths
+    sims = [str(d) for d in cfg.sim_dirs]
     slice_axes = cfg.slice_axes
-
 
     print(f"Running {sims=} with {dict_args['save_coords']=} and {dict_args['project_full']=}")
     for sim_idx in sim_ids:

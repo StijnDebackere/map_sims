@@ -55,7 +55,8 @@ def main():
         # sbatch_single argument INCLUDES final idx
         subprocess.run(
             [
-                "sbatch", "sbatch_single.sh", cfg_fname, str(n_start), str(n_stop - 1),
+                "sbatch",
+                # need to pass these arguments first
                 f"--array={','.join(snapshots)}",
                 f"--ntasks={len(snapshots)}",
                 "--partition=all",
@@ -64,6 +65,7 @@ def main():
                 f"--output={cfg_path}/batch-%j.out",
                 f"--error={cfg_path}/batch-%j.err",
                 "--time=30-00:00:00",
+                "sbatch_single.sh", cfg_fname, str(n_start), str(n_stop - 1),
             ],
             env=environ,
         )
