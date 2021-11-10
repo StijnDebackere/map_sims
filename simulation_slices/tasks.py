@@ -179,7 +179,7 @@ def map_full(
     map_overwrite = config.map_overwrite
     map_method = config.map_method
 
-    map_thickness = config.map_thickness
+    map_thickness = config.map_thickness[sim_idx]
     map_types = config.map_types[sim_idx]
     map_pix = config.map_pix
     n_ngb = config.n_ngb
