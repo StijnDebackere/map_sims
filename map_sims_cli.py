@@ -58,6 +58,7 @@ if __name__ == "__main__":
                 config=cfg,
                 logger=None,
             )
+            print(f"Finished coords")
         if dict_args["project_full"]:
             print(f"Saving map_full for {sims[sim_idx]=} and {snapshot=} with {cfg.coords_name=}")
             for slice_axis in slice_axes:
@@ -69,3 +70,4 @@ if __name__ == "__main__":
                     logger=None,
                     rng=None,
                 )
+                print("Finished {slice_axis=}")
