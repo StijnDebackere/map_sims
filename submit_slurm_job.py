@@ -33,6 +33,7 @@ def main():
     n_tasks = args["n_tasks"]
 
     cfg_fname = args["config"]
+    cfg_path = str(Path(cfg_fname).parent)
     cfg = Config(cfg_fname)
     snapshots = cfg.snapshots
     if not np.all(snapshots == snapshots[0]):
@@ -53,7 +54,14 @@ def main():
         # sbatch_single argument INCLUDES final idx
         subprocess.run([
             "sbatch", "sbatch_single.sh", cfg_fname, str(n_start), str(n_stop - 1),
-            f"--array={','.join(snapshots)}", f"--ntasks={len(snapshots)}"
+            f"--array={','.join(snapshots)}",
+            f"--ntasks={len(snapshots)}",
+            "--partition=all",
+            "--cpus-per-task=1",
+            "--mem-per-cpu=30000",
+            f"--output={cfg_path}/batch-%j.out",
+            f"--error={cfg_path}/batch-%j.err",
+            "--time=30-00:00:00",
         ])
 
         print(f"Submitted sbatch run for {cfg_fname=} and sims={','.join(sims[n_start:n_stop])} and snapshots={','.join(snapshots)}")

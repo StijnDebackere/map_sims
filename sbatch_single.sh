@@ -1,14 +1,5 @@
 #!/bin/bash -l
 
-#SBATCH -J batch-%j.job
-#SBATCH --partition=all
-#SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=30000
-#SBATCH --output=batch-%j.out
-#SBATCH --error=batch-%j.err
-#SBATCH --time=30-00:00:00
-
-
 echo "Activating conda environment simulation slices"
 conda activate simulation_slices
 
