@@ -352,7 +352,7 @@ def save_map_full(
     """
     t0 = time.time()
     # go from thick to thin
-    map_thickness = np.sort(map_thickness)[::-1]
+    map_thickness = np.sort(np.atleast_1d(map_thickness))[::-1]
     no_slice_axis = np.arange(0, 3) != slice_axis
 
     # ensure that save_dir exists
