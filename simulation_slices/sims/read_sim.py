@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple
 
 import astropy.units as u
+import numpy as np
 
 import simulation_slices.sims.bahamas as bahamas
 import simulation_slices.sims.mira_titan as mira_titan
@@ -8,6 +9,24 @@ import simulation_slices.utilities as util
 
 
 SIM_SUITE_OPTIONS = ["bahamas", "miratitan"]
+
+
+def snap_to_z(
+        sim_suit: str,
+        snapshots: np.ndarray,
+) -> List[float]:
+    snapshots = np.atleast_1d(snapshots)
+    if sim_suite.lower() not in SIM_SUITE_OPTIONS:
+        raise ValueError(f"sim_suite should be in {SIM_SUITE_OPTIONS=}")
+
+    if sim_suite.lower() == "bahamas":
+        z = np.array([bahamas.SNAP_TO_Z[snap] for snap in snapshots])
+
+    elif sim_suite.lower() == "miratitan":
+        z = np.array([bahamas.STEP_TO_Z[snap] for snap in snapshots])
+
+    return z
+
 
 def get_file_nums(
     sim_suite: str,

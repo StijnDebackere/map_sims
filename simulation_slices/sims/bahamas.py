@@ -48,6 +48,21 @@ ATTRS_TO_BAHAMAS = {
     "z": "Header/Redshift",
     "h": "Header/HubbleParam",
 }
+SNAP_TO_Z = {
+    22: 2.0,
+    23: 1.75,
+    24: 1.5,
+    25: 1.25,
+    26: 1.0,
+    27: 0.75,
+    28: 0.5,
+    29: 0.375,
+    30: 0.25,
+    31: 0.125,
+    32: 0.0,
+}
+
+
 
 
 def get_file_nums(
