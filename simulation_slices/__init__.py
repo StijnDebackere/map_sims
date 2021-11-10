@@ -25,7 +25,7 @@ class Config(object):
         self.snapshots = config["sims"]["snapshots"]
         self.slice_axes = config["sims"].get("slice_axes", None)
         self.ptypes = config["sims"]["ptypes"]
-        self.box_sizes = config["sims"]["box_sizes"] * u.Unit(
+        self.box_sizes = np.atleast_1d(config["sims"]["box_sizes"]) * u.Unit(
             config["sims"]["box_sizes_units"]
         )
 
@@ -74,14 +74,12 @@ class Config(object):
             self.map_pix = config["maps"]["map_pix"]
 
             self.map_full = config["maps"].get("map_full", False)
-            self.map_thickness = np.atleast_1d(config["maps"]["map_thickness"]) * u.Unit(
-                config["maps"]["map_units"]
-            )
 
             if not self.map_full:
-                self.map_size = config["maps"]["map_size"] * u.Unit(config["maps"]["map_units"])
+                map_units = u.Unit(config["maps"]["map_units"])
+                self.set_map_thickness(config["maps"]["map_thickness"], map_units)
             else:
-                self.map_size = self.box_sizes
+                self.set_map_thickness(self.box_sizes)
 
             self.n_ngb = config["maps"].get("n_ngb", None)
             if getattr(self, "coords_dir", None) is None:
@@ -190,15 +188,17 @@ class Config(object):
 
     @snapshots.setter
     def snapshots(self, val):
-        if type(val) is list:
+        # possibly give different number of snapshots for each sim
+        if isinstance(val, list):
             # snapshots specified for each sim
             if len(val) == self._n_sims:
                 self._snapshots = [np.atleast_1d(v) for v in val]
-            # multiple snapshots for each sim
+            # same number of snapshots for each sim
             else:
                 self._snapshots = np.tile(np.atleast_1d(val)[None], (self._n_sims, 1))
 
-        elif type(val) is int:
+        elif isinstance(val, int):
+            # single snapshot for all sims
             self._snapshots = np.ones((self._n_sims, 1), dtype=int) * val
         else:
             raise ValueError("snapshots should be list or int")
@@ -209,7 +209,7 @@ class Config(object):
 
     @ptypes.setter
     def ptypes(self, val):
-        if type(val) is list:
+        if isinstance(val, list):
             # ptypes specified for each sim
             if len(val) == self._n_sims:
                 self._ptypes = [np.atleast_1d(v) for v in val]
@@ -217,7 +217,7 @@ class Config(object):
             else:
                 self._ptypes = np.tile(np.atleast_1d(val)[None], (self._n_sims, 1))
 
-        elif type(val) is str:
+        elif isinstance(val, str):
             self._ptypes = np.chararray(
                 (self._n_sims, 1), itemsize=len(val), unicode=True
             )
@@ -232,17 +232,64 @@ class Config(object):
 
     @box_sizes.setter
     def box_sizes(self, val):
-        if type(val) is list:
+        if isinstance(val, u.Quantity):
             # box_sizes specified for each sim
-            if len(val) == self._n_sims:
-                self._box_sizes = [np.atleast_1d(v) for v in val]
+            if len(val.shape) == 1:
+                if val.shape[0] == self._n_sims:
+                    self._box_sizes = val
+                elif val.shape[0] == 1:
+                    self._box_sizes = np.ones(self._n_sims) * val
+                else:
+                    raise ValueError("can only have 1 box_size per sim")
             else:
                 raise ValueError("can only have 1 box_size per sim")
-
-        elif type(val) is u.Quantity:
-            self._box_sizes = np.ones(self._n_sims) * val
         else:
-            raise ValueError("box_sizes should be list or astropy.units.Quantity")
+            raise ValueError("box_sizes should be astropy.units.Quantity")
+
+    @property
+    def map_thickness(self):
+        return self._map_thickness
+
+    def set_map_thickness(self, val, units=None):
+        if isinstance(val, list):
+            if units is None:
+                raise ValueError("need to pass units if map_thickness is list")
+            else:
+                if not isinstance(units, u.Unit):
+                    raise ValueError("units should be astropy.units.Unit")
+
+            if len(val) == self._n_sims:
+                # possibly varying length lists for each simulation
+                self._map_thickness = [np.atleast_1d(v) * units for v in val]
+            elif len(val) == 1:
+                # single value for each simulation
+                self._map_thickness = np.ones(self._n_sims) * val * units
+            else:
+                # same lengths for each simulation
+                if not any([isinstance(v, list) for v in val]):
+                    self._map_thickness = np.tile(np.atleast_1d(val)[None] * units, (self._n_sims, 1))
+                else:
+                    raise ValueError("need to specify map_thickness for each simulation")
+
+        elif isinstance(val, u.Quantity):
+            # map_thickness specified for each sim
+            if len(val.shape) == 1:
+                if val.shape[0] == self._n_sims:
+                    self._map_thickness = val
+                elif val.shape[0] == 1:
+                    self._map_thickness = np.ones(self._n_sims) * val
+                else:
+                    raise ValueError("need to specify single map_thickness or map_thickness for all sims.")
+
+            elif len(val.shape) == 2:
+                if val.shape[0] == self._n_sims:
+                    self._map_thickness = val
+                else:
+                    raise ValueError(f"map_thickness.shape[0]={val.shape[0]} does not match n_sims={self._n_sims}.")
+            else:
+                raise ValueError("can only have 1 map_thickness per sim")
+        else:
+            raise ValueError("map_thickness should be list of lists or astropy.units.Quantity")
 
     @property
     def num_slices(self):
@@ -251,7 +298,7 @@ class Config(object):
     @num_slices.setter
     def num_slices(self, val):
         if val is not None:
-            if type(val) is not int:
+            if isinstance(val, int):
                 raise ValueError("num_slices should be int or None")
         self._num_slices = val
 
@@ -273,7 +320,7 @@ class Config(object):
     @map_types.setter
     def map_types(self, val):
         valid_map_types = obs.MAP_TYPES_OPTIONS.keys()
-        if type(val) is list:
+        if isinstance(val, list):
             # map_types specified for each sim
             if len(val) == self._n_sims:
                 try:
@@ -303,7 +350,7 @@ class Config(object):
                     np.atleast_1d(val)[None], (self._n_sims, 1)
                 ).tolist()
 
-        elif type(val) is str:
+        elif isinstance(val, str):
             self._map_types = np.asarray([val] * self._n_sims).tolist()
         else:
             raise ValueError("map_types should be list or string")
