@@ -10,7 +10,7 @@ from dagster.core.storage.fs_io_manager import fs_io_manager
 
 from map_sims import Config
 
-import dagster_solids as solids
+import .solids as solids
 
 
 @pipeline(

@@ -14,10 +14,10 @@ from dagster.core.definitions.reconstructable import build_reconstructable_pipel
 from dagster.core.storage.fs_io_manager import fs_io_manager
 from numpy.random import SeedSequence, default_rng
 
+import maps_sims.dagster.solids as solids
 import map_sims.tasks as tasks
 from map_sims import Config
 
-import dagster_solids as solids
 
 
 parser = argparse.ArgumentParser(

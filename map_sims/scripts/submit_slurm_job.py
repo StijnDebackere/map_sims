@@ -28,7 +28,6 @@ parser.add_argument(
 )
 
 
-
 def main():
     args = vars(parser.parse_args())
     n_tasks = args["n_tasks"]

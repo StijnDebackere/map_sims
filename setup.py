@@ -13,6 +13,15 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="",
     packages=['map_sims'],
+    entry_points={
+        "console_scripts": [
+            "batch_coords = map_sims.scripts.batch_coords",
+            "dagster_map_sims = map_sims.scripts.dagster_cli",
+            "extract_masses = map_sims.scripts.extract_masses",
+            "map_sims = map_sims.scripts.map_sims_cli",
+            "submit_slurm = map_sims.scripts.submit_slurm_job",
+        ],
+    },
     install_requires=[
         "astropy",
         "dagster",
