@@ -1,3 +1,9 @@
+"""Command-line tool to start multiple slurm sbatch runs invoking map_sims_cli.py
+
+Usage: python map_sims_slurm_run.py --config /path/to/batch_file --n-tasks 8
+
+batch_file should follow the map_sims.Config toml format.
+"""
 #!/usr/bin/env python3
 
 import argparse
@@ -11,7 +17,7 @@ from map_sims import Config
 
 
 parser = argparse.ArgumentParser(
-    description="Submit multiple sbatch runs using sbatch_single.sh"
+    description="Submit multiple sbatch runs using map_sims_sbatch.sh"
 )
 parser.add_argument(
     "--config",
@@ -64,7 +70,7 @@ def main():
                 f"--output={cfg_path}/batch-%j.out",
                 f"--error={cfg_path}/batch-%j.err",
                 "--time=30-00:00:00",
-                "sbatch_single.sh", cfg_fname, str(n_start), str(n_stop - 1),
+                "map_sims_sbatch.sh", cfg_fname, str(n_start), str(n_stop - 1),
             ],
             env=environ,
         )

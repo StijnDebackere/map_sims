@@ -5,7 +5,7 @@ import map_sims.tasks as tasks
 
 
 parser = argparse.ArgumentParser(
-    description="Run a dagster pipeline from config_filename."
+    description="Run a simple pipeline for sim_ids and snapshot in config_filename."
 )
 parser.add_argument(
     "config_filename",

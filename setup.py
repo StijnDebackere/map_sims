@@ -15,11 +15,11 @@ setuptools.setup(
     packages=['map_sims'],
     entry_points={
         "console_scripts": [
-            "batch_coords = map_sims.scripts.batch_coords",
-            "dagster_map_sims = map_sims.scripts.dagster_cli",
-            "extract_masses = map_sims.scripts.extract_masses",
-            "map_sims = map_sims.scripts.map_sims_cli",
-            "submit_slurm = map_sims.scripts.submit_slurm_job",
+            "batch_coords = map_sims.maps.scripts.batch_coords",
+            "dagster_map_sims = map_sims.maps.scripts.map_sims_dagster_cli",
+            "extract_masses = map_sims.maps.scripts.extract_masses",
+            "map_sims = map_sims.maps.scripts.map_sims_cli",
+            "slurm_map_sims = map_sims.maps.scripts.map_sims_slurm_run",
         ],
     },
     install_requires=[

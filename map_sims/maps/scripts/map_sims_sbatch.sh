@@ -1,5 +1,8 @@
 #!/bin/bash -l
 
+# --- CALLED FROM map_sims_slurm_run.py ---
+# Batch call to map_sims_cli.py for a subset N_START-N_STOP of the
+# simulations in BATCH_FILE
 echo "Activating conda environment simulation slices"
 conda activate simulation_slices
 
