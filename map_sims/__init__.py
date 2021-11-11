@@ -40,21 +40,21 @@ class Config(object):
             self.log_name_append = config["setup"].get("log_name_append", "")
 
         # optional info for save_coords
-        if "coords" in config.keys():
-            mass_units = config["coords"].get("mass_units", None)
-            log10_mass_range = config["coords"].get("log10_mass_range", None)
+        if "info" in config.keys():
+            mass_units = config["info"].get("mass_units", None)
+            log10_mass_range = config["info"].get("log10_mass_range", None)
             if log10_mass_range is not None:
                 self.mass_range = 10**np.array(log10_mass_range) * u.Unit(mass_units)
 
-            self.info_dir = config["coords"].get("info_dir", None)
-            self.info_name = config["coords"].get("info_name", None)
-            self.coord_dset = config["coords"].get("coord_dset", None)
+            self.info_dir = config["info"].get("info_dir", None)
+            self.info_name = config["info"].get("info_name", None)
+            self.coord_dset = config["info"].get("coord_dset", None)
 
-            self.halo_sample = config["coords"].get("halo_sample", None)
-            self.mass_dset = config["coords"].get("mass_dset", None)
-            self.extra_dsets = config["coords"].get("extra_dsets", None)
-            if "sample_haloes_bins" in config["coords"].keys():
-                sample_haloes_bins = config["coords"]["sample_haloes_bins"]
+            self.halo_sample = config["info"].get("halo_sample", None)
+            self.mass_dset = config["info"].get("mass_dset", None)
+            self.extra_dsets = config["info"].get("extra_dsets", None)
+            if "sample_haloes_bins" in config["info"].keys():
+                sample_haloes_bins = config["info"o]["sample_haloes_bins"]
                 n_bins = sample_haloes_bins["n_bins"]
                 self.sample_haloes_bins = {
                     "mass_bin_edges": 10**np.linspace(

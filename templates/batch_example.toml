@@ -1,0 +1,59 @@
+[setup]
+# only relevent if not using dagster, keep log info in log_dir
+logging = true
+log_dir = "/path/to/log_dir/"
+log_level = "INFO"
+
+# in case of Gadget sims, iterate over snapshot files to save memory
+iterate_files = false
+
+# randomly select files to read to prevent multiple access to the same file
+scramble_files = false
+
+# write hdf5 files in single-write-multiple-read mode 
+swmr = false
+
+[sims]
+base_dir = "/path/to/base_sim_dir/"
+sim_dirs = ['M001', 'M002', 'M003']
+sim_suite = "MiraTitan"
+# scalar or list of lists for each sim_dir
+snapshots = [163, 189, 247, 300, 347, 401, 453, 499]
+slice_axes = [0, 1, 2]
+box_sizes = 2100
+box_sizes_units = "Mpc"
+# any list of 'gas', 'dm', 'stars', 'bh'
+ptypes = ['dm']
+
+# only provide this if no info files saved manually
+[info]
+# overrides maps.info_name if provided
+# info saved under
+# {info_dir}/{sim_dir}/{info_name}_{snapshot:03d}.hdf5
+info_dir = "/path/to/info_dir/"
+info_name = "clusters_m200c_gt_13p5"
+# masses are read in in M_sun
+log10_mass_range = [13.5, 16.0]
+mass_units = "Msun"
+
+[maps]
+# maps are saved as
+# {save_dir}/{sim_dir}/{slice_axis}_maps_{map_method}_{info_name}{map_name_append}_{snapshot:03d}.hdf5
+save_dir = "/path/to/save_dir/"
+map_name_append = ""
+map_overwrite = true
+# bin - perform histogram binning
+# sph - perform sph smoothing on particles
+map_method = "bin"
+# any of "dm_mass", "gas_mass", "stars_mass", "bh_mass", "y_sz", "lum_x_ray"
+# can be nested list per sim or one list for each sim
+map_types = ['dm_mass']
+
+# details of the map, all in units of box size
+map_pix = 21000
+# if false, map_thickness can be list of different map_thickness for single sim
+map_full = true
+# only read if map_full = false
+# (possibly nested) list of map_thickness slices for each sim
+map_thickness = [[2100, 1000], 2100, 2100]
+map_units = "Mpc"
