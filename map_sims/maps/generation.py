@@ -8,7 +8,6 @@ from scipy.spatial import KDTree
 from tqdm import tqdm
 
 import map_sims.io as io
-import map_sims.maps.map_layout as map_layout
 import map_sims.maps.observables as obs
 import map_sims.maps.operations as map_ops
 import map_sims.sims.read_sim as read_sim

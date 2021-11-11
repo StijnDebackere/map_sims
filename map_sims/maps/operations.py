@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import astropy.units as u
 import numpy as np
 
