@@ -20,24 +20,24 @@ def get_map_name(
     snapshot: int,
     method: str,
     map_thickness: u.Quantity,
-    coords_name: str = "",
+    info_name: str = "",
     map_name_append: str = "",
     downsample: bool = False,
     downsample_factor: float = None,
     full: bool = False,
 ) -> str:
     save_dir = util.check_path(save_dir)
-    if coords_name != "":
-        coords_name = f"_{coords_name}"
+    if info_name != "":
+        info_name = f"_{info_name}"
     if downsample:
-        coords_name = f"{coords_name}_downsample_{str(downsample_factor).replace('.', 'p')}"
+        info_name = f"{info_name}_downsample_{str(downsample_factor).replace('.', 'p')}"
     if map_thickness.size > 1:
         map_name_append = f"{map_name_append}_nslices_{map_thickness.shape[0]}"
     if full:
         map_name_append = f"{map_name_append}_full"
 
     map_name = (
-        f"{save_dir}/{slice_axis}_maps_{method}{coords_name}"
+        f"{save_dir}/{slice_axis}_maps_{method}{info_name}"
         f"{map_name_append}_{snapshot:03d}.hdf5"
     )
     return map_name
@@ -366,7 +366,7 @@ def save_map_full(
         snapshot=snapshot,
         method=method,
         map_thickness=map_thickness,
-        coords_name="",
+        info_name="",
         map_name_append=map_name_append,
         downsample=False,
         downsample_factor=None,

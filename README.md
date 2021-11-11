@@ -29,7 +29,7 @@ slices (in units of the box size of the simulation).
 ## `maps`
 We can generate 2D projected maps from the slice files that we save.
 To create a map, the coordinates to center on need to be specified.
-These are expected in the `{coords_dir}/{sim_dir}/` directory. They
+These are expected in the `{info_dir}/{sim_dir}/` directory. They
 should be saved in `hdf5` file format with a main dataset
 `coordinates` that contains the map centers. Any secondary information
 about the map locations, such as halo masses etc., can be saved in the

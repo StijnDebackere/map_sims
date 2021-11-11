@@ -188,7 +188,6 @@ def recursively_fill_dict_hdf5(
                 path=new_path,
             )
         elif isinstance(val, h5py.Dataset):
-            breakpoint()
             data[key] = read_from_hdf5(h5file=h5file, path=new_path)
         else:
             # don't know how we would end up here, best to debug...

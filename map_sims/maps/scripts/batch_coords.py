@@ -18,7 +18,7 @@ parser.add_argument(
     help="directory to save coordinate files to",
 )
 parser.add_argument(
-    "coords_base_fname",
+    "info_base_fname",
     type=str,
     help="base filename of saved coordinates",
 )
@@ -118,7 +118,7 @@ def main():
     dict_args = vars(args)
 
     base_save_dir = dict_args["base_save_dir"]
-    coords_base_fname = dict_args["coords_base_fname"]
+    info_base_fname = dict_args["info_base_fname"]
     overwrite = dict_args["overwrite"]
 
     sim_suite = dict_args["sim_suite"].lower()
@@ -146,7 +146,7 @@ def main():
         sim_dir = f"{sim_base_dir}/{sim_name}/"
         save_dir = f"{base_save_dir}/{sim_name}/"
         for idx_l, dl in enumerate(l_range):
-            coords_fname = f"{slice_axis}_{coords_base_fname}_slice_{idx_l}"
+            info_fname = f"{slice_axis}_{info_base_fname}_slice_{idx_l}"
 
             if sim_suite.lower() == "bahamas":
                 coords_range = np.array([[0, box_size]] * 3) * u.Mpc / u.littleh
@@ -156,7 +156,7 @@ def main():
                     ]
                 ) * u.Mpc / u.littleh
 
-                fn = bahamas.save_halo_coords_file(
+                fn = bahamas.save_halo_info_file(
                     sim_dir=sim_dir,
                     snapshot=snapshot,
                     coord_dset="/FOF/GroupCentreOfPotential",
@@ -168,7 +168,7 @@ def main():
                         "/FOF/Group_M_Crit200",
                     ],
                     save_dir=save_dir,
-                    coords_fname=coords_fname,
+                    info_fname=info_fname,
                     verbose=False,
                     logger=logger,
                 )
@@ -181,13 +181,13 @@ def main():
                     ]
                 )
 
-                fn = mira_titan.save_halo_coords_file(
+                fn = mira_titan.save_halo_info_file(
                     sim_dir=sim_dir,
                     snapshot=snapshot,
                     mass_range=np.array([m_min, m_max]) * u.Msun,
                     coord_range=coords_range,
                     save_dir=save_dir,
-                    coords_fname=coords_fname,
+                    info_fname=info_fname,
                     logger=logger,
                     verbose=False,
                 )

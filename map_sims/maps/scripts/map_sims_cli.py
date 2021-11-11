@@ -51,7 +51,7 @@ if __name__ == "__main__":
     print(f"Running {sims=} with {dict_args['save_coords']=} and {dict_args['project_full']=}")
     for sim_idx in sim_ids:
         if dict_args["save_coords"]:
-            print(f"Saving coords for {sims[sim_idx]=} and {snapshot=} with {cfg.coords_name=}")
+            print(f"Saving coords for {sims[sim_idx]=} and {snapshot=} with {cfg.info_name=}")
             results_coords = tasks.save_coords(
                 sim_idx=sim_idx,
                 snapshot=snapshot,
@@ -60,7 +60,7 @@ if __name__ == "__main__":
             )
             print(f"Finished coords")
         if dict_args["project_full"]:
-            print(f"Saving map_full for {sims[sim_idx]=} and {snapshot=} with {cfg.coords_name=}")
+            print(f"Saving map_full for {sims[sim_idx]=} and {snapshot=} with {cfg.info_name=}")
             for slice_axis in slice_axes:
                 results_full = tasks.map_full(
                     sim_idx=sim_idx,

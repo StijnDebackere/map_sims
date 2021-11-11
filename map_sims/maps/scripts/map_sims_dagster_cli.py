@@ -78,7 +78,7 @@ def pipeline_factory(config_filename: str, n_cpus: int):
         i = 0
         for sim_idx in range(cfg._n_sims):
             for idx_snap, snapshot in enumerate(cfg.snapshots[sim_idx]):
-                save_coords = solids.save_coords_solid_factory(
+                save_info = solids.save_info_solid_factory(
                     sim_idx=sim_idx, snapshot=snapshot, cfg=cfg
                 )
                 coords = save_coords()

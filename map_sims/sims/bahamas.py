@@ -190,7 +190,7 @@ def read_simulation_cosmo(
     return prms
 
 
-def save_halo_coords_file(
+def save_halo_info_file(
     sim_dir: str,
     snapshot: int,
     coord_dset: str,
@@ -199,7 +199,7 @@ def save_halo_coords_file(
     coord_range: u.Quantity = None,
     extra_dsets: List[str] = None,
     save_dir: Optional[str] = None,
-    coords_fname: Optional[str] = "",
+    info_fname: Optional[str] = "",
     halo_sample: Optional[str] = None,
     verbose: Optional[bool] = False,
     sample_haloes_bins: Optional[dict] = None,
@@ -227,7 +227,7 @@ def save_halo_coords_file(
         extra datasets to save to the file
     save_dir : str or None
         location to save to, defaults to snapshot_xxx/maps/
-    coords_fname : str
+    info_fname : str
         name for the coordinates file without extension
 
     Returns
@@ -257,7 +257,7 @@ def save_halo_coords_file(
     else:
         save_dir = util.check_path(save_dir)
 
-    fname = (save_dir / f"{coords_fname}_{snapshot:03d}").with_suffix(".hdf5")
+    fname = (save_dir / f"{info_fname}_{snapshot:03d}").with_suffix(".hdf5")
 
     coordinates = group_info.read_var(coord_dset, verbose=verbose)
     masses = group_info.read_var(mass_dset, verbose=verbose)

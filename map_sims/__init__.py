@@ -46,8 +46,8 @@ class Config(object):
             if log10_mass_range is not None:
                 self.mass_range = 10**np.array(log10_mass_range) * u.Unit(mass_units)
 
-            self.coords_dir = config["coords"].get("coords_dir", None)
-            self.coords_name = config["coords"].get("coords_name", None)
+            self.info_dir = config["coords"].get("info_dir", None)
+            self.info_name = config["coords"].get("info_name", None)
             self.coord_dset = config["coords"].get("coord_dset", None)
 
             self.halo_sample = config["coords"].get("halo_sample", None)
@@ -82,9 +82,9 @@ class Config(object):
                 self.set_map_thickness(self.box_sizes)
 
             self.n_ngb = config["maps"].get("n_ngb", None)
-            if getattr(self, "coords_dir", None) is None:
-                self.coords_dir = config["maps"].get("coords_dir", None)
-                self.coords_name = config["maps"].get("coords_name", None)
+            if getattr(self, "info_dir", None) is None:
+                self.info_dir = config["maps"].get("info_dir", None)
+                self.info_name = config["maps"].get("info_name", None)
 
 
     def __getitem__(self, key):
@@ -130,36 +130,36 @@ class Config(object):
         self.map_paths = [self._map_dir / sd for sd in self.sim_dirs]
 
     @property
-    def coords_dir(self):
-        return self._coords_dir
+    def info_dir(self):
+        return self._info_dir
 
-    @coords_dir.setter
-    def coords_dir(self, val):
+    @info_dir.setter
+    def info_dir(self, val):
         if val is None:
-            self._coords_dir = None
-            self.coords_paths = [None for sd in self.sim_dirs]
+            self._info_dir = None
+            self.info_paths = [None for sd in self.sim_dirs]
         else:
-            self._coords_dir = Path(val)
-            self.coords_paths = [self._coords_dir / sd for sd in self.sim_dirs]
+            self._info_dir = Path(val)
+            self.info_paths = [self._info_dir / sd for sd in self.sim_dirs]
 
     @property
-    def coords_name(self):
-        return self._coords_name
+    def info_name(self):
+        return self._info_name
 
-    @coords_name.setter
-    def coords_name(self, val):
+    @info_name.setter
+    def info_name(self, val):
         if val is None:
-            self._coords_name = None
-            self.coords_files = [
+            self._info_name = None
+            self.info_files = [
                 [None for snap in self.snapshots[sim_idx]]
                 for sim_idx in range(len(self.sim_dirs))
             ]
         else:
-            self._coords_name = val
-            self.coords_files = [
+            self._info_name = val
+            self.info_files = [
                 [
                     sd / f"{val}_{snap:03d}.hdf5" for snap in self.snapshots[sim_idx]
-                ]  for sim_idx, sd in enumerate(self.coords_paths)
+                ]  for sim_idx, sd in enumerate(self.info_paths)
             ]
 
     @property

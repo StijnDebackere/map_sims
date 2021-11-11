@@ -64,8 +64,8 @@ def save_coords(
     mass_range = config.mass_range
     coord_dset = config.coord_dset
     extra_dsets = config.extra_dsets
-    save_dir = config.coords_paths[sim_idx]
-    coords_fname = config.coords_name
+    save_dir = config.info_paths[sim_idx]
+    info_fname = config.info_name
     sample_haloes_bins = config.sample_haloes_bins
     halo_sample = config.halo_sample
     log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_coords{config.log_name_append}"
@@ -80,7 +80,7 @@ def save_coords(
 
     if sim_suite.lower() == "bahamas":
         try:
-            fname = bahamas.save_halo_coords_file(
+            fname = bahamas.save_halo_info_file(
                 sim_dir=str(sim_dir),
                 snapshot=snapshot,
                 mass_dset=mass_dset,
@@ -88,7 +88,7 @@ def save_coords(
                 mass_range=mass_range,
                 extra_dsets=extra_dsets,
                 save_dir=save_dir,
-                coords_fname=coords_fname,
+                info_fname=info_fname,
                 sample_haloes_bins=sample_haloes_bins,
                 logger=logger,
                 verbose=False,
@@ -106,12 +106,12 @@ def save_coords(
 
     elif sim_suite.lower() == "miratitan":
         try:
-            fname = mira_titan.save_halo_coords_file(
+            fname = mira_titan.save_halo_info_file(
                 sim_dir=str(sim_dir),
                 snapshot=snapshot,
                 mass_range=mass_range,
                 save_dir=save_dir,
-                coords_fname=coords_fname,
+                info_fname=info_fname,
                 sample_haloes_bins=sample_haloes_bins,
                 halo_sample=halo_sample,
                 logger=logger,
@@ -130,7 +130,7 @@ def save_coords(
     end = time.time()
     if logger:
         logger.info(
-            f"save_coords_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
+            f"save_info_{config.sim_dirs[sim_idx]}_{snapshot:03d} took {end - start:.2f}s"
         )
         with open(
             f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.complete",

@@ -14,10 +14,10 @@ from map_sims import Config
 
 
 # inspired by https://stackoverflow.com/q/61330816/
-def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
+def save_info_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
     @solid(
         name=str(
-            f"save_coords_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"
+            f"save_info_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"
         ),
         input_defs=[InputDefinition("ready", dagster_type=Nothing)],
         description=f"Save coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}.",
@@ -42,7 +42,7 @@ def save_coords_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
 
             yield AssetMaterialization(
                 asset_key=AssetKey(
-                    f"save_coords_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"
+                    f"save_info_{str(cfg.sim_dirs[sim_idx]).replace('.', 'p')}_{snapshot:03d}"
                 ),
                 description=f"Coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}",
                 metadata_entries=[EventMetadataEntry.path(fname, "file path")],

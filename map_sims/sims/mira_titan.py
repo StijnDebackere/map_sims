@@ -169,13 +169,13 @@ def read_simulation_cosmo(
     return prms
 
 
-def save_halo_coords_file(
+def save_halo_info_file(
     sim_dir: str,
     snapshot: int,
     mass_range: Tuple[u.Quantity, u.Quantity],
     coord_range: u.Quantity = None,
     save_dir: Optional[str] = None,
-    coords_fname: Optional[str] = "",
+    info_fname: Optional[str] = "",
     sample_haloes_bins: Optional[dict] = None,
     halo_sample: Optional[str] = None,
     logger: util.LoggerType = None,
@@ -196,7 +196,7 @@ def save_halo_coords_file(
         range for coordinates to include
     save_dir : str or None
         location to save to, defaults to snapshot_xxx/maps/
-    coords_fname : str
+    info_fname : str
         name for the coordinates file without extension
 
     Returns
@@ -219,7 +219,7 @@ def save_halo_coords_file(
     else:
         save_dir = util.check_path(save_dir)
 
-    fname = (save_dir / f"{coords_fname}_{snapshot:03d}").with_suffix(".hdf5")
+    fname = (save_dir / f"{info_fname}_{snapshot:03d}").with_suffix(".hdf5")
 
     group_data = sim_info.read_properties(
         "sod",
