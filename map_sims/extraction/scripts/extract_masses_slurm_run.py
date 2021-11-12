@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(
     description="Submit maps-file to n-tasks slurm runs using extract_masses_sbatch.py"
 )
 parser.add_argument(
-    "maps_names_file",
+    "map_names_file",
     default="",
     type=str,
     help="file with all maps files filenames",
