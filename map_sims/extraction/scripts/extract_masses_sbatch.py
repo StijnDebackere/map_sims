@@ -104,7 +104,7 @@ def main():
             "--ntasks=1",
             f"--cpus-per-task={NCPUS}",
             "--exclusive",
-            f"extract_masses",
+            "extract_masses",
             temp_map_filename,
             info_file,
             f"--sim_suite={sim_suite}"
