@@ -51,7 +51,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--log-dir",
-    default="/cosmo/scratch/projects/MiraTitanU/Grid/",
+    default="/cosmo/scratch/debackere/logs/",
     type=str,
     dest="log_dir",
     help="path to log files to",

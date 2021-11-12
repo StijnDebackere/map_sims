@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 
-#SBATCH -J calc_mass
-#SBATCH --partition=all
-#SBATCH --ntasks=6
-#SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=8g
-#SBATCH --output=/cosmo/scratch/debackere/batch_files/batch-%j.out
-#SBATCH --error=/cosmo/scratch/debackere/batch_files/batch-%j.err
-#SBATCH --time=30-00:00:00
 
 import argparse
 import os
@@ -148,3 +140,7 @@ def main():
     for temp_filename in temp_filenames:
         print(f"Removing {temp_map_filename}")
         os.remove(temp_filename)
+
+
+if __name__ == "__main__":
+    main()
