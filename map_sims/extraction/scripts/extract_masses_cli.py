@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser(
     description="Extract aperture masses from all maps in map_names_file with metadata in matching info_names_file."
 )
 parser.add_argument(
-    "maps_names_file",
+    "map_names_file",
     default="",
     type=str,
     help="file with all maps files filenames",
