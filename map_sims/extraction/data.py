@@ -90,33 +90,43 @@ def load_map_file(
 
     """
     # read metadata from hdf5 file
-    with h5py.File(map_file, "r") as h5_map:
-        length_units = u.Unit(str(h5_map.attrs["length_units"]))
-        box_size = h5_map.attrs["box_size"] * length_units
-        pix_size = h5_map.attrs["map_size"] / h5_map.attrs["map_pix"] * length_units
-        map_thickness = h5_map.attrs["map_thickness"] * length_units
-        snapshot = h5_map.attrs["snapshot"]
-
-        z = read_sim.snap_to_z(sim_suite=sim_suite.lower(), snapshots=int(snapshot))
-        metadata = {
-            "box_size": box_size,
-            "pix_size": pix_size,
-            "map_thickness": map_thickness,
-            "snapshot": snapshot,
-            "z": z,
-        }
+    try:
+        box_size = io.read_from_hdf5(map_file, "box_size")
+        map_size = io.read_from_hdf5(map_file, "map_size")
+        map_pix = io.read_from_hdf5(map_file, "map_pix")
+        pix_size = map_size / map_pix
+        map_thickness = io.read_from_hdf5(map_file, "map_thickness")
+        snapshot = io.read_from_hdf5(map_file, "snapshot")
 
         # new files save map_thickness as 1d array, having box_size under key 0
-        if isinstance(h5_map["dm_mass"], h5py.Group):
-            path_append = "/0"
-        elif isinstance(h5_map["dm_mass"], h5py.Dataset):
-            path_append = ""
+        map_full = io.read_from_hdf5(map_file, "dm_mass/0")
+        if "DMONLY" not in sim and sim_suite.lower() == "bahamas":
+            for mass_type in ["gas_mass/0", "stars_mass/0", "bh_mass/0"]:
+                map_full += io.read_from_hdf5(map_file, mass_type)
 
-    map_full = io.read_from_hdf5(map_file, "dm_mass" + path_append)
-    if "DMONLY" not in sim and sim_suite.lower() == "bahamas":
-        for mass_type in ["gas_mass", "stars_mass", "bh_mass"]:
-            map_full += io.read_from_hdf5(map_file, mass_type + path_append)
+    except KeyError:
+        with h5py.File(map_file, "r") as h5_map:
+            length_units = u.Unit(str(h5_map.attrs["length_units"]))
+            box_size = h5_map.attrs["box_size"] * length_units
+            pix_size = h5_map.attrs["map_size"] / h5_map.attrs["map_pix"] * length_units
+            map_thickness = h5_map.attrs["map_thickness"] * length_units
+            snapshot = h5_map.attrs["snapshot"]
 
+            z = read_sim.snap_to_z(sim_suite=sim_suite.lower(), snapshots=int(snapshot))
+
+            map_full = h5_map["dm_mass"][()]
+            if "DMONLY" not in sim and sim_suite.lower() == "bahamas":
+                for mass_type in ["gas_mass", "stars_mass", "bh_mass"]:
+                    map_full += h5_map[mass_type][()]
+
+    z = read_sim.snap_to_z(sim_suite=sim_suite.lower(), snapshots=int(snapshot))
+    metadata = {
+        "box_size": box_size,
+        "pix_size": pix_size,
+        "map_thickness": map_thickness,
+        "snapshot": snapshot,
+        "z": z,
+    }
     if logger:
         logger.debug(f"loaded map from {map_file}")
 
