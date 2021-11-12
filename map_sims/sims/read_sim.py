@@ -21,7 +21,8 @@ def snap_to_z(
 
     if sim_suite.lower() == "bahamas":
         z = np.array([bahamas.SNAP_TO_Z[snap] for snap in snapshots])
-        z = np.array([bahamas.STEP_TO_Z[snap] for snap in snapshots])
+    elif sim_suite.lower() == "miratitan":
+        z = np.array([mira_titan.STEP_TO_Z[snap] for snap in snapshots])
 
     return z
 
