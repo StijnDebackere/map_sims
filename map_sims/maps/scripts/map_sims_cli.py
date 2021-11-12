@@ -36,21 +36,20 @@ parser.set_defaults(save_coords=False)
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    dict_args = vars(args)
 
     # ensure that mira_titan does not claim all resources
     os.environ["OMP_NUM_THREADS"] = "1"
-    snapshot = dict_args["snapshot"]
-    sim_ids = dict_args["sim_ids"]
+    snapshot = args.snapshot
+    sim_ids = args.sim_ids
 
-    cfg = tasks.Config(dict_args["config_filename"])
+    cfg = tasks.Config(args.config_filename)
     # convert to strings instead of PosixPaths
     sims = [str(d) for d in cfg.sim_dirs]
     slice_axes = cfg.slice_axes
 
-    print(f"Running {sims=} with {dict_args['save_coords']=} and {dict_args['project_full']=}")
+    print(f"Running {sims=} with {args.save_coords=} and {args.project_full=}")
     for sim_idx in sim_ids:
-        if dict_args["save_coords"]:
+        if args.save_coords:
             print(f"Saving coords for {sims[sim_idx]=} and {snapshot=} with {cfg.info_name=}")
             results_coords = tasks.save_coords(
                 sim_idx=sim_idx,
@@ -59,7 +58,7 @@ if __name__ == "__main__":
                 logger=None,
             )
             print(f"Finished coords")
-        if dict_args["project_full"]:
+        if args.project_full:
             print(f"Saving map_full for {sims[sim_idx]=} and {snapshot=} with {cfg.info_name=}")
             for slice_axis in slice_axes:
                 results_full = tasks.map_full(

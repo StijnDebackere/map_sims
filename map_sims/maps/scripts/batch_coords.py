@@ -115,30 +115,29 @@ def extract_fnames(file_path):
 
 def main():
     args = parser.parse_args()
-    dict_args = vars(args)
 
-    base_save_dir = dict_args["base_save_dir"]
-    info_base_fname = dict_args["info_base_fname"]
-    overwrite = dict_args["overwrite"]
+    base_save_dir = args.base_save_dir
+    info_base_fname = args.info_base_fname
+    overwrite = args.overwrite
 
-    sim_suite = dict_args["sim_suite"].lower()
-    sim_base_dir = dict_args["sim_base_dir"]
-    sim_names = extract_fnames(dict_args["sims_file"])
+    sim_suite = args.sim_suite.lower()
+    sim_base_dir = args.sim_base_dir
+    sim_names = extract_fnames(args.sims_file)
 
-    log_dir = dict_args["log_dir"]
+    log_dir = args.log_dir
     log_fname = f"batch_coords_{os.getpid()}"
     logger = util.get_logger(log_dir=log_dir, fname=log_fname, level="INFO")
 
-    snapshots = dict_args["snapshots"]
-    slice_axes = dict_args["slice_axes"]
-    box_size = dict_args["L"]
+    snapshots = args.snapshots
+    slice_axes = args.slice_axes
+    box_size = args.L
 
-    m_min = 10**dict_args["m_min"]
-    m_max = 10**dict_args["m_max"]
-    l_frac = dict_args["l_frac"]
-    l_min = dict_args["l_min"]
-    l_max = dict_args["l_max"]
-    n_l = dict_args["n_l"]
+    m_min = 10**args.m_min
+    m_max = 10**args.m_max
+    l_frac = args.l_frac
+    l_min = args.l_min
+    l_max = args.l_max
+    n_l = args.n_l
     l_range = l_frac * np.geomspace(l_min, l_max, n_l)
     for sim_name, snapshot, slice_axis in itertools.product(
         sim_names, snapshots, slice_axes,

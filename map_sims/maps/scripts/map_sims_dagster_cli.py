@@ -100,16 +100,15 @@ def pipeline_factory(config_filename: str, n_cpus: int):
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    dict_args = vars(args)
 
-    os.environ["DAGSTER_HOME"] = dict_args["dagster_home"]
+    os.environ["DAGSTER_HOME"] = args.dagster_home
     reconstructable_pipeline = build_reconstructable_pipeline(
         "dagster_cli",
         "pipeline_factory",
         (),
         {
-            "config_filename": dict_args["config_filename"],
-            "n_cpus": dict_args["max_cpus"],
+            "config_filename": args.config_filename,
+            "n_cpus": args.max_cpus,
         },
     )
     result = execute_pipeline(
@@ -119,7 +118,7 @@ if __name__ == "__main__":
             "execution": {
                 "multiprocess": {
                     "config": {
-                        "max_concurrent": dict_args["max_cpus"],
+                        "max_concurrent": args.max_cpus,
                     }
                 }
             },
@@ -127,8 +126,8 @@ if __name__ == "__main__":
             "resources": {
                 "settings": {
                     "config": {
-                        "save_coords": dict_args["save_coords"],
-                        "map_sims": dict_args["map_sims"],
+                        "save_coords": args.save_coords,
+                        "map_sims": args.map_sims,
                     },
                 },
             },

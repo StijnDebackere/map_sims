@@ -102,14 +102,13 @@ def extract_fnames(file_path):
 def main():
     t0 = time.time()
     args = parser.parse_args()
-    dict_args = vars(args)
 
-    base_dir = dict_args["base_dir"]
-    log_dir = dict_args["log_dir"]
-    sim_suite = dict_args["sim_suite"]
-    info_files = extract_fnames(dict_args["info_names_file"])
-    map_files = extract_fnames(dict_args["map_names_file"])
-    overwrite = dict_args["overwrite"]
+    base_dir = args.base_dir
+    log_dir = args.log_dir
+    sim_suite = args.sim_suite
+    info_files = extract_fnames(args.info_names_file)
+    map_files = extract_fnames(args.map_names_file)
+    overwrite = args.overwrite
 
     log_fname = f"{log_dir}/save_aperture_masses_{os.getpid()}"
     logger = tools.get_logger(fname=log_fname, log_level="info")
@@ -129,9 +128,9 @@ def main():
     else:
         raise ValueError(f"{sim_suite=} not recognized")
 
-    R_aps = np.asarray(dict_args["r_aps"])  * R_unit
-    R2s = dict_args.get("r_ins", None) * R_unit
-    Rms = dict_args.get("r_outs", None) * R_unit
+    R_aps = np.asarray(args.r_aps)  * R_unit
+    R2s = args.r_ins * R_unit
+    Rms = args.r_out * R_unit
 
     cut_map_size = max((2 * R_aps.max(), (2 * Rms.max()) or 0))
 
@@ -237,7 +236,7 @@ def main():
         logger.info(f"kwargs for {sim_name}_{snapshot:03d}_{slice_axis} loaded")
 
     # let sbatch handle multiprocessing
-    if dict_args["max_cpus"] == 1:
+    if args.max_cpus == 1:
         for prms in batch_parameters:
             logger.info(f"submitting {prms['map_file']}")
             try:
@@ -250,8 +249,8 @@ def main():
                     f.write(traceback.format_exc())
 
     # without sbatch, run multiprocessing through python
-    elif dict_args["max_cpus"] > 1:
-        with Pool(dict_args["max_cpus"]) as pool:
+    elif args.max_cpus > 1:
+        with Pool(args.max_cpus) as pool:
             future_parameters = [
                 (pool.apply_async(extraction.save_aperture_masses, kwds=prms), prms)
                 for prms in batch_parameters

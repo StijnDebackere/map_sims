@@ -35,10 +35,10 @@ parser.add_argument(
 
 
 def main():
-    args = vars(parser.parse_args())
-    n_tasks = args["n_tasks"]
+    args = parser.parse_args()
+    n_tasks = args.n_tasks
 
-    cfg_fname = args["config"]
+    cfg_fname = args.config
     cfg_path = str(Path(cfg_fname).parent)
     cfg = Config(cfg_fname)
     snapshots = cfg.snapshots

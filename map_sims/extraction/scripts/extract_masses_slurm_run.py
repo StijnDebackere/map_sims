@@ -67,15 +67,14 @@ parser.add_argument(
 
 def main():
     args = parser.parse_args()
-    dict_args = vars(args)
 
-    n_tasks = dict_args["n_tasks"]
-    info_file = dict_args["info_names_file"]
-    maps_file = dict_args["map_names_file"]
-    sim_suite = dict_args["sim_suite"]
-    base_dir = dict_args["base_dir"]
-    log_dir = dict_args["log_dir"]
-    env = dict_args["env"]
+    n_tasks = args.n_tasks
+    info_file = args.info_names_file
+    maps_file = args.map_names_file
+    sim_suite = args.sim_suite
+    base_dir = args.base_dir
+    log_dir = args.log_dir
+    env = args.env
 
     path = Path(__file__).parent
     p = subprocess.Popen(

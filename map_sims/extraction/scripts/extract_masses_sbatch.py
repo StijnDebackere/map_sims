@@ -91,7 +91,7 @@ def main():
         map_files[i:j] for i, j in zip(chunk_ids[:-1], chunk_ids[1:])
     ]
     temp_map_filenames = [
-        dict_args["map_names_file"] + f".{i}.temp" for i in range(len(map_files_split))
+        args.map_names_file + f".{i}.temp" for i in range(len(map_files_split))
     ]
 
     procs = []
