@@ -31,9 +31,9 @@ parser.add_argument(
 )
 parser.add_argument(
     "radii_file",
-    default="/cosmo/scratch/debackere/batch_files/r_0p5-1p5_r2_0p5-2p0_rm_3p0.dill",
+    default="/cosmo/scratch/debackere/batch_files/r_0p5-1p5_r2_0p5-2p0_rm_3p0.toml",
     type=str,
-    help="dill file containing the dict with r_aps, r_ins and r_out",
+    help="toml file containing the section 'radii' with keys r_aps, r_ins and r_out",
 )
 parser.add_argument(
     "sim_suite",

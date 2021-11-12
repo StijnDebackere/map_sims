@@ -16,11 +16,11 @@ import time
 import traceback
 
 import astropy.units as u
-import dill
 import gadget
 import mira_titan
 import numpy as np
 import simulation_slices.tasks as tasks
+import toml
 
 import map_sims.extraction.aperture_masses as extraction
 import map_sims.tools as tools
@@ -69,9 +69,9 @@ parser.add_argument(
 )
 parser.add_argument(
     "--radii_file",
-    default="/cosmo/scratch/debackere/batch_files/r_0p5-2p5_r_in_0p5-2p5_r_out_3p0.dill",
+    default="/cosmo/scratch/debackere/batch_files/r_0p5-1p5_r2_0p5-2p0_rm_3p0.toml",
     type=str,
-    help="dill file containing the dict with r_aps, r_ins and r_out",
+    help="toml file containing the section 'radii' with keys r_aps, r_ins and r_out",
 )
 parser.add_argument("--overwrite", dest="overwrite", action="store_true")
 parser.add_argument("--no-overwrite", dest="overwrite", action="store_false")
@@ -114,11 +114,10 @@ def main():
     else:
         raise ValueError(f"{sim_suite=} not recognized")
 
-    with open(args.radii_file, "r") as f:
-        r_dict = dill.load(f)
-        R_aps = r_dict["r_aps"] * R_unit
-        R2s = r_dict["r_ins"] * R_unit
-        Rms = r_dict["r_out"] * R_unit
+    radii = toml.load(radii_file)["radii"]
+    R_aps = np.atleast_1d(radii["r_aps"]) * R_unit
+    R2s = np.atleast_1d(radii["r_ins"]) * R_unit
+    Rms = np.atleast_1d(radii["r_out"]) * R_unit
 
     cut_map_size = max((2 * R_aps.max(), (2 * Rms.max()) or 0))
 
