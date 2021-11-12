@@ -77,6 +77,7 @@ def main():
     log_dir = dict_args["log_dir"]
     env = dict_args["env"]
 
+    path = Path(__file__).parent
     p = subprocess.Popen(
         [
             "sbatch",
@@ -84,11 +85,11 @@ def main():
             f"--ntasks={n_tasks}",
             "--partition=all",
             "--cpus-per-task=1",
-            "--mem-per-cpu=8g",
+            "--mem-per-CPU=8g",
             f"--output={log_dir}/batch-%j.out",
             f"--error={log_dir}/batch-%j.err",
             "--time=30-00:00:00",
-            "extract_masses_sbatch.py",
+            f"{str(path)}/extract_masses_sbatch.py",
             maps_file,
             info_file,
             f"--sim-suite {sim_suite}",
