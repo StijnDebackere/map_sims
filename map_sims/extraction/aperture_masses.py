@@ -235,7 +235,7 @@ def save_aperture_masses(
     if logger:
         logger.info(f"Loading results from {info_file}")
     # start loading information for all groups for sim
-    sim_results = data.load_from_info_file(
+    sim_results = data.load_from_info_files(
         sims=[sim],
         info_files=[info_file],
         extra_dsets=extra_dsets,

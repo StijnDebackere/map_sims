@@ -9,9 +9,9 @@ import map_sims.io as io
 import map_sims.sims.read_sim as read_sim
 
 
-def load_from_info_file(
+def load_from_info_files(
     sims: List[str],
-    info_file: List[str],
+    info_files: List[str],
     extra_dsets: dict,
     selection: np.ndarray = None,
 ) -> dict:
