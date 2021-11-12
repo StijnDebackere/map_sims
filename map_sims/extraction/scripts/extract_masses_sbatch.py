@@ -109,9 +109,9 @@ def main():
             f"{FILE_PATH}/extract_masses_cli.py",
             temp_map_filename,
             info_file,
-            f"--sim_suite={SIM_SUITE}"
-            f"--log_dir={LOG_DIR}",
-            f"--base_dir={BASE_DIR}",
+            f"--sim_suite={sim_suite}"
+            f"--log_dir={log_dir}",
+            f"--base_dir={base_dir}",
             "&",
         ]
         full_cmd = f"{activate_env} && {' '.join(srun_cmd)}"
