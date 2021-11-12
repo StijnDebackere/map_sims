@@ -9,7 +9,6 @@ import subprocess
 import sys
 
 
-FILE_PATH = str(Path(__file__).parent)
 NTASKS = int(os.environ["SLURM_NTASKS"])
 NCPUS = int(os.environ["SLURM_CPUS_PER_TASK"])
 
@@ -105,8 +104,7 @@ def main():
             "--ntasks=1",
             f"--cpus-per-task={NCPUS}",
             "--exclusive",
-            "python",
-            f"{FILE_PATH}/extract_masses_cli.py",
+            f"extract_masses",
             temp_map_filename,
             info_file,
             f"--sim_suite={sim_suite}"
