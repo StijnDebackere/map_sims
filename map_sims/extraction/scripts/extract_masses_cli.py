@@ -16,6 +16,7 @@ import time
 import traceback
 
 import astropy.units as u
+import dill
 import gadget
 import mira_titan
 import numpy as np
@@ -56,36 +57,21 @@ parser.add_argument(
 )
 parser.add_argument(
     "--base_dir",
-    default="/hpcdata0/simulations/BAHAMAS/",
+    default="/cosmo/scratch/projects/MiraTitanU/Grid/",
     type=str,
     help="base directory for simulations",
 )
 parser.add_argument(
     "--log_dir",
-    default="/hpcdata0/simulations/BAHAMAS/extsdeba/logs/",
+    default="/cosmo/scratch/debackere/logs/",
     type=str,
     help="location to save log file",
 )
 parser.add_argument(
-    "--r_aps",
-    default=[0.5, 1.0, 1.5, 2.0, 2.5],
-    type=float,
-    nargs="+",
-    help="aperture radii to compute for",
-)
-parser.add_argument(
-    "--r_ins",
-    default=None,
-    type=float,
-    nargs="+",
-    help="inner annulus radii",
-)
-parser.add_argument(
-    "--r_outs",
-    default=None,
-    type=float,
-    nargs="+",
-    help="outer annulus radii",
+    "--radii_file",
+    default="/cosmo/scratch/debackere/batch_files/r_0p5-2p5_r_in_0p5-2p5_r_out_3p0.dill",
+    type=str,
+    help="dill file containing the dict with r_aps, r_ins and r_out",
 )
 parser.add_argument("--overwrite", dest="overwrite", action="store_true")
 parser.add_argument("--no-overwrite", dest="overwrite", action="store_false")
@@ -128,9 +114,11 @@ def main():
     else:
         raise ValueError(f"{sim_suite=} not recognized")
 
-    R_aps = np.asarray(args.r_aps)  * R_unit
-    R2s = args.r_ins * R_unit
-    Rms = args.r_out * R_unit
+    with open(args.radii_file, "r") as f:
+        r_dict = dill.load(f)
+        R_aps = r_dict["r_aps"] * R_unit
+        R2s = r_dict["r_ins"] * R_unit
+        Rms = r_dict["r_out"] * R_unit
 
     cut_map_size = max((2 * R_aps.max(), (2 * Rms.max()) or 0))
 

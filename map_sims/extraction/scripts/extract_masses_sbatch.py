@@ -30,6 +30,12 @@ parser.add_argument(
     help="file with all info_file filenames",
 )
 parser.add_argument(
+    "radii_file",
+    default="/cosmo/scratch/debackere/batch_files/r_0p5-1p5_r2_0p5-2p0_rm_3p0.dill",
+    type=str,
+    help="dill file containing the dict with r_aps, r_ins and r_out",
+)
+parser.add_argument(
     "sim_suite",
     default="miratitan",
     type=str,
@@ -73,6 +79,7 @@ def main():
 
     info_file = args.info_names_file
     map_files = extract_from_file(args.map_names_file)
+    radii_file = args.radii_file
     sim_suite = args.sim_suite
     base_dir = args.base_dir
     log_dir = args.log_dir
@@ -107,9 +114,12 @@ def main():
             "extract_masses",
             temp_map_filename,
             info_file,
-            f"--sim_suite={sim_suite}"
-            f"--log_dir={log_dir}",
-            f"--base_dir={base_dir}",
+            f"--sim_suite {sim_suite}"
+            f"--log_dir {log_dir}",
+            f"--base_dir {base_dir}",
+            f"--radii_file {radii_file}",
+            "--max_cpus 1",
+            "--overwrite",
             "&",
         ]
         full_cmd = f"{activate_env} && {' '.join(srun_cmd)}"

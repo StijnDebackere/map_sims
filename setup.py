@@ -26,6 +26,7 @@ setuptools.setup(
     install_requires=[
         "astropy",
         "dagster",
+        "dill",
         "h5py",
         # "gadget @ https://github.com/StijnDebackere/gadget",
         # "mira_titan @ https://github.com/StijnDebackere/mira_titan",
