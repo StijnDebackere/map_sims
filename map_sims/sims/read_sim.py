@@ -12,8 +12,8 @@ SIM_SUITE_OPTIONS = ["bahamas", "miratitan"]
 
 
 def snap_to_z(
-        sim_suit: str,
-        snapshots: np.ndarray,
+    sim_suite: str,
+    snapshots: np.ndarray,
 ) -> List[float]:
     snapshots = np.atleast_1d(snapshots)
     if sim_suite.lower() not in SIM_SUITE_OPTIONS:
