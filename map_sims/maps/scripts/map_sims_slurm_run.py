@@ -32,6 +32,13 @@ parser.add_argument(
     help="number of sbatch scripts to submit",
     dest="n_tasks"
 )
+parser.add_argument(
+    "--log-dir",
+    default="/cosmo/scratch/debackere/logs/",
+    type=str,
+    dest="log_dir",
+    help="path to log files to",
+)
 parser.add_argument("--save-info", dest="save_info", action="store_true")
 parser.add_argument("--no-save-info", dest="save_info", action="store_false")
 parser.set_defaults(save_info=False)
@@ -48,8 +55,8 @@ def main():
     # flag to determine which version of map_sims_cli to run
     flag = int(save_info) * 2 ** 0 + int(map_full) * 2 ** 1
 
+    log_dir = args.log_dir
     cfg_fname = args.config
-    cfg_path = str(Path(cfg_fname).parent)
     cfg = Config(cfg_fname)
     snapshots = cfg.snapshots
     if not np.all(snapshots == snapshots[0]):
@@ -78,8 +85,8 @@ def main():
                 "--partition=all",
                 "--cpus-per-task=1",
                 "--mem-per-cpu=30000",
-                f"--output={cfg_path}/batch-%j.out",
-                f"--error={cfg_path}/batch-%j.err",
+                f"--output={log_dir}/batch-%j.out",
+                f"--error={log_dir}/batch-%j.err",
                 "--time=30-00:00:00",
                 f"{str(path)}/map_sims_sbatch.sh",
                 cfg_fname,
