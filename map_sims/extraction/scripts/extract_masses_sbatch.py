@@ -114,9 +114,9 @@ def main():
             "extract_masses",
             temp_map_filename,
             info_file,
-            f"--sim_suite {sim_suite}"
-            f"--log_dir {log_dir}",
+            f"--sim_suite {sim_suite}",
             f"--base_dir {base_dir}",
+            f"--log_dir {log_dir}",
             f"--radii_file {radii_file}",
             "--max_cpus 1",
             "--overwrite",
