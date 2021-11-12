@@ -106,7 +106,7 @@ def main():
             f"--cpus-per-task={NCPUS}",
             "--exclusive",
             "python",
-            "{FILE_PATH}/extract_masses_cli.py",
+            f"{FILE_PATH}/extract_masses_cli.py",
             temp_map_filename,
             info_file,
             f"--sim_suite={SIM_SUITE}"
