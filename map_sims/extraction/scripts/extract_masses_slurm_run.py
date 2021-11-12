@@ -85,7 +85,7 @@ def main():
             f"--ntasks={n_tasks}",
             "--partition=all",
             "--cpus-per-task=1",
-            "--mem-per-CPU=8g",
+            "--mem-per-cpu=8g",
             f"--output={log_dir}/batch-%j.out",
             f"--error={log_dir}/batch-%j.err",
             "--time=30-00:00:00",
