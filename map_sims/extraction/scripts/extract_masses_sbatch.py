@@ -113,8 +113,10 @@ def main():
             f"--base_dir={BASE_DIR}",
             "&",
         ]
+        full_cmd = f"{activate_env} && {' '.join(srun_cmd)}"
+
         proc = subprocess.Popen(
-            f"{activate_env} && {' '.join(srun_cmd)}",
+            full_cmd,
             shell=True,
             executable="/usr/bin/bash",
             stdout=subprocess.PIPE,
@@ -130,9 +132,13 @@ def main():
     # check return codes
     return_codes = [p.poll() for p in procs]
     for idx, rc in enumerate(return_codes):
+        print(
+            f"{temp_map_filenames[idx]} output = ",
+            procs[idx].stdout.read().decode("utf8"),
+        )
         if rc != 0:
-            print(f"{temp_map_filenames[idx]=} exited with return code {rc}")
-            print(procs[idx].stdout.read().decode("utf8"))
+            print(f"{temp_map_filenames[idx]} exited with return code {rc}")
+            print(procs[idx].stderr.read().decode("utf8"))
 
     # remove temp files
     for temp_map_filename in temp_map_filenames:
