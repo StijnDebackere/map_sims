@@ -4,6 +4,10 @@ import astropy.units as u
 import numpy as np
 
 
+PI = np.pi
+PI_INV = 1.0 / np.pi
+
+
 def sigma_mean(
     R: u.Quantity,
     sigma: u.Quantity,
