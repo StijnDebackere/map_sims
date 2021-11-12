@@ -54,7 +54,7 @@ class Config(object):
             self.mass_dset = config["info"].get("mass_dset", None)
             self.extra_dsets = config["info"].get("extra_dsets", None)
             if "sample_haloes_bins" in config["info"].keys():
-                sample_haloes_bins = config["info"o]["sample_haloes_bins"]
+                sample_haloes_bins = config["info"]["sample_haloes_bins"]
                 n_bins = sample_haloes_bins["n_bins"]
                 self.sample_haloes_bins = {
                     "mass_bin_edges": 10**np.linspace(
