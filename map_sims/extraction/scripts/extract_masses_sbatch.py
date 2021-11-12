@@ -8,8 +8,8 @@ import subprocess
 import sys
 
 
-NTASKS = os.environ["SLURM_NTASKS"]
-NCPUS = os.environ["SLURM_CPUS_PER_TASK"]
+NTASKS = int(os.environ["SLURM_NTASKS"])
+NCPUS = int(os.environ["SLURM_CPUS_PER_TASK"])
 
 
 # arguments passes by extract_masses_slurm_run.sh
@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(
     description="Split map_names_file into SLURM_NTASKS and pass off to extract_masses.cli"
 )
 parser.add_argument(
-    "maps_names_file",
+    "map_names_file",
     default="",
     type=str,
     help="file with all maps files filenames",
