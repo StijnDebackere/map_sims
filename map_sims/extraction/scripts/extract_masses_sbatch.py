@@ -133,9 +133,9 @@ def main():
             print(procs[idx].stdout.read().decode("utf8"))
 
     # remove temp files
-    for temp_filename in temp_filenames:
+    for temp_map_filename in temp_map_filenames:
         print(f"Removing {temp_map_filename}")
-        os.remove(temp_filename)
+        os.remove(temp_map_filename)
 
 
 if __name__ == "__main__":
