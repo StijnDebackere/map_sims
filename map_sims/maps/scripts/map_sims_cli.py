@@ -34,7 +34,7 @@ parser.add_argument("--no-save-coords", dest="save_coords", action="store_false"
 parser.set_defaults(save_coords=False)
 
 
-if __name__ == "__main__":
+def main():
     args = parser.parse_args()
 
     # ensure that mira_titan does not claim all resources
@@ -70,3 +70,7 @@ if __name__ == "__main__":
                     rng=None,
                 )
                 print("Finished {slice_axis=}")
+
+
+if __name__ == "__main__":
+    main()
