@@ -117,16 +117,22 @@ def write_to_hdf5(
 
 
 def read_from_hdf5(
-    h5file: h5py.File,
+    h5file: Union[h5py.File, str],
     path: str,
+    close: bool = False,
 ) -> Any:
     """Read value from h5file[path] following our hdf5 schema."""
+    if type(h5file) is str:
+        h5file = h5py.File(h5file, "r")
     if not isinstance(h5file[path], h5py.Dataset):
         raise ValueError(f"{path} should be a h5py.Dataset, not {type(h5file[path])}")
 
     value = h5file[path][()]
     attrs = {k: v for k, v in h5file[path].attrs.items()}
     val = from_schema(value=value, attrs=attrs)
+
+    if close:
+        h5file.close()
 
     return val
 
