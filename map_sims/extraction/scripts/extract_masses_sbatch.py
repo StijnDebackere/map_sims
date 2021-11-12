@@ -3,6 +3,7 @@
 
 import argparse
 import os
+from pathlib import Path
 import time
 import subprocess
 import sys
@@ -79,7 +80,8 @@ def main():
 
     # need to activate the correct conda environment for each srun call
     # see https://github.com/conda/conda/issues/9296#issuecomment-537085104
-    activate_env = f". $CONDA_PREFIX/etc/profile.d/conda.sh && conda activate {env}"
+    CONDA_BASE = Path(os.environ["CONDA_EXE"]).parent.parent
+    activate_env = f". {CONDA_BASE}/etc/profile.d/conda.sh && conda activate {env}"
 
     # divide map_files into NTASKS chunks
     num_per_chunk = int((len(map_files) + NTASKS - 1) / NTASKS)
