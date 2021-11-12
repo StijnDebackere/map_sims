@@ -61,6 +61,7 @@ def main():
     n_sims = len(cfg.sim_dirs)
     n_ids_per_task = int((n_sims + n_tasks - 1) / n_tasks)
 
+    path = Path(__file__).parent
     for i in range(0, n_tasks):
         n_start = i * n_ids_per_task
         if i == n_tasks - 1:
@@ -80,7 +81,7 @@ def main():
                 f"--output={cfg_path}/batch-%j.out",
                 f"--error={cfg_path}/batch-%j.err",
                 "--time=30-00:00:00",
-                "map_sims_sbatch.sh",
+                f"{str(path)}/map_sims_sbatch.sh",
                 cfg_fname,
                 str(n_start), str(n_stop - 1),
                 str(flag),
