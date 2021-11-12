@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple, Union, Any
 
 import astropy.units as u
 import h5py
+import numpy as np
 
 import map_sims.io as io
 import map_sims.sims.read_sim as read_sim
