@@ -83,7 +83,7 @@ def main():
                 "map_sims_sbatch.sh",
                 cfg_fname,
                 str(n_start), str(n_stop - 1),
-                flag,
+                str(flag),
             ],
             env=environ,
         )
