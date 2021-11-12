@@ -169,7 +169,7 @@ def main():
             continue
 
         info_file_split = info_file.split("/")
-        if not info_file_split.endswith(".hdf5"):
+        if not info_file_split[-1].endswith(".hdf5"):
             raise ValueError(f"{info_file} should be .hdf5 file.")
 
         # get rid of .hdf5 extension
