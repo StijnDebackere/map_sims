@@ -119,7 +119,7 @@ def main():
             stderr=subprocess.PIPE,
         )
         print(f"Submitted {temp_map_filename} to pid {proc.pid}")
-        procs.append(p)
+        procs.append(proc)
 
     # check if all processes have finished
     while all([p.poll() is None for p in procs]):
