@@ -24,11 +24,11 @@ export FLAG=$4
 # snapshots are passed through SBATCH array
 echo "Running batch job for sim_ids=${N_START}-${N_STOP} from ${BATCH_FILE} for snapshot=${SLURM_ARRAY_TASK_ID}"
 if [[ $FLAG -eq 1 ]]; then
-    eval srun -n1 --exclusive python map_sims_cli.py ${BATCH_FILE} ${SLURM_ARRAY_TASK_ID} -i {$N_START..$N_STOP} --save-coords --no-project-full &
+    eval srun -n1 --exclusive map_sims ${BATCH_FILE} ${SLURM_ARRAY_TASK_ID} -i {$N_START..$N_STOP} --save-coords --no-project-full &
 elif [[ $FLAG -eq 2 ]]; then
-    eval srun -n1 --exclusive python map_sims_cli.py ${BATCH_FILE} ${SLURM_ARRAY_TASK_ID} -i {$N_START..$N_STOP} --no-save-coords --project-full &
+    eval srun -n1 --exclusive map_sims ${BATCH_FILE} ${SLURM_ARRAY_TASK_ID} -i {$N_START..$N_STOP} --no-save-coords --project-full &
 elif [[ $FLAG -eq 3 ]]; then
-    eval srun -n1 --exclusive python map_sims_cli.py ${BATCH_FILE} ${SLURM_ARRAY_TASK_ID} -i {$N_START..$N_STOP} --save-coords --project-full &
+    eval srun -n1 --exclusive map_sims ${BATCH_FILE} ${SLURM_ARRAY_TASK_ID} -i {$N_START..$N_STOP} --save-coords --project-full &
 else
     echo "Doing nothing"
 fi
