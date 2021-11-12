@@ -8,8 +8,8 @@ import subprocess
 import sys
 
 
-NTASKS = sys.environ["SLURM_NTASKS"]
-NCPUS = sys.environ["SLUMR_CPUS_PER_TASK"]
+NTASKS = os.environ["SLURM_NTASKS"]
+NCPUS = os.environ["SLUMR_CPUS_PER_TASK"]
 
 
 # arguments passes by extract_masses_slurm_run.sh
