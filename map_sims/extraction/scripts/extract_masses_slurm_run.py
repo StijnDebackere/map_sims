@@ -90,12 +90,14 @@ def main():
             f"--error={log_dir}/batch-%j.err",
             "--time=30-00:00:00",
             f"{str(path)}/extract_masses_sbatch.py",
+            # ENSURE CORRECT ORDER!
+            # TODO: figure out --variables support for sbatch
             maps_file,
             info_file,
-            f"--sim-suite {sim_suite}",
-            f"--base-dir {base_dir}",
-            f"--log-dir {log_dir}",
-            f"--env {env}",
+            sim_suite,
+            base_dir,
+            log_dir,
+            env
         ],
     )
 

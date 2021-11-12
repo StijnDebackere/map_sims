@@ -29,31 +29,27 @@ parser.add_argument(
     help="file with all info_file filenames",
 )
 parser.add_argument(
-    "--sim-suite",
+    "sim_suite",
     default="miratitan",
     type=str,
-    dest="sim_suite",
     help="simulation suite to run for",
 )
 parser.add_argument(
-    "--base-dir",
+    "base_dir",
     default="/cosmo/scratch/projects/MiraTitanU/Grid/",
     type=str,
-    dest="base_dir",
     help="path to base of saved simulations for simulation suite",
 )
 parser.add_argument(
-    "--log-dir",
+    "log_dir",
     default="/cosmo/scratch/projects/MiraTitanU/Grid/",
     type=str,
-    dest="log_dir",
     help="path to log files to",
 )
 parser.add_argument(
-    "--env",
+    "env",
     default="simulation_slices",
     type=str,
-    dest="env",
     help="conda environment to use",
 )
 
@@ -73,13 +69,13 @@ def write_to_file(file_path, lst):
 
 def main():
     args = parser.parse_args()
-    dict_args = vars(args)
-    info_file = dict_args["info_names_file"]
-    map_files = extract_from_file(dict_args["map_names_file"])
-    sim_suite = dict_args["sim_suite"]
-    base_dir = dict_args["base_dir"]
-    log_dir = dict_args["log_dir"]
-    env = dict_args["env"]
+
+    info_file = args.info_names_file
+    map_files = extract_from_file(args.map_names_file)
+    sim_suite = args.sim_suite
+    base_dir = args.base_dir
+    log_dir = args.log_dir
+    env = args.env
 
     # need to activate the correct conda environment for each srun call
     # see https://github.com/conda/conda/issues/9296#issuecomment-537085104
