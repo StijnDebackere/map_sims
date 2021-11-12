@@ -32,11 +32,21 @@ parser.add_argument(
     help="number of sbatch scripts to submit",
     dest="n_tasks"
 )
+parser.add_argument("--save-info", dest="save_info", action="store_true")
+parser.add_argument("--no-save-info", dest="save_info", action="store_false")
+parser.set_defaults(save_info=False)
+parser.add_argument("--map-full", dest="map_full", action="store_true")
+parser.add_argument("--no-map-full", dest="map_full", action="store_false")
+parser.set_defaults(map_full=False)
 
 
 def main():
     args = parser.parse_args()
     n_tasks = args.n_tasks
+    save_info = args.save_info
+    map_full = args.map_full
+    # flag to determine which version of map_sims_cli to run
+    flag = int(save_info) * 2 ** 0 + int(map_full) * 2 ** 1
 
     cfg_fname = args.config
     cfg_path = str(Path(cfg_fname).parent)
@@ -70,7 +80,10 @@ def main():
                 f"--output={cfg_path}/batch-%j.out",
                 f"--error={cfg_path}/batch-%j.err",
                 "--time=30-00:00:00",
-                "map_sims_sbatch.sh", cfg_fname, str(n_start), str(n_stop - 1),
+                "map_sims_sbatch.sh",
+                cfg_fname,
+                str(n_start), str(n_stop - 1),
+                flag,
             ],
             env=environ,
         )
