@@ -94,6 +94,7 @@ def main():
     sim_suite = args.sim_suite
     info_files = extract_fnames(args.info_names_file)
     map_files = extract_fnames(args.map_names_file)
+    radii_file = args.radii_file
     overwrite = args.overwrite
 
     log_fname = f"{log_dir}/save_aperture_masses_{os.getpid()}"
