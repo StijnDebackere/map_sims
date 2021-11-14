@@ -56,6 +56,7 @@ def read_particle_properties(
     ptype: str = None,
     file_num: int = None,
     verbose: bool = False,
+    logger: util.LoggerType = None,
 ) -> dict:
     if sim_suite.lower() not in SIM_SUITE_OPTIONS:
         raise ValueError(f"sim_suite should be in {SIM_SUITE_OPTIONS=}")
@@ -67,6 +68,7 @@ def read_particle_properties(
         "properties": properties,
         "file_num": file_num,
         "verbose": verbose,
+        "logger": logger,
     }
     if sim_suite.lower() == "bahamas":
         props = bahamas.read_particle_properties(**kwargs)

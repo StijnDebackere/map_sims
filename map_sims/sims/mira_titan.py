@@ -63,6 +63,7 @@ def read_particle_properties(
     ptype: str = None,
     file_num: int = None,
     verbose: bool = False,
+    logger: util.LoggerType = None,
 ):
     prop_options = ["coordinates", "masses"]
 
@@ -82,11 +83,16 @@ def read_particle_properties(
 
     props = {}
     if "coordinates" in valid_props:
+        if logger:
+            logger.info(f"Reading coordinates for {sim_dir=} and {snapshot=}")
         data = sim_info.read_properties(
             datatype="snap",
             props=["x", "y", "z"],
             num=file_num,
         )
+        if logger:
+            logger.info(f"Finished reading coordinates for {sim_dir=} and {snapshot=}")
+
         props["coordinates"] = np.vstack(
             [data["x"], data["y"], data["z"]]
         ).T.to("Mpc", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc)))

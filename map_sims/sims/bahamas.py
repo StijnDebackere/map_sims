@@ -82,6 +82,7 @@ def read_particle_properties(
     properties: List[str] = None,
     file_num: int = None,
     verbose: bool = False,
+    logger: util.LoggerType = None,
 ) -> dict:
     ptype_options = PTYPES_TO_BAHAMAS.keys()
 
@@ -105,6 +106,8 @@ def read_particle_properties(
         props["masses"] = np.atleast_1d(snap_info.masses[PTYPES_TO_BAHAMAS[ptype]])
 
     for prop in properties:
+        if logger:
+            logger.info(f"Reading {prop=} for {ptype=} from {sim_dir=} and {snapshot=}")
         if file_num is None:
             props[prop] = snap_info.read_var(var=PROPS_TO_BAHAMAS[ptype][prop])
         else:
@@ -112,6 +115,8 @@ def read_particle_properties(
                 var=PROPS_TO_BAHAMAS[ptype][prop],
                 i=file_num,
             )
+        if logger:
+            logger.info(f"Finished reading {prop=} for {ptype=} from {sim_dir=} and {snapshot=}")
 
     return props
 
