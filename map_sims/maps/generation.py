@@ -431,6 +431,7 @@ def save_map_full(
                 properties=properties,
                 ptype=ptype,
                 file_num=file_num,
+                logger=logger,
                 verbose=verbose,
             )
             attrs = read_sim.read_simulation_attributes(
