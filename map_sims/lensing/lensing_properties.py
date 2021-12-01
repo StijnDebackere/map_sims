@@ -3,7 +3,7 @@ from astropy.cosmology import FlatwCDM
 import astropy.units as u
 import numpy as np
 
-import lensing_sims.tools as tools
+import map_sims.tools as tools
 
 
 def sigma_crit(
