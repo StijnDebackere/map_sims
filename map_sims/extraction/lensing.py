@@ -59,7 +59,7 @@ def compute_lensing_maps(
         "map_thickness": map_thickness,
         "cut_map_size": cut_map_size,
         "maps_sigma": [],
-        "maps_dsigma": [],
+        "maps_dsigma_t": [],
     }
 
     iterator = enumerate(coords)
@@ -75,12 +75,12 @@ def compute_lensing_maps(
             pix_size=pix_size,
             box_size=box_size,
         )
-        dsigma = gen_lensing.dsigma_from_sigma(
+        dsigma_t = gen_lensing.dsigma_t_from_sigma(
             map_sigma=map_cutout,
             pix_size=pix_size,
         )
         results["maps_sigma"].append(map_cutout)
-        results["maps_dsigma"].append(dsigma)
+        results["maps_dsigma_t"].append(dsigma_t)
 
         if idx % 10000 == 0 and logger:
             logger.info(
@@ -88,7 +88,7 @@ def compute_lensing_maps(
             )
 
     results["maps_sigma"] = np.stack(results["maps_sigma"], axis=0)
-    results["maps_dsigma"] = np.stack(results["maps_dsigma"], axis=0)
+    results["maps_dsigma_t"] = np.stack(results["maps_dsigma_t"], axis=0)
     return results
 
 
