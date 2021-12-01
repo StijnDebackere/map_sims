@@ -13,26 +13,6 @@ import map_sims.io as io
 import map_sims.maps.operations as map_ops
 
 
-def get_r_ap_names(r_aps, r2s, rms, bg=False):
-    """Get standardized names for aperture masses."""
-    r_ap_names = []
-    if bg:
-        bg_str = "_bg"
-    else:
-        bg_str = ""
-
-    for r_ap, r2, rm in zip(r_aps, r2s, rms):
-        ann_str = (
-            f"_R2_{str(r2.value).replace('.', 'p')}_"
-            f"Rm_{str(rm.value).replace('.', 'p')}"
-        )
-        r_ap_names.append(
-            f"m_ap_{str(r_ap.value).replace('.', 'p')}{ann_str}{bg_str}"
-        )
-
-    return r_ap_names
-
-
 def compute_aperture_masses(
     map_full: u.Quantity,
     pix_size: u.Quantity,
@@ -106,14 +86,14 @@ def compute_aperture_masses(
         r2s = [None] * r_aps.shape[0]
         rms = [None] * r_aps.shape[0]
 
-    r_ap_names = get_r_ap_names(r_aps=r_aps, r2s=r2s, rms=rms, bg=False)
+    r_ap_names = data.get_r_ap_names(r_aps=r_aps, r2s=r2s, rms=rms, bg=False)
     for name in r_ap_names:
         results[name] = (
             np.zeros(coords.shape[0], dtype=float) * map_full.unit * A_pix.unit
         )
 
     if calc_bg:
-        r_ap_names_bg = get_r_ap_names(r_aps=r_aps, r2s=r2s, rms=rms, bg=True)
+        r_ap_names_bg = data.get_r_ap_names(r_aps=r_aps, r2s=r2s, rms=rms, bg=True)
         return_bg = True
         # save the mean background mass from matter density
         if rho_mean is not None:

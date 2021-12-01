@@ -9,6 +9,26 @@ import map_sims.io as io
 import map_sims.sims.read_sim as read_sim
 
 
+def get_r_ap_names(r_aps, r2s, rms, bg=False):
+    """Get standardized names for aperture masses."""
+    r_ap_names = []
+    if bg:
+        bg_str = "_bg"
+    else:
+        bg_str = ""
+
+    for r_ap, r2, rm in zip(r_aps, r2s, rms):
+        ann_str = (
+            f"_R2_{str(r2.value).replace('.', 'p')}_"
+            f"Rm_{str(rm.value).replace('.', 'p')}"
+        )
+        r_ap_names.append(
+            f"m_ap_{str(r_ap.value).replace('.', 'p')}{ann_str}{bg_str}"
+        )
+
+    return r_ap_names
+
+
 def load_from_info_files(
     sims: List[str],
     info_files: List[str],
