@@ -98,11 +98,41 @@ def sigma_from_shear(
     return sigma
 
 
+def dsigma_t_from_sigma(map_sigma: u.Quantity, pix_size: u.Quantity) -> u.Quantity:
+    """Convert projected surface mass density map to tangential Delta Sigma map.
+
+    Parameters
+    ----------
+    map_sigma : (n, n) astropy.units.Quantity
+        projected surface mass density map
+    pix_size : astropy.units.Quantity
+        physical pixel size
+
+    Returns
+    -------
+    Delta_Sigma_t : (n, n) astropy.units.Quantity
+        tangential excess surface mass density
+    """
+    dims = map_sigma.shape
+    # zero frequency at [0, 0]
+    x, y = np.meshgrid(
+        np.fft.fftfreq(dims[0]) * dims[0],
+        np.fft.fftfreq(dims[1]) * dims[1],
+        indexing="ij",
+    )
+    # unshift, will multiply later with unshifted reverse FFTs
+    phi = np.fft.fftshift(np.arctan2(y, x))
+
+    dsigma = dsigma_from_sigma(map_sigma=map_sigma, pix_size=pix_size)
+    dsigma_t = -1 * np.real(dsigma * np.exp(-2j * phi))
+    return dsigma_t
+
+
 def shear_red_from_sigma(
     map_sigma: u.Quantity,
     pix_size: u.Quantity,
     sigma_crit: u.Quantity,
-    dsigma: Optional[u.Quantity] = None,
+    dsigma_t: Optional[u.Quantity] = None,
 ) -> u.Quantity:
     """Convert projected surface mass density map to reduced tangential shear map.
 
@@ -114,16 +144,16 @@ def shear_red_from_sigma(
         physical pixel size
     sigma_crit : astropy.units.Quantity
         critical surface mass density
-    dsigma : Optional[astropy.units.Quantity]
-        differential surface mass density for map_sigma
+    dsigma_t : Optional[astropy.units.Quantity]
+        differential tangential surface mass density for map_sigma
 
     Returns
     -------
-    Delta_Sigma : (n, n) astropy.units.Quantity
-        tangential excess surface mass density
+    g : (n, n) astropy.units.Quantity
+        reduced shear map
     """
-    if disgma is None:
-        dsigma = dsigma_from_sigma(map_sigma=map_sigma, pix_size=pix_size)
+    if disgma_t is None:
+        dsigma_t = dsigma_t_from_sigma(map_sigma=map_sigma, pix_size=pix_size)
 
-    g = (dsigma / sigma_crit) / (1 - map_sigma / sigma_crit)
+    g = (dsigma_t / sigma_crit) / (1 - map_sigma / sigma_crit)
     return g
