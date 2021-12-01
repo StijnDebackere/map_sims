@@ -65,9 +65,9 @@ def load_from_info_files(
 
     results = dict((sim, {}) for sim in sims)
     for sim, info_file in zip(sims, info_files):
-        coordinates = io.read_from_hdf5(info_file, "coordinates")[selection]
-        group_ids = io.read_from_hdf5(info_file, "group_ids")[selection]
-        masses = io.read_from_hdf5(info_file, "masses")[selection]
+        coordinates = io.read_from_hdf5(info_file, "coordinates")
+        group_ids = io.read_from_hdf5(info_file, "group_ids")
+        masses = io.read_from_hdf5(info_file, "masses")
 
         results[sim]["coordinates"] = coordinates[selection]
         results[sim]["group_ids"] = group_ids[selection]
