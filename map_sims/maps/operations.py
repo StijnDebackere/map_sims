@@ -149,6 +149,23 @@ def shift_image(image: u.Quantity, shift: u.Quantity, pix_size: u.Quantity) -> u
     return image_shifted
 
 
+def average_from_image(
+    R: u.Quantity,
+    image: u.Quantity,
+    pix_size: u.Quantity,
+    R_bins: u.Quantity,
+    fun=np.median,
+    **kwargs,
+):
+    """Return the tangentially average profile from image in R_bins around center."""
+    image_avg = np.zeros(R_bins.shape[0] - 1, dtype=float) * image.unit
+    for idx, (R_min, R_max) in enumerate(zip(R_bins[:-1], R_bins[1:])):
+        selection = (R > R_min) & (R <= R_max)
+        image_avg[idx] = fun(image[selection], **kwargs)
+
+    return image_avg
+
+
 def get_coords_slices(
     coords: u.Quantity, slice_size: u.Quantity, slice_axis: int
 ) -> np.ndarray:
