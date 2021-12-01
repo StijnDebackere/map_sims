@@ -47,6 +47,8 @@ def load_from_info_files(
     extra_dsets : dict
         keys: name for result
         values: dset in info_files for result
+    selection : np.ndarray
+        selection criterion for halos in info_files
 
     Returns
     -------
@@ -117,6 +119,7 @@ def load_map_file(
         pix_size = map_size / map_pix
         map_thickness = io.read_from_hdf5(map_file, "map_thickness")
         snapshot = io.read_from_hdf5(map_file, "snapshot")
+        slice_axis = io.read_from_hdf5(map_file, "slice_axis")
 
         # new files save map_thickness as 1d array, having box_size under key 0
         map_full = io.read_from_hdf5(map_file, "dm_mass/0")
@@ -131,6 +134,7 @@ def load_map_file(
             pix_size = h5_map.attrs["map_size"] / h5_map.attrs["map_pix"] * length_units
             map_thickness = h5_map.attrs["map_thickness"] * length_units
             snapshot = h5_map.attrs["snapshot"]
+            slice_axis = h5_map.attrs["slice_axis"]
 
             z = read_sim.snap_to_z(sim_suite=sim_suite.lower(), snapshots=int(snapshot))
 
@@ -145,6 +149,7 @@ def load_map_file(
         "pix_size": pix_size,
         "map_thickness": map_thickness,
         "snapshot": snapshot,
+        "slice_axis": slice_axis,
         "z": z,
     }
     if logger:

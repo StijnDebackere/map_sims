@@ -148,10 +148,8 @@ def main():
         # strip .hdf5 extension => {slice_axis}_{map_name}_{snapshot:03d}
         map_name = map_file_split[-1][:-5]
 
-        # get snapshot from map_file
+        # get snapshot & slice_axis from map_file
         snapshot = int(map_name[-3:])
-
-        # get slice_axis from map_file
         slice_axis = int(map_name[0])
 
         info_file = None
@@ -214,11 +212,9 @@ def main():
             **kwargs,
             "fname": save_fname,
             "sim": sim_name,
-            "snapshot": snapshot,
             "info_file": info_file,
             "map_file": map_file,
             "rho_mean": rho_mean,
-            "slice_axis": slice_axis,
         }
         batch_parameters.append(kwargs)
         logger.info(f"kwargs for {sim_name}_{snapshot:03d}_{slice_axis} loaded")
@@ -230,10 +226,12 @@ def main():
             try:
                 extraction.save_aperture_masses(**prms)
             except Exception:
+                map_name = prms["map_file"].split("/")[-1][:-5]
+                snap = int(map_name[-3:])
+                sl = int(map_name[0])
+
                 logger.error(f"{prms['fname']} failed with exception", exc_info=True)
-                sim = prms["sim"]
-                snap = prms["snapshot"]
-                with open(f"{log_fname}_{sim}_{snap:03d}.err", "w") as f:
+                with open(f"{log_fname}_{sim}_{sl}_{snap:03d}.err", "w") as f:
                     f.write(traceback.format_exc())
 
     # without sbatch, run multiprocessing through python
@@ -247,10 +245,12 @@ def main():
                 try:
                     future.get()
                 except Exception:
+                    map_name = prms["map_file"].split("/")[-1][:-5]
+                    snap = int(map_name[-3:])
+                    sl = int(map_name[0])
+
                     logger.error(f"{prms['fname']} failed with exception", exc_info=True)
-                    sim = prms["sim"]
-                    snap = prms["snapshot"]
-                    with open(f"{log_fname}_{sim}_{snap:03d}.err", "w") as f:
+                    with open(f"{log_fname}_{sim}_{sl}_{snap:03d}.err", "w") as f:
                         f.write(traceback.format_exc())
 
     tf = time.time()

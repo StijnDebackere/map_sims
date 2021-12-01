@@ -150,8 +150,6 @@ def compute_aperture_masses(
 def save_aperture_masses(
     fname: str,
     sim: str,
-    slice_axis: int,
-    snapshot: int,
     info_file: str,
     extra_dsets: dict,
     map_file: str,
@@ -175,10 +173,6 @@ def save_aperture_masses(
         path to save aperture masses to
     sim : str
         simulation name
-    slice_axis : int
-        axis along which map is projected [0: x, 1: y, 2: z]
-    snapshot : int
-        snapshot of the map
     info_file : str
         filename with halo centers and metadata
     extra_dsets : dict
@@ -224,17 +218,12 @@ def save_aperture_masses(
     )
 
     map_full, metadata = data.load_map_file(sim, map_file, sim_suite=sim_suite, logger=logger)
+    snapshot = metadata["snapshot"]
+    slice_axis = metadata["slice_axis"]
     no_slice_axis = np.arange(0, 3) != slice_axis
 
     if logger:
-        map_file_split = map_file.split("/")
-        sl = int(map_file_split[-1][0])
-        if info_file.endswith(".hdf5"):
-            snap = int(info_file[:-5][-3:])
-        else:
-            raise ValueError(f"{info_file=} should have .hdf5 extension.")
-
-        logger = logger.getChild(f"{os.getpid()}-{sim}_{snap:03d}_{sl}")
+        logger = logger.getChild(f"{os.getpid()}-{sim}_{snapshot:03d}_{slice_axis}")
         logger.info(f"Starting to compute aperture_masses for {info_file=}")
 
     masses_info = compute_aperture_masses(

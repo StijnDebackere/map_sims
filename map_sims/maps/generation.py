@@ -374,12 +374,12 @@ def save_map_full(
     )
     # save initial data
     metadata = {
-        "slice_axis": slice_axis,
         "box_size": box_size,
         "map_size": box_size,
         "map_pix": map_pix,
         "map_thickness": map_thickness,
         "snapshot": snapshot,
+        "slice_axis": slice_axis,
         "sim_dir": sim_dir,
         "method": method,
     }

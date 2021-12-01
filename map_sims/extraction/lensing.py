@@ -95,8 +95,6 @@ def compute_lensing_maps(
 def save_lensing_maps(
     fname: str,
     sim: str,
-    slice_axis: int,
-    snapshot: int,
     info_file: str,
     extra_dsets: dict,
     map_file: str,
@@ -115,10 +113,6 @@ def save_lensing_maps(
         path to save lensing maps to
     sim : str
         simulation name
-    slice_axis : int
-        axis along which map is projected [0: x, 1: y, 2: z]
-    snapshot : int
-        snapshot of the map
     info_file : str
         filename with halo centers and metadata
     extra_dsets : dict
@@ -150,6 +144,8 @@ def save_lensing_maps(
     )
 
     map_full, metadata = data.load_map_file(sim, map_file, sim_suite=sim_suite, logger=logger)
+    snapshot = metadata["snapshot"]
+    slice_axis = metadata["slice_axis"]
     no_slice_axis = np.arange(0, 3) != slice_axis
 
     if logger:
