@@ -131,12 +131,12 @@ def load_map_file(
         with h5py.File(map_file, "r") as h5_map:
             length_units = u.Unit(str(h5_map.attrs["length_units"]))
             box_size = h5_map.attrs["box_size"] * length_units
-            pix_size = h5_map.attrs["map_size"] / h5_map.attrs["map_pix"] * length_units
+            map_size = h5_map.attrs["map_size"] * length_units
+            map_pix = h5_map.attrs["map_pix"]
+            pix_size = map_size / map_pix * length_units
             map_thickness = h5_map.attrs["map_thickness"] * length_units
             snapshot = h5_map.attrs["snapshot"]
             slice_axis = h5_map.attrs["slice_axis"]
-
-            z = read_sim.snap_to_z(sim_suite=sim_suite.lower(), snapshots=int(snapshot))
 
             map_full = h5_map["dm_mass"][()]
             if "DMONLY" not in sim and sim_suite.lower() == "bahamas":
@@ -146,6 +146,7 @@ def load_map_file(
     z = read_sim.snap_to_z(sim_suite=sim_suite.lower(), snapshots=int(snapshot))
     metadata = {
         "box_size": box_size,
+        "map_size": map_size,
         "pix_size": pix_size,
         "map_thickness": map_thickness,
         "snapshot": snapshot,
