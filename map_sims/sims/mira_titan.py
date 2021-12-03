@@ -218,6 +218,7 @@ def save_halo_info_file(
         verbose=False,
     )
     h = sim_info.cosmo["h"]
+    z = sim_info.z
 
     # ensure that save_dir exists
     if save_dir is None:
@@ -338,6 +339,7 @@ def save_halo_info_file(
         "group_ids": group_ids,
         "masses": masses,
         "radii": radii,
+        "z": z,
     }
 
     if coord_range is not None:

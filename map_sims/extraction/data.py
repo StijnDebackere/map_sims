@@ -69,11 +69,13 @@ def load_from_info_files(
         radii = io.read_from_hdf5(info_file, "radii")
         group_ids = io.read_from_hdf5(info_file, "group_ids")
         masses = io.read_from_hdf5(info_file, "masses")
+        z = io.read_from_hdf5(info_file, "z")
 
         results[sim]["coordinates"] = coordinates[selection]
         results[sim]["radii"] = radii[selection]
         results[sim]["group_ids"] = group_ids[selection]
         results[sim]["masses"] = masses[selection]
+        results[sim]["z"] = z
 
         extra = {}
         for name, dset in extra_dsets.items():

@@ -251,6 +251,7 @@ def save_halo_info_file(
         model_dir=sim_dir, file_type="subh", snapnum=snapshot, units=True, comoving=True
     )
     h = group_info.h
+    z = group_info.z
 
     if "FOF" not in mass_dset:
         raise ValueError("group_dset should be a FOF property")
@@ -347,6 +348,7 @@ def save_halo_info_file(
         "radii": radii,
         "masses": masses,
         "group_ids": group_ids,
+        "z": z,
         "radius_dset": radius_dset,
         "mass_dset": mass_dset,
         "mass_range": mass_range,
