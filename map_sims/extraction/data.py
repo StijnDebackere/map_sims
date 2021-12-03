@@ -55,9 +55,9 @@ def load_from_info_files(
     results : dict
         keys: sims
         values: dict
-            keys: [coordinates, masses, group_ids, extra_dsets.keys()]
+            keys: [coordinates, radii, masses, group_ids, extra_dsets.keys()]
             values: dsets from info_file found under
-                    [coordinates, masses, group_ids, extra_dsets.values()]
+                    [coordinates, radii, masses, group_ids, extra_dsets.values()]
 
     """
     if selection is None:
@@ -66,10 +66,12 @@ def load_from_info_files(
     results = dict((sim, {}) for sim in sims)
     for sim, info_file in zip(sims, info_files):
         coordinates = io.read_from_hdf5(info_file, "coordinates")
+        radii = io.read_from_hdf5(info_file, "radii")
         group_ids = io.read_from_hdf5(info_file, "group_ids")
         masses = io.read_from_hdf5(info_file, "masses")
 
         results[sim]["coordinates"] = coordinates[selection]
+        results[sim]["radii"] = radii[selection]
         results[sim]["group_ids"] = group_ids[selection]
         results[sim]["masses"] = masses[selection]
 
