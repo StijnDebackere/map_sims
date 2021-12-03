@@ -241,7 +241,7 @@ def dist(x, y, box_size, axis=-1):
     return np.linalg.norm(np.atleast_1d(dx), axis=axis)
 
 
-def distances_from_centers(
+def distances_from_center(
     center, map_size, pix_size, box_size,
 ):
     """Calculate the distance for a pixel grid with pix_size of physical
@@ -328,7 +328,7 @@ def slice_map_around_center(
     else:
         map_cutout_extra = 1 * map_cutout_size
 
-    pix, dists = distances_from_centers(
+    pix, dists = distances_from_center(
         center=center, map_size=map_cutout_extra, pix_size=pix_size, box_size=box_size
     )
     n_pix = int(pix.shape[0] ** 0.5)
