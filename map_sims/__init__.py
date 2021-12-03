@@ -52,6 +52,7 @@ class Config(object):
 
             self.halo_sample = config["info"].get("halo_sample", None)
             self.mass_dset = config["info"].get("mass_dset", None)
+            self.radius_dset = config["info"].get("radius_dset", None)
             self.extra_dsets = config["info"].get("extra_dsets", None)
             if "sample_haloes_bins" in config["info"].keys():
                 sample_haloes_bins = config["info"]["sample_haloes_bins"]

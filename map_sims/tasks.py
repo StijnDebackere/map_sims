@@ -61,6 +61,7 @@ def save_coords(
     box_size = config.box_sizes[sim_idx]
 
     mass_dset = config.mass_dset
+    radius_dset = config.radius_dset
     mass_range = config.mass_range
     coord_dset = config.coord_dset
     extra_dsets = config.extra_dsets
@@ -84,6 +85,7 @@ def save_coords(
                 sim_dir=str(sim_dir),
                 snapshot=snapshot,
                 mass_dset=mass_dset,
+                radius_dset=radius_dset,
                 coord_dset=coord_dset,
                 mass_range=mass_range,
                 extra_dsets=extra_dsets,

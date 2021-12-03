@@ -323,6 +323,7 @@ def save_halo_info_file(
 
     # only included selection
     coordinates = coordinates[selection]
+    radii = radii[selection]
     masses = masses[selection].to(
         "Msun", equivalencies=u.with_H0(100 * h * u.km / (u.s * u.Mpc))
     )
@@ -336,6 +337,7 @@ def save_halo_info_file(
         "mass_range": mass_range,
         "group_ids": group_ids,
         "masses": masses,
+        "radii": radii,
     }
 
     if coord_range is not None:

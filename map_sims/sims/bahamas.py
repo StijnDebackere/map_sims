@@ -200,6 +200,7 @@ def save_halo_info_file(
     snapshot: int,
     coord_dset: str,
     mass_dset: str,
+    radius_dset: str,
     mass_range: Tuple[u.Quantity, u.Quantity],
     coord_range: u.Quantity = None,
     extra_dsets: List[str] = None,
@@ -224,6 +225,8 @@ def save_halo_info_file(
         hdf5 dataset containing the coordinates
     mass_dset : str
         hdf5 FOF dataset to get masses from
+    radius_dset : str
+        hdf5 FOF dataset to get radii from
     mass_range : (min, max) tuple
         minimum and maximum value for mass_dset
     coord_range : (3, 2) array
@@ -265,6 +268,7 @@ def save_halo_info_file(
     fname = (save_dir / f"{info_fname}_{snapshot:03d}").with_suffix(".hdf5")
 
     coordinates = group_info.read_var(coord_dset, verbose=verbose)
+    radii = group_info.read_var(radius_dset, verbose=verbose)
     masses = group_info.read_var(mass_dset, verbose=verbose)
     group_ids = np.arange(len(masses))
 
@@ -323,6 +327,7 @@ def save_halo_info_file(
             raise ValueError(f"{halo_sample=} not in {halo_sample_options=}")
 
     coordinates = coordinates[selection]
+    radii = radii[selection]
     masses = masses[selection]
     group_ids = group_ids[selection].astype(int)
 
@@ -339,10 +344,12 @@ def save_halo_info_file(
             "description": "File with selected coordinates for maps.",
         },
         "coordinates": coordinates,
+        "radii": radii,
+        "masses": masses,
+        "group_ids": group_ids,
+        "radius_dset": radius_dset,
         "mass_dset": mass_dset,
         "mass_range": mass_range,
-        "group_ids": group_ids,
-        "masses": masses,
         **extra,
     }
 
