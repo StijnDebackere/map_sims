@@ -33,13 +33,13 @@ def compute_aperture_masses(
     Parameters
     ----------
     map_full : astropy.units.Quantity
-        map to compute masses from
+        map(s) to compute masses from
     pix_size : astropy.units.Quantity
         size of map pixels
     box_size : astropy.units.Quantity
         size of simulation box
     map_thickness : astropy.units.Quantity
-        thickness of the map
+        thickness(es) of the map
     coords : astropy.units.Quantity
         coordinates of map_full to center on
     r_aps : astropy.units.Quantity
@@ -124,7 +124,7 @@ def compute_aperture_masses(
 
         for idx_r, (r_ap, r2, rm) in enumerate(zip(r_aps, r2s, rms)):
             name = r_ap_names[idx_r]
-            res = filters.filter_zeta(
+            res = filters.filter_u_zeta(
                 R=dists,
                 maps=map_cutout,
                 A_pix=A_pix,

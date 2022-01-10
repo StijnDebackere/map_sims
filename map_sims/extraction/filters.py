@@ -48,7 +48,7 @@ def sigma_mean(
     return sigma_mean
 
 
-def filter_zeta(
+def filter_u_zeta(
     R: u.Quantity,
     maps: u.Quantity,
     A_pix: u.Quantity,
