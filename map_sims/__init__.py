@@ -45,6 +45,14 @@ class Config(object):
             log10_mass_range = config["info"].get("log10_mass_range", None)
             if log10_mass_range is not None:
                 self.mass_range = 10**np.array(log10_mass_range) * u.Unit(mass_units)
+            else:
+                self.mass_range = None
+
+            coord_range = config["info"].get("coord_range", None)
+            if coord_range is not None:
+                self.coord_range = np.array(coord_range) * box_sizes.unit
+            else:
+                self.coord_range = None
 
             self.info_dir = config["info"].get("info_dir", None)
             self.info_name = config["info"].get("info_name", None)

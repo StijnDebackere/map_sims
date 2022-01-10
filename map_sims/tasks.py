@@ -63,6 +63,7 @@ def save_coords(
     mass_dset = config.mass_dset
     radius_dset = config.radius_dset
     mass_range = config.mass_range
+    coord_range = config.coord_range
     coord_dset = config.coord_dset
     extra_dsets = config.extra_dsets
     save_dir = config.info_paths[sim_idx]
@@ -112,6 +113,7 @@ def save_coords(
                 sim_dir=str(sim_dir),
                 snapshot=snapshot,
                 mass_range=mass_range,
+                coord_range=coord_range,
                 save_dir=save_dir,
                 info_fname=info_fname,
                 sample_haloes_bins=sample_haloes_bins,
