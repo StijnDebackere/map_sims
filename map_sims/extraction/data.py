@@ -126,16 +126,18 @@ def load_map_file(
         slice_axis = io.read_from_hdf5(map_file, "slice_axis")
 
         # new files save map_thickness as 1d array, having box_size under key 0
-        map_full = []
+        map_full = np.empty((map_thickness.shape[0], map_pix, map_pix), dtype=float)
         for idx, thickness in enumerate(map_thickness):
-            mp_full = io.read_from_hdf5(map_file, f"dm_mass/{idx}")[None]
+            map_full[idx] = io.read_from_hdf5(map_file, f"dm_mass/{idx}")[None].value
+
+            if idx == 0:
+                unit = io.read_from_hdf5(map_file, f"dm_mass/{idx}")[None].unit
+
             if "DMONLY" not in sim and sim_suite.lower() == "bahamas":
                 for mass_type in [f"gas_mass/{idx}", f"stars_mass/{idx}", f"bh_mass/{idx}"]:
-                    mp_full += io.read_from_hdf5(map_file, mass_type)[None]
+                    map_full[idx] += io.read_from_hdf5(map_file, mass_type)[None].to_value(unit)
 
-            map_full.append(mp_full)
-
-        map_full = np.squeeze(np.concatenate(map_full, axis=0))
+        map_full = np.squeeze(map_full) * unit
 
     except KeyError:
         with h5py.File(map_file, "r") as h5_map:
