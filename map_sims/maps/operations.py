@@ -130,22 +130,43 @@ def pix_id_array_to_map(pix_id_array):
 
 
 def shift_image(image: u.Quantity, shift: u.Quantity, pix_size: u.Quantity) -> u.Quantity:
-    """Shift image center by vector shift along each axis."""
-    dims = image.shape
+    """Shift image center by vector shift along each axis.
+
+    Parameters
+    ----------
+    image : (..., n_pix, n_pix) array-like
+        image to shift
+    shift : (2,) array
+        shift in units of pix_size along (-2, -1) axes of image
+    pix_size : astropy.units.Quantity
+        pixel size
+
+    Returns
+    -------
+    image_shifted : (..., n_pix, n_pix) array-like
+        image shifted by shift
+    """
+    dims = image.shape[-2:]
 
     indices = np.meshgrid(
         *[
-            np.fft.fftfreq(n, d=pix_size)
-            for n in dims
+            np.fft.fftfreq(n, d=pix_size) for n in dims
         ],
         indexing="ij",
     )
 
     # align dimension axis with shift
-    k_i = np.swapaxes(2 * np.pi * np.array(indices), axis1=0, axis2=-1) / pix_size.unit
-    image_fft_shift = np.fft.fft2(np.fft.ifftshift(image)) * np.exp(1j * np.sum(k_i * shift, axis=-1))
+    k_i = np.swapaxes(2 * np.pi * np.array(indices), axis1=-2, axis2=-1) / pix_size.unit
+    image_fft_shift = np.fft.fft2(
+        np.fft.ifftshift(image, axes=(-2, -1)),
+        axes=(-2, -1),
+    ) * np.exp(1j * np.sum(k_i * shift, axis=-1))
 
-    image_shifted = np.fft.fftshift(np.abs(np.fft.ifft2(image_fft_shift)))
+
+    image_shifted = np.fft.fftshift(
+        np.abs(np.fft.ifft2(image_fft_shift, axes=(-2, -1))),
+        axes=(-2, -1),
+    )
     return image_shifted
 
 
@@ -304,7 +325,7 @@ def slice_map_around_center(
     ----------
     center: astropy.units.Quantity
         coordinate to center on
-    map_full : astropy.units.Quantity
+    map_full : (..., n_pix, n_pix) astropy.units.Quantity
         map to slice from
     map_cutout_size : astropy.units.Quantity
         size of cutout region
@@ -332,18 +353,19 @@ def slice_map_around_center(
         center=center, map_size=map_cutout_extra, pix_size=pix_size, box_size=box_size
     )
     n_pix = int(pix.shape[0] ** 0.5)
-    map_cutout = map_full[pix[:, 0], pix[:, 1]].reshape(n_pix, n_pix)
+    map_cutout = map_full[..., pix[:, 0], pix[:, 1]].reshape(-1, n_pix, n_pix)
 
     if shift_to_center:
         # shifts are always sub-pixel => distances
         map_cutout = shift_image(map_cutout, shift=shift, pix_size=pix_size)
-        map_cutout = map_cutout[1:-1, 1:-1]
+        map_cutout = map_cutout[..., 1:-1, 1:-1]
         dists = pix_dist(
-            a=tools.arrays_to_coords(*[np.arange(i) for i in map_cutout.shape]),
-            b=np.array(map_cutout.shape) / 2,
+            a=tools.arrays_to_coords(*[np.arange(i) for i in map_cutout.shape[-2:]]),
+            b=np.array(map_cutout.shape[-2:]) / 2,
             b_is_pix=True,
         ) * pix_size
 
+    map_cutout = np.squeeze(map_cutout)
     return map_cutout, dists.reshape(map_cutout.shape)
 
 
