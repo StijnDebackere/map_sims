@@ -50,7 +50,7 @@ class Config(object):
 
             coord_range = config["info"].get("coord_range", None)
             if coord_range is not None:
-                self.coord_range = np.array(coord_range) * box_sizes.unit
+                self.coord_range = np.array(coord_range) * self.box_sizes.unit
             else:
                 self.coord_range = None
 
