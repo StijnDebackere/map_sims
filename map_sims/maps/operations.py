@@ -366,7 +366,7 @@ def slice_map_around_center(
         ) * pix_size
 
     map_cutout = np.squeeze(map_cutout)
-    return map_cutout, dists.reshape(map_cutout.shape)
+    return map_cutout, dists.reshape(map_cutout.shape[-2:])
 
 
 def get_slice_around_center(
