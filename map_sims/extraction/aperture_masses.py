@@ -66,6 +66,7 @@ def compute_aperture_masses(
     A_pix = pix_size ** 2
 
     r_aps = np.atleast_1d(r_aps)
+    map_thickness = np.atleast_1d(map_thickness)
 
     results = {
         "R_aps": r_aps,
@@ -86,10 +87,15 @@ def compute_aperture_masses(
         r2s = [None] * r_aps.shape[0]
         rms = [None] * r_aps.shape[0]
 
+    if map_thickness.shape[0] > 1:
+        m_shape = (map_thickness.shape[0], coords.shape[0])
+    else:
+        m_shape = (coords.shape[0])
+
     r_ap_names = data.get_r_ap_names(r_aps=r_aps, r2s=r2s, rms=rms, bg=False)
     for name in r_ap_names:
         results[name] = (
-            np.zeros(coords.shape[0], dtype=float) * map_full.unit * A_pix.unit
+            np.zeros(m_shape, dtype=float) * map_full.unit * A_pix.unit
         )
 
     if calc_bg:
@@ -102,7 +108,7 @@ def compute_aperture_masses(
 
         for name_bg in r_ap_names_bg:
             results[name_bg] = (
-                np.zeros(coords.shape[0], dtype=float) * map_full.unit * A_pix.unit
+                np.zeros(m_shape, dtype=float) * map_full.unit * A_pix.unit
             )
 
     else:
