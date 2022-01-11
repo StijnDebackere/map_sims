@@ -88,7 +88,7 @@ def compute_aperture_masses(
         rms = [None] * r_aps.shape[0]
 
     if map_thickness.shape[0] > 1:
-        m_shape = (map_thickness.shape[0], coords.shape[0])
+        m_shape = (coords.shape[0], map_thickness.shape[0])
     else:
         m_shape = (coords.shape[0])
 
