@@ -42,8 +42,9 @@ def sigma_mean(
         raise ValueError(f"R needs to match final 2 dimensions of sigma: {sigma.shape}")
 
     selection = (R >= R0) & (R <= R1)
-    norm = PI_INV * A_pix / (R1 ** 2 - R0 ** 2)
-    sigma_mean = norm * np.sum(sigma[..., selection], axis=-1)
+
+    # calculate area simply as area of selected pixels -> A_pix drops out
+    sigma_mean = np.sum(sigma[..., selection], axis=-1) / selection.sum()
 
     return sigma_mean
 
