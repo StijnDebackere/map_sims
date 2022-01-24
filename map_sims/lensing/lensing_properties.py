@@ -169,8 +169,8 @@ def shape_noise(
 
 @u.quantity_input
 def sample_gal_pos(
-    n_gal: u.Quantity[u.arcmin ** -2],
-    theta_edges: u.Quantity[u.arcmin],
+    n_gal: u.arcmin ** -2,
+    theta_edges: u.arcmin,
 ) -> u.Quantity:
     """Sample uniform galaxy positions"""
     if not n_gal.unit == theta_edges.unit ** -2:
