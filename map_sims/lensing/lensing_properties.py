@@ -181,7 +181,7 @@ def sample_gal_pos(
     theta_hi = theta_edges[1:]
 
     A = 2 * np.pi * theta_lo * dtheta
-    N = (n * A).value.astype(int)
+    N = (n_gal * A).value.astype(int)
     theta_i = [
         np.random.uniform(t_lo.value, t_hi.value, size=nn) * t_lo.unit
         for t_lo, t_hi, nn in zip(theta_lo, theta_hi, N)
@@ -206,7 +206,7 @@ def sigma_zetac(theta_edges, theta1, theta2, thetam, sigma_gal, n_gal):
         theta1=theta1.value,
         theta2=theta2.value,
         thetam=thetam.value,
-    ) * theta.unit ** -2
+    ) * theta_i.unit ** -2
 
     delta_zetac_i = sigma_gal / (2 ** 0.5 * n_gal) * np.sum(Q_i ** 2) ** 0.5
     return delta_zetac_i
