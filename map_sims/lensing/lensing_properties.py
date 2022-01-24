@@ -1,5 +1,5 @@
 import astropy.constants as constants
-from astropy.cosmology import FlatwCDM
+from astropy.cosmology import FlatwCDM, FLRW
 import astropy.units as u
 import numpy as np
 
@@ -37,7 +37,13 @@ def sigma_crit(
     sigma_crit : array-like
         critical surface mass density for each lens
     """
-    c = FlatwCDM(Om0=cosmo["omega_m"], H0=100 * cosmo["h"], w0=cosmo["w0"])
+    if isinstance(cosmo, dict):
+        c = FlatwCDM(Om0=cosmo["omega_m"], H0=100 * cosmo["h"], w0=cosmo["w0"])
+    elif isinstance(cosmo, FLRW):
+        c = cosmo
+    else:
+        TypeError(f"cannot convert {type(cosmo)=} to astropy.cosmology.FLRW object.")
+
     # [(M_odot / h) / (Mpc / h)]
     alpha = (constants.c ** 2 / (4 * np.pi * constants.G)).to(u.solMass / u.Mpc)
     sigma_crit = (
