@@ -165,3 +165,105 @@ def shape_noise(
     N_bins = 2 * np.pi * nmpch2 * (np.diff(R_bins) * R_centers)
     sigma_bins = sigma_e / (N_bins) ** 0.5
     return sigma_bins
+
+
+def sample_gal_pos(
+    n_gal: u.Quantity,
+    theta_edges: u.Quantity,q
+) -> u.Quantity:
+    """Sample uniform galaxy positions"""
+    if not n_gal.unit == theta_edges.unit ** -2:
+        raise ValueError(f"n_gal should have units {theta_edges.unit ** -2=} not {n_gal.unit}")
+
+    dtheta = np.diff(theta_edges)
+    theta_lo = theta_edges[:-1]
+    theta_hi = theta_edges[1:]
+
+    A = 2 * np.pi * theta_lo * dtheta
+    N = (n * A).value.astype(int)
+    theta_i = [
+        np.random.uniform(t_lo.value, t_hi.value, size=nn) * t_lo.unit
+        for t_lo, t_hi, nn in zip(theta_lo, theta_hi, N)
+    ]
+    return theta_i
+
+
+@np.vectorize
+def Q_zetac(theta, theta1, theta2, thetam):
+    if (theta < theta1) | (theta >= thetam):
+        return np.zeros_like(theta)
+    if (theta >= theta1) & (theta  < theta2):
+        return 1 / (np.pi * theta ** 2)
+    if (theta >= theta2) & (theta < thetam):
+        return 1 / (np.pi * theta ** 2) * 1 / (1 - theta2 ** 2 / thetam ** 2)
+
+
+def sigma_zetac(theta_edges, theta1, theta2, thetam, sigma_gal, n_gal):
+    theta_i = np.concatenate(sample_gal_pos(n_gal, theta_edges))
+    Q_i = Q_zetac(
+        theta=theta_i.value,
+        theta1=theta1.value,
+        theta2=theta2.value,
+        thetam=thetam.value,
+    ) * theta.unit ** -2
+
+    delta_zetac_i = sigma_gal / (2 ** 0.5 * n_gal) * np.sum(Q_i ** 2) ** 0.5
+    return delta_zetac_i
+
+
+def sigma_delta_m(
+        theta1: u.Quantity,
+        theta2: u.Quantity,
+        thetam: u.Quantity,
+        z: float,
+        sigma_gal: float,
+        n_gal: u.Quantity,
+        cosmo: FLRW,
+        beta_mean: float = 0.5,
+        n_bins: int = 10,
+) -> u.Quantity:
+    """Compute the uncertainty in the aperture mass for zeta_c due to
+    background galaxy sampling.
+
+    Parameters
+    ----------
+    theta1 : u.Quantity
+        inner radius for measurement
+    theta2 : u.Quantity
+        inner radius for control annulus
+    thetam : u.Quantity
+        outer radius for control annulus
+    z : float
+        redshift of lens
+    sigma_gal : float
+        galaxy shape noise
+    cosmo : dict or FLRW
+        cosmology
+    beta_mean : float
+        mean lensing efficiency
+    n_bins : int
+        number of bins for the observations
+    """
+    theta_edges = np.linspace(theta1, thetam, n_bins + 1)
+    sigma_zc = sigma_zetac(
+        theta_edges=theta_edges,
+        theta1=theta1,
+        theta2=theta2,
+        thetam=thetam,
+        sigma_gal=sigma_gal,
+        n_gal=n_gal,
+    )
+
+    sigma_m = (
+        np.pi * theta1 ** 2 * sigma_zc
+        * cosmo.kpc_comoving_per_arcmin(z=z).to(
+            u.Mpc / u.arcmin, equivalencies=u.with_H0(cosmo.H0)
+        ) ** 2 * sigma_crit(
+            z_l=z,
+            beta_mean=beta_mean,
+            comoving=True,
+            littleh=False,
+            cosmo=cosmo,
+        )
+    )
+    return sigma_m
