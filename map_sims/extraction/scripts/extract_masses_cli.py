@@ -71,7 +71,7 @@ parser.add_argument(
     "--radii_file",
     default="/cosmo/scratch/debackere/batch_files/r_0p5-1p5_r2_0p5-2p0_rm_3p0.toml",
     type=str,
-    help="toml file containing the section 'radii' with keys r_aps, r_ins and r_out",
+    help="toml file containing the section 'radii' with keys r_aps, r_ins and r_out and unit",
 )
 parser.add_argument("--overwrite", dest="overwrite", action="store_true")
 parser.add_argument("--no-overwrite", dest="overwrite", action="store_false")
@@ -116,6 +116,7 @@ def main():
         raise ValueError(f"{sim_suite=} not recognized")
 
     radii = toml.load(radii_file)["radii"]
+    R_unit = u.Unit(str(radii["unit"]))
     R_aps = np.atleast_1d(radii["r_aps"]) * R_unit
     R2s = np.atleast_1d(radii["r_ins"]) * R_unit
     Rms = np.atleast_1d(radii["r_out"]) * R_unit
