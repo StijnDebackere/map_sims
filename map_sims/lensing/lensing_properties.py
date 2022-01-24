@@ -167,9 +167,10 @@ def shape_noise(
     return sigma_bins
 
 
+@u.quantity_input
 def sample_gal_pos(
-    n_gal: u.Quantity,
-    theta_edges: u.Quantity,q
+    n_gal: u.Quantity[u.arcmin ** -2],
+    theta_edges: u.Quantity[u.arcmin],
 ) -> u.Quantity:
     """Sample uniform galaxy positions"""
     if not n_gal.unit == theta_edges.unit ** -2:
@@ -211,13 +212,14 @@ def sigma_zetac(theta_edges, theta1, theta2, thetam, sigma_gal, n_gal):
     return delta_zetac_i
 
 
+@u.quantity_input
 def sigma_delta_m(
-        theta1: u.Quantity,
-        theta2: u.Quantity,
-        thetam: u.Quantity,
+        theta1: u.arcmin,
+        theta2: u.arcmin,
+        thetam: u.arcmin,
         z: float,
         sigma_gal: float,
-        n_gal: u.Quantity,
+        n_gal: u.arcmin ** -2,
         cosmo: FLRW,
         beta_mean: float = 0.5,
         n_bins: int = 10,
