@@ -76,56 +76,6 @@ def sigma_crit(
     return sigma_crit
 
 
-@u.quantity_input
-def n_mpch2(
-    n_arcmin2: u.arcmin ** -2,
-    z_l: float,
-    cosmo: dict = {"omega_m": 0.315, "w0": -1.0, "h": 0.7},
-    littleh: bool = True,
-    comoving: bool = True,
-) -> u.Quantity:
-    """
-    Convert a mean background galaxy density per arcmin^2 for a lens
-    at redshift z_l to a density per (Mpc/h)^2 assuming cosmo
-
-    Parameters
-    ----------
-    n_arcmin2 : astropy.units.Quantity
-        background galaxy density per arcmin^2
-    z_l : array-like
-        redshift of the lens
-    cosmo : dictionary
-        cosmological information, needs keywords
-        - omega_m
-        - h
-        - w0
-    littleh : bool
-        return littleh units
-    comoving : bool
-        variables are in comoving coordinates
-
-    Returns
-    -------
-    n_mpch2 : array-like
-        background galaxy density per (Mpc/h)^2 for each z_l
-    """
-    cosmo = convert_cosmo(cosmo)
-
-    # arcminute to Mpc/h conversion factor
-    # number density in physical units => area grows in comoving => number density down
-    if comoving:
-        mpch_per_arcmin = c.kpc_comoving_per_arcmin(z=z_l).to(u.Mpc / u.arcmin)
-    else:
-        mpch_per_arcmin = c.kpc_proper_per_arcmin(z=z_l).to(u.Mpc / u.arcmin)
-
-    if littleh:
-        mpch_per_arcmin *= c.h / u.littleh
-
-    # galaxy density is arcmin^-2
-    nmpch2 = n_arcmin2 * mpch_per_arcmin ** (-2)
-    return nmpch2
-
-
 def shape_noise(
     R_bins,
     z_l,
@@ -170,17 +120,26 @@ def shape_noise(
     # (1, R) array or (z, R) array
     R_bins = np.atleast_2d(R_bins)
     R_centers = tools.bin_centers(R_bins, log=log)
-    # (z, 1) array
-    nmpch2 = n_mpch2(
-        n_arcmin2=n_arcmin2,
-        z_l=z_l,
-        cosmo=cosmo,
-        comoving=comoving,
-        littleh=littleh,
-    ).reshape(-1, 1)
+
+    if littleh:
+        R_unit = u.Mpc / u.littleh
+    else:
+        R_unit = u.Mpc
+
+    if comoving:
+        mpc_per_arcmin = cosmo.kpc_comoving_per_arcmin(z=z_l).to(
+            R_unit / u.arcmin, equivalencies=u.with_H0(cosmo.H0)
+        )
+    else:
+        mpc_per_arcmin = cosmo.kpc_proper_per_arcmin(z=z_l).to(
+            R_unit / u.arcmin, equivalencies=u.with_H0(cosmo.H0)
+        )
+
+    theta_bins = R_bins.to(R_unit, equivalencies=u.with_H0(cosmo.H0)) / mpc_per_arcmin
+    theta_centers = R_centers.to(R_unit, equivalencies=u.with_H0(cosmo.H0)) / mpc_per_arcmin
 
     # (z, R) array
-    N_bins = 2 * np.pi * nmpch2 * (np.diff(R_bins) * R_centers)
+    N_bins = 2 * np.pi * n_arcmin2 * (np.diff(R_bins) * R_centers)
     sigma_bins = sigma_e / (N_bins) ** 0.5
     return sigma_bins
 
