@@ -63,11 +63,11 @@ def sigma_crit(
     # [(M_odot / h) / (Mpc / h)]
     alpha = (constants.c ** 2 / (4 * np.pi * constants.G)).to(u.solMass / u.Mpc)
     sigma_crit = (
-        alpha * 1 / (beta_mean * c.angular_diameter_distance(z_l).to(u.Mpc))
+        alpha * 1 / (beta_mean * cosmo.angular_diameter_distance(z_l).to(u.Mpc))
     ).to(u.Msun / u.Mpc ** 2)
 
     if littleh:
-        sigma_crit = sigma_crit / c.h * u.littleh
+        sigma_crit = sigma_crit / cosmo.h * u.littleh
 
     # surface area grows in comoving units => surface mass density goes down
     if comoving:
@@ -83,7 +83,7 @@ def n_mpch2(
     cosmo: dict = {"omega_m": 0.315, "w0": -1.0, "h": 0.7},
     littleh: bool = True,
     comoving: bool = True,
-) -> Union[(u.Mpc / u.littleh) ** -2, u.Mpc ** -2]:
+) -> u.Quantity:
     """
     Convert a mean background galaxy density per arcmin^2 for a lens
     at redshift z_l to a density per (Mpc/h)^2 assuming cosmo
@@ -131,7 +131,7 @@ def shape_noise(
     z_l,
     cosmo={"omega_m": 0.315, "w0": -1.0, "h": 0.7},
     sigma_e=0.25,
-    n_arcmin2=10,
+    n_arcmin2=10 * u.arcmin ** -2,
     littleh=True,
     comoving=True,
     log=False,
@@ -276,10 +276,10 @@ def sigma_delta_m(
 
     sigma_m = (
         np.pi * theta1 ** 2 * sigma_zc
-        * cosmo.kpc_comoving_per_arcmin(z=z).to(
+        * cosmo.kpc_comoving_per_arcmin(z=z_l).to(
             u.Mpc / u.arcmin, equivalencies=u.with_H0(cosmo.H0)
         ) ** 2 * sigma_crit(
-            z_l=z,
+            z_l=z_l,
             beta_mean=beta_mean(z_l=z_l, z_s=z_s, cosmo=cosmo),
             comoving=True,
             littleh=False,
