@@ -19,7 +19,7 @@ def convert_cosmo(cosmo):
     return c
 
 
-def beta_mean(z_l, z_s, cosmo):
+def lensing_efficiency(z_l, z_s, cosmo):
     """Get lensing efficiency for lens at z_l and source at z_s in cosmo."""
     cosmo = convert_cosmo(cosmo)
     D_s = cosmo.angular_diameter_distance(z_s)
@@ -240,6 +240,7 @@ def sigma_delta_m(
         sigma_gal: float,
         n_gal: u.arcmin ** -2,
         cosmo: FLRW,
+        beta_mean: float = None,
         n_bins: int = 10,
 ) -> u.Quantity:
     """Compute the uncertainty in the aperture mass for zeta_c due to
@@ -261,6 +262,8 @@ def sigma_delta_m(
         galaxy shape noise
     cosmo : dict or FLRW
         cosmology
+    beta_mean : Optional[float]
+        mean lensing efficiency, supersedes z_s
     n_bins : int
         number of bins for the observations
     """
@@ -274,13 +277,16 @@ def sigma_delta_m(
         n_gal=n_gal,
     )
 
+    if beta_mean is None:
+        beta_mean = lensing_efficiency(z_l=z_l, z_s=z_s, cosmo=cosmo)
+
     sigma_m = (
         np.pi * theta1 ** 2 * sigma_zc
         * cosmo.kpc_comoving_per_arcmin(z=z_l).to(
             u.Mpc / u.arcmin, equivalencies=u.with_H0(cosmo.H0)
         ) ** 2 * sigma_crit(
             z_l=z_l,
-            beta_mean=beta_mean(z_l=z_l, z_s=z_s, cosmo=cosmo),
+            beta_mean=beta_mean,
             comoving=True,
             littleh=False,
             cosmo=cosmo,
