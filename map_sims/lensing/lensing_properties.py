@@ -191,9 +191,6 @@ def sample_gal_pos(
     theta_edges: u.arcmin,
 ) -> u.Quantity:
     """Sample uniform galaxy positions"""
-    if not n_gal.unit == theta_edges.unit ** -2:
-        raise ValueError(f"n_gal should have units {theta_edges.unit ** -2=} not {n_gal.unit}")
-
     dtheta = np.diff(theta_edges)
     theta_lo = theta_edges[:-1]
     theta_hi = theta_edges[1:]
@@ -219,12 +216,15 @@ def Q_zetac(theta, theta1, theta2, thetam):
 
 def sigma_zetac(theta_edges, theta1, theta2, thetam, sigma_gal, n_gal):
     theta_i = np.concatenate(sample_gal_pos(n_gal, theta_edges))
-    Q_i = Q_zetac(
-        theta=theta_i.value,
-        theta1=theta1.value,
-        theta2=theta2.value,
-        thetam=thetam.value,
-    ) * theta_i.unit ** -2
+    if theta_i.size > 0:
+        Q_i = Q_zetac(
+            theta=theta_i.value,
+            theta1=theta1.value,
+            theta2=theta2.value,
+            thetam=thetam.value,
+        ) * theta_i.unit ** -2
+    else:
+        Q_i = 0.
 
     delta_zetac_i = sigma_gal / (2 ** 0.5 * n_gal) * np.sum(Q_i ** 2) ** 0.5
     return delta_zetac_i
