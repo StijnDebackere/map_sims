@@ -6,6 +6,17 @@ import numpy as np
 import map_sims.tools as tools
 
 
+def convert_cosmo(cosmo):
+    if isinstance(cosmo, dict):
+        c = FlatwCDM(Om0=cosmo["omega_m"], H0=100 * cosmo["h"], w0=cosmo["w0"])
+    elif isinstance(cosmo, FLRW):
+        c = cosmo
+    else:
+        TypeError(f"cannot convert {type(cosmo)=} to astropy.cosmology.FLRW object.")
+
+    return c
+
+
 def sigma_crit(
     z_l,
     beta_mean,
@@ -37,12 +48,7 @@ def sigma_crit(
     sigma_crit : array-like
         critical surface mass density for each lens
     """
-    if isinstance(cosmo, dict):
-        c = FlatwCDM(Om0=cosmo["omega_m"], H0=100 * cosmo["h"], w0=cosmo["w0"])
-    elif isinstance(cosmo, FLRW):
-        c = cosmo
-    else:
-        TypeError(f"cannot convert {type(cosmo)=} to astropy.cosmology.FLRW object.")
+    cosmo = convert_cosmo(cosmo)
 
     # [(M_odot / h) / (Mpc / h)]
     alpha = (constants.c ** 2 / (4 * np.pi * constants.G)).to(u.solMass / u.Mpc)
@@ -93,7 +99,7 @@ def n_mpch2(
         background galaxy density per (Mpc/h)^2 for each z_l
     """
     n_arcmin2 *= 1 / u.arcmin ** 2
-    c = FlatwCDM(Om0=cosmo["omega_m"], H0=100 * cosmo["h"], w0=cosmo["w0"])
+    cosmo = convert_cosmo(cosmo)
     # arcminute to Mpc/h conversion factor
     mpch_per_arcmin = c.kpc_proper_per_arcmin(z=z_l).to(u.Mpc / u.arcmin)
     if littleh:
