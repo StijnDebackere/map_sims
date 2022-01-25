@@ -1,3 +1,5 @@
+from typing import Union
+
 import astropy.constants as constants
 from astropy.cosmology import FlatwCDM, FLRW
 import astropy.units as u
@@ -74,20 +76,21 @@ def sigma_crit(
     return sigma_crit
 
 
+@u.quantity_input
 def n_mpch2(
-    n_arcmin2,
-    z_l,
-    cosmo={"omega_m": 0.315, "w0": -1.0, "h": 0.7},
-    littleh=True,
-    comoving=True,
-):
+    n_arcmin2: u.arcmin ** -2,
+    z_l: float,
+    cosmo: dict = {"omega_m": 0.315, "w0": -1.0, "h": 0.7},
+    littleh: bool = True,
+    comoving: bool = True,
+) -> Union[(u.Mpc / u.littleh) ** -2, u.Mpc ** -2]:
     """
     Convert a mean background galaxy density per arcmin^2 for a lens
     at redshift z_l to a density per (Mpc/h)^2 assuming cosmo
 
     Parameters
     ----------
-    n_arcmin2 : float
+    n_arcmin2 : astropy.units.Quantity
         background galaxy density per arcmin^2
     z_l : array-like
         redshift of the lens
@@ -106,19 +109,20 @@ def n_mpch2(
     n_mpch2 : array-like
         background galaxy density per (Mpc/h)^2 for each z_l
     """
-    n_arcmin2 *= 1 / u.arcmin ** 2
     cosmo = convert_cosmo(cosmo)
+
     # arcminute to Mpc/h conversion factor
-    mpch_per_arcmin = c.kpc_proper_per_arcmin(z=z_l).to(u.Mpc / u.arcmin)
+    # number density in physical units => area grows in comoving => number density down
+    if comoving:
+        mpch_per_arcmin = c.kpc_comoving_per_arcmin(z=z_l).to(u.Mpc / u.arcmin)
+    else:
+        mpch_per_arcmin = c.kpc_proper_per_arcmin(z=z_l).to(u.Mpc / u.arcmin)
+
     if littleh:
         mpch_per_arcmin *= c.h / u.littleh
 
     # galaxy density is arcmin^-2
     nmpch2 = n_arcmin2 * mpch_per_arcmin ** (-2)
-    # number density in physical units => area grows in comoving => number density down
-    if comoving:
-        nmpch2 *= 1 / (1 + z_l) ** 2
-
     return nmpch2
 
 
