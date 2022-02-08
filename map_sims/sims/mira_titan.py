@@ -6,7 +6,6 @@ from pathlib import Path
 import astropy.units as u
 import h5py
 import mira_titan
-from mira_titan import MiraTitan
 import numpy as np
 from tqdm import tqdm
 
@@ -48,7 +47,7 @@ def get_file_nums(
     sim_dir: str,
     snapshot: int,
 ) -> List[int]:
-    sim_info = MiraTitan(
+    sim_info = mira_titan.MiraTitan(
         sim_dir=sim_dir,
         snapnum=snapshot,
         verbose=False,
@@ -74,7 +73,7 @@ def read_particle_properties(
     if not valid_props:
         raise ValueError(f"properties should be in {prop_options=}")
 
-    sim_info = MiraTitan(
+    sim_info = mira_titan.MiraTitan(
         sim_dir=sim_dir,
         snapnum=snapshot,
         verbose=verbose,
@@ -122,7 +121,7 @@ def read_simulation_attributes(
     if not valid_attrs:
         ValueError(f"{attributes.keys()=} should be in {attr_options=}")
 
-    sim_info = MiraTitan(
+    sim_info = mira_titan.MiraTitan(
         sim_dir=sim_dir,
         snapnum=snapshot,
         verbose=verbose,
@@ -212,7 +211,7 @@ def save_halo_info_file(
     saves a set of coordinates to save_dir
 
     """
-    sim_info = MiraTitan(
+    sim_info = mira_titan.MiraTitan(
         sim_dir=sim_dir,
         snapnum=snapshot,
         verbose=False,
