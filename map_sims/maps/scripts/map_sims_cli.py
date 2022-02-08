@@ -17,9 +17,10 @@ parser.add_argument(
     help="configuration filename",
 )
 parser.add_argument(
-    "snapshot",
-    default=401,
+    "-s", "--snapshots",
+    default=[401],
     type=int,
+    nargs="+",
     help="snapshot to evaluate",
 )
 parser.add_argument(
@@ -42,7 +43,7 @@ def main():
 
     # ensure that mira_titan does not claim all resources
     os.environ["OMP_NUM_THREADS"] = "1"
-    snapshot = args.snapshot
+    snapshots = args.snapshots
     sim_ids = args.sim_ids
 
     cfg = tasks.Config(args.config_filename)
@@ -53,26 +54,29 @@ def main():
     print(f"Running {sims=} with {args.save_info=} and {args.project_full=}")
     for sim_idx in sim_ids:
         if args.save_info:
-            print(f"Saving info for {sims[sim_idx]=} and {snapshot=} with {cfg.info_name=}")
-            results_info = tasks.save_info(
-                sim_idx=sim_idx,
-                snapshot=snapshot,
-                config=cfg,
-                logger=None,
-            )
-            print(f"Finished info")
-        if args.project_full:
-            print(f"Saving map_full for {sims[sim_idx]=} and {snapshot=} with {cfg.info_name=}")
-            for slice_axis in slice_axes:
-                results_full = tasks.map_full(
+            for snapshot in snapshots:
+                print(f"Saving info for {sims[sim_idx]=} and {snapshot=} with {cfg.info_name=}")
+                results_info = tasks.save_info(
                     sim_idx=sim_idx,
-                    config=cfg,
                     snapshot=snapshot,
-                    slice_axis=slice_axis,
+                    config=cfg,
                     logger=None,
-                    rng=np.random.default_rng(42),
                 )
-                print(f"Finished {slice_axis=}")
+                print(f"Finished info")
+
+        if args.project_full:
+            for snapshot in snapshots:
+                print(f"Saving map_full for {sims[sim_idx]=} and {snapshot=} with {cfg.info_name=}")
+                for slice_axis in slice_axes:
+                    results_full = tasks.map_full(
+                        sim_idx=sim_idx,
+                        config=cfg,
+                        snapshot=snapshot,
+                        slice_axis=slice_axis,
+                        logger=None,
+                        rng=np.random.default_rng(42),
+                    )
+                    print(f"Finished {snapshot=}, {slice_axis=}")
 
 
 if __name__ == "__main__":
