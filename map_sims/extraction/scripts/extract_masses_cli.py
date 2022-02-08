@@ -10,14 +10,12 @@ info_names_file should contain filenames saved by map_sims.sims.sim.save_halo_in
 
 import argparse
 import os
-import logging
 from multiprocessing import Pool
 import time
 import traceback
 
 import astropy.units as u
 import numpy as np
-import simulation_slices.tasks as tasks
 import toml
 
 import map_sims.extraction.aperture_masses as extraction
