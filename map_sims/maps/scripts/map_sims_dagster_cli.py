@@ -104,7 +104,7 @@ if __name__ == "__main__":
 
     os.environ["DAGSTER_HOME"] = args.dagster_home
     reconstructable_pipeline = build_reconstructable_pipeline(
-        "dagster_cli",
+        "map_sims_dagster_cli",
         "pipeline_factory",
         (),
         {
