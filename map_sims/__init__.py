@@ -39,7 +39,7 @@ class Config(object):
             self.log_level = config["setup"]["log_level"]
             self.log_name_append = config["setup"].get("log_name_append", "")
 
-        # optional info for save_coords
+        # optional info for save_info
         if "info" in config.keys():
             mass_units = config["info"].get("mass_units", None)
             log10_mass_range = config["info"].get("log10_mass_range", None)

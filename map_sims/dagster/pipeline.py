@@ -21,7 +21,7 @@ import .solids as solids
             resource_defs={
                 "io_manager": fs_io_manager,
                 "settings": make_values_resource(
-                    save_coords=bool,
+                    save_info=bool,
                     map_sims=bool,
                 ),
             },
@@ -37,10 +37,10 @@ def pipeline():
             save_info = solids.save_info_solid_factory(
                 sim_idx=sim_idx, snapshot=snapshot, cfg=cfg
             )
-            coords = save_coords()
+            info = save_info()
 
             for slice_axis in cfg.slice_axes:
                 map_sim = solids.map_sim_solid_factory(
                     sim_idx=sim_idx, snapshot=snapshot, slice_axis=slice_axis, cfg=cfg
                 )
-                mapped = map_sim(coords)
+                mapped = map_sim(info)

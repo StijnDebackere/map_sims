@@ -31,9 +31,9 @@ parser.add_argument(
 parser.add_argument("--project-full", dest="project_full", action="store_true")
 parser.add_argument("--no-project-full", dest="project_full", action="store_false")
 parser.set_defaults(project_full=True)
-parser.add_argument("--save-coords", dest="save_coords", action="store_true")
-parser.add_argument("--no-save-coords", dest="save_coords", action="store_false")
-parser.set_defaults(save_coords=False)
+parser.add_argument("--save-info", dest="save_info", action="store_true")
+parser.add_argument("--no-save-info", dest="save_info", action="store_false")
+parser.set_defaults(save_info=False)
 
 
 def main():
@@ -49,17 +49,17 @@ def main():
     sims = [str(d) for d in cfg.sim_dirs]
     slice_axes = cfg.slice_axes
 
-    print(f"Running {sims=} with {args.save_coords=} and {args.project_full=}")
+    print(f"Running {sims=} with {args.save_info=} and {args.project_full=}")
     for sim_idx in sim_ids:
-        if args.save_coords:
-            print(f"Saving coords for {sims[sim_idx]=} and {snapshot=} with {cfg.info_name=}")
-            results_coords = tasks.save_coords(
+        if args.save_info:
+            print(f"Saving info for {sims[sim_idx]=} and {snapshot=} with {cfg.info_name=}")
+            results_info = tasks.save_info(
                 sim_idx=sim_idx,
                 snapshot=snapshot,
                 config=cfg,
                 logger=None,
             )
-            print(f"Finished coords")
+            print(f"Finished info")
         if args.project_full:
             print(f"Saving map_full for {sims[sim_idx]=} and {snapshot=} with {cfg.info_name=}")
             for slice_axis in slice_axes:

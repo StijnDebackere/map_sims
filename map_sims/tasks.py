@@ -43,7 +43,7 @@ def get_logger(sim_idx: int, snapshot: int, config: Config, fname: str) -> loggi
     return logger
 
 
-def save_coords(
+def save_info(
     sim_idx: int,
     snapshot: int,
     config: Union[Config, str],
@@ -69,7 +69,7 @@ def save_coords(
     info_fname = config.info_name
     sample_haloes_bins = config.sample_haloes_bins
     halo_sample = config.halo_sample
-    log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_coords{config.log_name_append}"
+    log_fname = f"{config.sim_dirs[sim_idx]}_{snapshot:03d}_save_info{config.log_name_append}"
 
     if logger is None and config.logging:
         logger = get_logger(

@@ -43,9 +43,9 @@ parser.add_argument(
     dest="dagster_home",
     help="$DAGSTER_HOME location",
 )
-parser.add_argument("--save-coords", dest="save_coords", action="store_true")
-parser.add_argument("--no-save-coords", dest="save_coords", action="store_false")
-parser.set_defaults(save_coords=False)
+parser.add_argument("--save-info", dest="save_info", action="store_true")
+parser.add_argument("--no-save-info", dest="save_info", action="store_false")
+parser.set_defaults(save_info=False)
 parser.add_argument("--map-sims", dest="map_sims", action="store_true")
 parser.add_argument("--no-map-sims", dest="map_sims", action="store_false")
 parser.set_defaults(map_sims=True)
@@ -60,7 +60,7 @@ def pipeline_factory(config_filename: str, n_cpus: int):
                 resource_defs={
                     "io_manager": fs_io_manager,
                     "settings": make_values_resource(
-                        save_coords=bool,
+                        save_info=bool,
                         map_sims=bool,
                     ),
                 },
@@ -81,7 +81,7 @@ def pipeline_factory(config_filename: str, n_cpus: int):
                 save_info = solids.save_info_solid_factory(
                     sim_idx=sim_idx, snapshot=snapshot, cfg=cfg
                 )
-                coords = save_coords()
+                info = save_info()
 
                 for slice_axis in cfg.slice_axes:
                     rng = default_rng(spawned[i])
@@ -92,7 +92,7 @@ def pipeline_factory(config_filename: str, n_cpus: int):
                         rng=rng,
                         cfg=cfg,
                     )
-                    mapped = map_sim(coords)
+                    mapped = map_sim(info)
                     i += 1
 
     return pipeline_with_config
@@ -126,7 +126,7 @@ if __name__ == "__main__":
             "resources": {
                 "settings": {
                     "config": {
-                        "save_coords": args.save_coords,
+                        "save_info": args.save_info,
                         "map_sims": args.map_sims,
                     },
                 },

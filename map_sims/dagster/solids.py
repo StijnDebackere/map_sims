@@ -23,8 +23,8 @@ def save_info_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
         description=f"Save coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}.",
         required_resource_keys={"settings"},
     )
-    def _save_coords(context) -> Nothing:
-        if context.resources.settings["save_coords"]:
+    def _save_info(context) -> Nothing:
+        if context.resources.settings["save_info"]:
             context.log.info(
                 f"Start saving coordinates for {str(cfg.sim_dirs[sim_idx]).replace('.', 'p')} for {snapshot=}"
             )
@@ -32,7 +32,7 @@ def save_info_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
             # run our own logger if cfg.logging
             logger = None
 
-            fname = tasks.save_coords(
+            fname = tasks.save_info(
                 sim_idx=sim_idx, snapshot=snapshot, config=cfg, logger=logger
             )
 
@@ -54,7 +54,7 @@ def save_info_solid_factory(sim_idx: int, snapshot: int, cfg: Config):
 
         yield Output(None)
 
-    return _save_coords
+    return _save_info
 
 
 def map_sim_solid_factory(
