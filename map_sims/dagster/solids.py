@@ -1,3 +1,5 @@
+from typing import Optional
+
 from dagster import (
     solid,
     InputDefinition,
