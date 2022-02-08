@@ -481,7 +481,7 @@ def save_map_full(
 
                 if logger:
                     tf1 = time.time()
-                    logger.info(f"{idx/len(file_nums)}: {file_num=} {dl=} calculated in {tf1 - tl0:.2f}s")
+                    logger.info(f"{idx/len(file_nums) * 100:.1f}%: {file_num=} {dl=} calculated in {tf1 - tl0:.2f}s")
 
                 # save result
                 result = {
@@ -498,11 +498,11 @@ def save_map_full(
 
                 if logger:
                     tl1 = time.time()
-                    logger.info(f"{idx/len(file_nums)}: {file_num=} {dl=} saved in {tl1 - tl0:.2f}s")
+                    logger.info(f"{idx/len(file_nums) * 100:.1f}%: {file_num=} {dl=} saved in {tl1 - tl0:.2f}s")
 
             if logger:
                 tm1 = time.time()
-                logger.info(f"{idx/len(file_nums)}: {file_num=} {map_type=} finished in {tm1 - tm0:.2f}s")
+                logger.info(f"{idx/len(file_nums) * 100:.1f}%: {file_num=} {map_type=} finished in {tm1 - tm0:.2f}s")
 
     if logger:
         t1 = time.time()
