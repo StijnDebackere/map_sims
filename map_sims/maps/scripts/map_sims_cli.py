@@ -71,7 +71,7 @@ def main():
                     logger=None,
                     rng=np.random.default_rng(42),
                 )
-                print("Finished {slice_axis=}")
+                print(f"Finished {slice_axis=}")
 
 
 if __name__ == "__main__":
