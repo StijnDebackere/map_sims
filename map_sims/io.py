@@ -124,13 +124,15 @@ def read_from_hdf5(
     """Read value from h5file[path] following our hdf5 schema."""
     if type(h5file) is str:
         h5file = h5py.File(h5file, "r")
-    if not isinstance(h5file[path], h5py.Dataset):
-        raise ValueError(f"{path} should be a h5py.Dataset, not {type(h5file[path])}")
 
     try:
-        value = h5file[path][()]
-        attrs = {k: v for k, v in h5file[path].attrs.items()}
-        val = from_schema(value=value, attrs=attrs)
+        dset = h5file[path]
+        if not isinstance(dset, h5py.Dataset):
+            raise ValueError(f"{path} should be a h5py.Dataset, not {type(h5file[path])}")
+
+        attrs = {k: v for k, v in dset.attrs.items()}
+        val = from_schema(value=dset[()], attrs=attrs)
+
     except KeyError:
         val = None
 
