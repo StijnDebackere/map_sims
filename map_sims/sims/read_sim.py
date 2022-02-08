@@ -48,6 +48,49 @@ def get_file_nums(
     return file_nums
 
 
+def save_halo_info_file(
+    sim_suite: str,
+    sim_dir: str,
+    snapshot: int,
+    mass_range: Tuple[u.Quantity, u.Quantity],
+    coord_range: u.Quantity = None,
+    coord_dset: str = None,
+    mass_dset: str = None,
+    radius_dset: str = None,
+    extra_dsets: List[str] = None,
+    save_dir: Optional[str] = None,
+    info_fname: Optional[str] = "",
+    sample_haloes_bins: Optional[dict] = None,
+    halo_sample: Optional[str] = None,
+    verbose: bool = False,
+    logger: util.LoggerType = None,
+):
+    kwargs = {
+        "sim_dir": sim_dir,
+        "snapshot": snapshot,
+        "mass_range": mass_range,
+        "coord_range": coord_range,
+        "save_dir": save_dir,
+        "info_fname": info_fname,
+        "sample_haloes_bins": sample_haloes_bins,
+        "halo_sample": halo_sample,
+        "verbose": verbose,
+        "logger": logger,
+    }
+    if sim_suite.lower() == "bahamas":
+        fname = bahamas.save_halo_info_file(
+            coord_dset=coord_dset,
+            mass_dset=mass_dset,
+            radius_dset=radius_dset,
+            extra_dsets=extra_dsets,
+            **kwargs
+        )
+    elif sim_suite.lower() == "miratitan":
+        fname = mira_titan.save_halo_info_file(**kwargs)
+
+    return fname
+
+
 def read_particle_properties(
     sim_suite: str,
     sim_dir: str,

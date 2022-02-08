@@ -183,6 +183,7 @@ def save_halo_info_file(
     info_fname: Optional[str] = "",
     sample_haloes_bins: Optional[dict] = None,
     halo_sample: Optional[str] = None,
+    verbose: Optional[bool] = False,
     logger: util.LoggerType = None,
     **kwargs,
 ) -> str:
@@ -214,7 +215,7 @@ def save_halo_info_file(
     sim_info = mira_titan.MiraTitan(
         sim_dir=sim_dir,
         snapnum=snapshot,
-        verbose=False,
+        verbose=verbose,
     )
     h = sim_info.cosmo["h"]
     z = sim_info.z

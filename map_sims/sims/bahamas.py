@@ -206,9 +206,9 @@ def save_halo_info_file(
     extra_dsets: List[str] = None,
     save_dir: Optional[str] = None,
     info_fname: Optional[str] = "",
+    sample_haloes_bins: Optional[dict] = None,
     halo_sample: Optional[str] = None,
     verbose: Optional[bool] = False,
-    sample_haloes_bins: Optional[dict] = None,
     logger: util.LoggerType = None,
     **kwargs,
 ) -> str:

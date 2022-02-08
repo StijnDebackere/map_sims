@@ -13,8 +13,7 @@ from numpy.random import Generator
 from map_sims import Config
 import map_sims.utilities as util
 import map_sims.maps.generation as map_gen
-import map_sims.sims.bahamas as bahamas
-import map_sims.sims.mira_titan as mira_titan
+import map_sims.sims.read_sim as read_sim
 
 
 def get_logger(sim_idx: int, snapshot: int, config: Config, fname: str) -> logging.Logger:
@@ -80,56 +79,35 @@ def save_coords(
             fname=log_fname,
         )
 
-    if sim_suite.lower() == "bahamas":
-        try:
-            fname = bahamas.save_halo_info_file(
-                sim_dir=str(sim_dir),
-                snapshot=snapshot,
-                mass_dset=mass_dset,
-                radius_dset=radius_dset,
-                coord_dset=coord_dset,
-                mass_range=mass_range,
-                extra_dsets=extra_dsets,
-                save_dir=save_dir,
-                info_fname=info_fname,
-                sample_haloes_bins=sample_haloes_bins,
-                logger=logger,
-                verbose=False,
-            )
-        except Exception as e:
-            fname = []
+    try:
+        read_sim.save_halo_info_file(
+            sim_suite=sim_suite,
+            sim_dir=str(sim_dir),
+            snapshot=snapshot,
+            mass_dset=mass_dset,
+            radius_dset=radius_dset,
+            coord_dset=coord_dset,
+            mass_range=mass_range,
+            coord_range=coord_range,
+            extra_dsets=extra_dsets,
+            save_dir=save_dir,
+            info_fname=info_fname,
+            sample_haloes_bins=sample_haloes_bins,
+            halo_sample=halo_sample,
+            logger=logger,
+            verbose=False,
+        )
 
-            if logger:
-                logger.error("Failed with exception:", exc_info=True)
-                with open(
-                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
-                    "w"
-                ) as f:
-                    f.write(traceback.format_exc())
+    except Exception as e:
+        fname = []
 
-    elif sim_suite.lower() == "miratitan":
-        try:
-            fname = mira_titan.save_halo_info_file(
-                sim_dir=str(sim_dir),
-                snapshot=snapshot,
-                mass_range=mass_range,
-                coord_range=coord_range,
-                save_dir=save_dir,
-                info_fname=info_fname,
-                sample_haloes_bins=sample_haloes_bins,
-                halo_sample=halo_sample,
-                logger=logger,
-            )
-        except Exception as e:
-            fname = []
-
-            if logger:
-                logger.error("Failed with exception:", exc_info=True)
-                with open(
-                    f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
-                    "w"
-                ) as f:
-                    f.write(traceback.format_exc())
+        if logger:
+            logger.error("Failed with exception:", exc_info=True)
+            with open(
+                f"{config.log_dir}/{log_fname}-{time.strftime('%Y%m%d_%H%M', time.localtime())}.err",
+                "w"
+            ) as f:
+                f.write(traceback.format_exc())
 
     end = time.time()
     if logger:
