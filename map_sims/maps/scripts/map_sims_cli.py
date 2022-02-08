@@ -1,6 +1,8 @@
 import argparse
 import os
 
+import numpy as np
+
 import map_sims.tasks as tasks
 
 
@@ -67,7 +69,7 @@ def main():
                     snapshot=snapshot,
                     slice_axis=slice_axis,
                     logger=None,
-                    rng=None,
+                    rng=np.random.default_rng(42),
                 )
                 print("Finished {slice_axis=}")
 
