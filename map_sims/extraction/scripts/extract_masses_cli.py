@@ -125,12 +125,16 @@ def main():
         "r2s": R2s,
         "rms": Rms,
         "overwrite": overwrite,
-        "verbose": False,
         "sim_suite": sim_suite,
         "calc_bg": True,
         "cut_map_size": cut_map_size,
         "logger": logger,
     }
+    # show progress if running only 1
+    if n_cpus > 1:
+        kwargs["verbose"] = False
+    else:
+        kwargs["verbose"] = True
 
     batch_parameters = []
     # ensure that mira_titan does not claim all resources
