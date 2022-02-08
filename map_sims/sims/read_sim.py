@@ -3,8 +3,6 @@ from typing import List, Optional, Tuple
 import astropy.units as u
 import numpy as np
 
-import map_sims.sims.bahamas as bahamas
-import map_sims.sims.mira_titan as mira_titan
 import map_sims.utilities as util
 
 
@@ -20,8 +18,11 @@ def snap_to_z(
         raise ValueError(f"sim_suite should be in {SIM_SUITE_OPTIONS=}")
 
     if sim_suite.lower() == "bahamas":
+        import map_sims.sims.bahamas as bahamas
         z = np.array([bahamas.SNAP_TO_Z[snap] for snap in snapshots])
+
     elif sim_suite.lower() == "miratitan":
+        import map_sims.sims.mira_titan as mira_titan
         z = np.array([mira_titan.STEP_TO_Z[snap] for snap in snapshots])
 
     return z
@@ -40,9 +41,11 @@ def get_file_nums(
         "snapshot": snapshot,
     }
     if sim_suite.lower() == "bahamas":
+        import map_sims.sims.bahamas as bahamas
         file_nums = bahamas.get_file_nums(**kwargs)
 
     elif sim_suite.lower() == "miratitan":
+        import map_sims.sims.mira_titan as mira_titan
         file_nums = mira_titan.get_file_nums(**kwargs)
 
     return file_nums
@@ -78,6 +81,7 @@ def save_halo_info_file(
         "logger": logger,
     }
     if sim_suite.lower() == "bahamas":
+        import map_sims.sims.bahamas as bahamas
         fname = bahamas.save_halo_info_file(
             coord_dset=coord_dset,
             mass_dset=mass_dset,
@@ -85,7 +89,9 @@ def save_halo_info_file(
             extra_dsets=extra_dsets,
             **kwargs
         )
+
     elif sim_suite.lower() == "miratitan":
+        import map_sims.sims.mira_titan as mira_titan
         fname = mira_titan.save_halo_info_file(**kwargs)
 
     return fname
@@ -114,8 +120,11 @@ def read_particle_properties(
         "logger": logger,
     }
     if sim_suite.lower() == "bahamas":
+        import map_sims.sims.bahamas as bahamas
         props = bahamas.read_particle_properties(**kwargs)
+
     elif sim_suite.lower() == "miratitan":
+        import map_sims.sims.mira_titan as mira_titan
         props = mira_titan.read_particle_properties(**kwargs)
 
     return props
@@ -142,8 +151,11 @@ def read_simulation_attributes(
         "verbose": verbose,
     }
     if sim_suite.lower() == "bahamas":
+        import map_sims.sims.bahamas as bahamas
         attrs = bahamas.read_simulation_attributes(**kwargs)
+
     elif sim_suite.lower() == "miratitan":
+        import map_sims.sims.mira_titan as mira_titan
         attrs = mira_titan.read_simulation_attributes(**kwargs)
 
     return attrs
@@ -170,8 +182,11 @@ def read_simulation_cosmo(
         "verbose": verbose,
     }
     if sim_suite.lower() == "bahamas":
+        import map_sims.sims.bahamas as bahamas
         attrs = bahamas.read_simulation_cosmo(**kwargs)
+
     elif sim_suite.lower() == "miratitan":
+        import map_sims.sims.mira_titan as mira_titan
         attrs = mira_titan.read_simulation_cosmo(**kwargs)
 
     return attrs
