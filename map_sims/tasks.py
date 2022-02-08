@@ -80,7 +80,7 @@ def save_info(
         )
 
     try:
-        read_sim.save_halo_info_file(
+        fname = read_sim.save_halo_info_file(
             sim_suite=sim_suite,
             sim_dir=str(sim_dir),
             snapshot=snapshot,
