@@ -263,7 +263,7 @@ def link_sims(
 ):
     """Link hydro_sim and dmo_sim groupnumbers with n_mb matching DM particles."""
     if log_dir is not None and log_fname is not None:
-        logger = tools.get_logger(log_dir=log_dir, fname=log_fname)
+        logger = tools.get_logger(fname=f"{log_dir}/{log_fname}", log_level="INFO")
         verbose = False
 
     else:
@@ -374,7 +374,8 @@ def link_sims(
             )
             procs.append(proc)
             proc.start()
-            logger.info(f"{other_sim=} {i=} passed to pid={proc.pid}")
+            if logger:
+                logger.info(f"{other_sim=} {i=} passed to pid={proc.pid}")
 
     results = []
     for _ in range(len(procs)):
