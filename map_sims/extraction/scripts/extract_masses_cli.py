@@ -131,7 +131,7 @@ def main():
         "logger": logger,
     }
     # show progress if running only 1
-    if n_cpus > 1:
+    if args.max_cpus > 1:
         kwargs["verbose"] = False
     else:
         kwargs["verbose"] = True
