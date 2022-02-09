@@ -200,8 +200,10 @@ def match_group_pids(
 def get_group_pids_mp(
     ref_sim_dir,
     other_sim_dirs,
-    snapnum, cut_var,
+    snapnum,
+    cut_var,
     cut_vals,
+    N,
     verbose=False,
     logger=None,
 ):
@@ -294,6 +296,7 @@ def link_sims(
         snapnum=snapnum,
         cut_var=cut_var,
         cut_vals=cut_vals,
+        N=N,
         verbose=verbose,
     )
 
