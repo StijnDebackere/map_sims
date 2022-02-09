@@ -290,7 +290,7 @@ def link_sims(
     ref_sim = Path(ref_sim_dir).name
     other_sims = [Path(other_sim_dir).name for other_sim_dir in other_sim_dirs]
 
-    pids_groups_ref, pids_groups_other = get_group_pids_mp(
+    pids_groups_ref, pids_groups_others = get_group_pids_mp(
         ref_sim_dir=ref_sim_dir,
         other_sim_dirs=other_sim_dirs,
         snapnum=snapnum,
@@ -315,7 +315,7 @@ def link_sims(
                 # unique key for given cut_var and cut_vals
                 key = (
                     f"{gid:d}_{list(cut_var.keys())[0]}"
-                    f"_{np.log10(cut_vals[0]):.2f}-{np.log10(cut_vals[1]):.2f}"
+                    f"_{np.log10(cut_vals[0].value):.2f}-{np.log10(cut_vals[1].value):.2f}"
                 )
                 if key in f:
                     if np.allclose(f[key][()], pids):
@@ -341,7 +341,7 @@ def link_sims(
                 for gid, pids in pids_groups_others[idx].items():
                     key = (
                         f"{gid:d}_{list(cut_var.keys())[0]}"
-                        f"_{np.log10(cut_vals[0]):.2f}-{np.log10(cut_vals[1]):.2f}"
+                        f"_{np.log10(cut_vals[0].value):.2f}-{np.log10(cut_vals[1].value):.2f}"
                     )
                     if key in f:
                         if np.allclose(f[key][()], pids):
@@ -360,6 +360,7 @@ def link_sims(
                 logger.info(f"saved groups_pids for {other_sim=}")
 
     # bijectively link haloes between ref_sim and other_sims
+    queue = Queue()
     procs = []
     for pids_groups_other, other_sim in zip(pids_groups_others, other_sims):
         for i in range(2):
@@ -426,7 +427,7 @@ def link_sims(
         if h5file:
             key = (
                 f"{other_sims[idx]}_{list(cut_var.keys())[0]}"
-                f"_{np.log10(cut_vals[0]):.2f}-{np.log10(cut_vals[1]):.2f}"
+                f"_{np.log10(cut_vals[0].value):.2f}-{np.log10(cut_vals[1].value):.2f}"
                 f"_n_mb_{n_mb:d}"
             )
             if key in f:
