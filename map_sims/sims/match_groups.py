@@ -197,7 +197,14 @@ def match_group_pids(
     return linked_gids
 
 
-def get_group_pids_mp(ref_sim_dir, other_sim_dirs, snapnum, cut_var, cut_vals, verbose, logger):
+def get_group_pids_mp(
+    ref_sim_dir,
+    other_sim_dirs,
+    snapnum, cut_var,
+    cut_vals,
+    verbose=False,
+    logger=None,
+):
     # set up queue for passing different sim process results
     queue = Queue()
 
