@@ -14,6 +14,8 @@ import h5py
 import numpy as np
 from tqdm import tqdm
 
+import map_sims.tools as tools
+
 
 def on_queue(queue, func, *args, **kwargs):
     res = func(*args, **kwargs)
@@ -261,7 +263,7 @@ def link_sims(
 ):
     """Link hydro_sim and dmo_sim groupnumbers with n_mb matching DM particles."""
     if log_dir is not None and log_fname is not None:
-        logger = get_logger(log_dir=log_dir, fname=log_fname)
+        logger = tools.get_logger(log_dir=log_dir, fname=log_fname)
         verbose = False
 
     else:
