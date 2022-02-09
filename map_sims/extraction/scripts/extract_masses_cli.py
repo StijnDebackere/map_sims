@@ -230,6 +230,7 @@ def main():
                 extraction.save_aperture_masses(**prms)
             except Exception:
                 map_name = prms["map_file"].split("/")[-1][:-5]
+                sim = prms["sim"]
                 snap = int(map_name[-3:])
                 sl = int(map_name[0])
 
@@ -249,6 +250,7 @@ def main():
                     future.get()
                 except Exception:
                     map_name = prms["map_file"].split("/")[-1][:-5]
+                    sim = prms["sim"]
                     snap = int(map_name[-3:])
                     sl = int(map_name[0])
 
