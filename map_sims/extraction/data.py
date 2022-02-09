@@ -128,14 +128,14 @@ def load_map_file(
         # new files save map_thickness as 1d array, having box_size under key 0
         map_full = np.empty((map_thickness.shape[0], map_pix, map_pix), dtype=float)
         for idx, thickness in enumerate(map_thickness):
-            map_full[idx] = io.read_from_hdf5(map_file, f"dm_mass/{idx}")[None].value
+            map_full[idx] = io.read_from_hdf5(map_file, f"dm_mass/{idx}").value
 
             if idx == 0:
-                unit = io.read_from_hdf5(map_file, f"dm_mass/{idx}")[None].unit
+                unit = io.read_from_hdf5(map_file, f"dm_mass/{idx}").unit
 
             if "DMONLY" not in sim and sim_suite.lower() == "bahamas":
                 for mass_type in [f"gas_mass/{idx}", f"stars_mass/{idx}", f"bh_mass/{idx}"]:
-                    map_full[idx] += io.read_from_hdf5(map_file, mass_type)[None].to_value(unit)
+                    map_full[idx] += io.read_from_hdf5(map_file, mass_type).to_value(unit)
 
         map_full = np.squeeze(map_full) * unit
 
