@@ -23,6 +23,7 @@ def compute_aperture_masses(
     r_aps: u.Quantity,
     r2s: u.Quantity,
     rms: u.Quantity,
+    r_sods: Optional[u.Quantity] = None,
     rho_mean: Optional[u.Quantity] = None,
     calc_bg: bool = False,
     verbose: bool = False,
@@ -52,6 +53,8 @@ def compute_aperture_masses(
         mean background matter density of the Universe
     calc_bg : bool
         return mean background masses for each r_ap calculated from R2-Rm annulus
+    r_sods: [Optional: astropy.units.Quantity]
+        spherical overdensity radii
     verbose : bool
         print outputs
     logger : logging.Logger
@@ -114,6 +117,15 @@ def compute_aperture_masses(
     else:
         return_bg = False
 
+    if r_sods is not None:
+        results["m_ap_sod"] = (
+            np.zeros(m_shape, dtype=float) * map_full.unit * A_pix.unit
+        )
+        if calc_bg:
+            results["m_ap_sod_bg"] = (
+                np.zeros(m_shape, dtype=float) * map_full.unit * A_pix.unit
+            )
+
     iterator = enumerate(coords)
     if verbose:
         iterator = tqdm(iterator, total=coords.shape[0], desc="Computing m_aps")
@@ -127,6 +139,21 @@ def compute_aperture_masses(
             pix_size=pix_size,
             box_size=box_size,
         )
+        if r_sods is not None:
+            res = filters.filter_u_zeta(
+                R=dists,
+                maps=map_cutout,
+                A_pix=A_pix,
+                R1=r_sods[idx],
+                R2=r2,
+                Rm=rm,
+                return_bg=return_bg,
+            )
+            if return_bg:
+                results["m_ap_sod"][idx] = res[0]
+                results["m_ap_sod_bg"][idx] = res[1]
+            else:
+                results["m_ap_sod"][idx] = res
 
         for idx_r, (r_ap, r2, rm) in enumerate(zip(r_aps, r2s, rms)):
             name = r_ap_names[idx_r]
@@ -238,6 +265,7 @@ def save_aperture_masses(
         box_size=metadata["box_size"],
         map_thickness=metadata["map_thickness"],
         coords=sim_results[sim]["coordinates"][:, no_slice_axis],
+        r_sods=sim_results[sim]["radii"],
         cut_map_size=cut_map_size,
         r_aps=r_aps,
         r2s=r2s,
