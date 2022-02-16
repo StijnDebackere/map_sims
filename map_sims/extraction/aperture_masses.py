@@ -101,7 +101,7 @@ def compute_aperture_masses(
             np.zeros(m_shape, dtype=float) * map_full.unit * A_pix.unit
         )
         if r_sods is not None:
-            results["m_ap_sod" + "_".join(name.split("_")[3:])] = (
+            results["m_ap_sod_" + "_".join(name.split("_")[3:])] = (
                 np.zeros(m_shape, dtype=float) * map_full.unit * A_pix.unit
             )
 
@@ -118,7 +118,7 @@ def compute_aperture_masses(
                 np.zeros(m_shape, dtype=float) * map_full.unit * A_pix.unit
             )
             if r_sods is not None:
-                results["m_ap_sod" + "_".join(name_bg.split("_")[3:])] = (
+                results["m_ap_sod_" + "_".join(name_bg.split("_")[3:])] = (
                     np.zeros(m_shape, dtype=float) * map_full.unit * A_pix.unit
                 )
 
@@ -168,10 +168,10 @@ def compute_aperture_masses(
                     return_bg=return_bg,
                 )
                 if return_bg:
-                    results["m_ap_sod" + "_".join(name.split("_")[3:])][idx] = res[0]
-                    results["m_ap_sod_bg" + "_".join(name.split("_")[3:])][idx] = res[1]
+                    results["m_ap_sod_" + "_".join(name.split("_")[3:])][idx] = res[0]
+                    results["m_ap_sod_" + "_".join(name.split("_")[3:]) + "_bg"][idx] = res[1]
                 else:
-                    results["m_ap_sod" + "_".join(name.split("_")[3:])][idx] = res
+                    results["m_ap_sod_" + "_".join(name.split("_")[3:])][idx] = res
 
         if idx % 10000 == 0 and logger:
             logger.info(
