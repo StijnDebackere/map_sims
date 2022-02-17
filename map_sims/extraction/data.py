@@ -65,11 +65,11 @@ def load_from_info_files(
 
     results = dict((sim, {}) for sim in sims)
     for sim, info_file in zip(sims, info_files):
-        coordinates = io.read_from_hdf5(info_file, "coordinates")
-        radii = io.read_from_hdf5(info_file, "radii")
-        group_ids = io.read_from_hdf5(info_file, "group_ids")
-        masses = io.read_from_hdf5(info_file, "masses")
-        z = io.read_from_hdf5(info_file, "z")
+        coordinates = io.read_from_hdf5(info_file, "coordinates", close=True)
+        radii = io.read_from_hdf5(info_file, "radii", close=True)
+        group_ids = io.read_from_hdf5(info_file, "group_ids", close=True)
+        masses = io.read_from_hdf5(info_file, "masses", close=True)
+        z = io.read_from_hdf5(info_file, "z", close=True)
 
         results[sim]["coordinates"] = coordinates[selection]
         results[sim]["radii"] = radii[selection]
@@ -79,7 +79,7 @@ def load_from_info_files(
 
         extra = {}
         for name, dset in extra_dsets.items():
-            extra[name] = io.read_from_hdf5(info_file, dset)[selection]
+            extra[name] = io.read_from_hdf5(info_file, dset, close=True)[selection]
 
         results[sim] = {
             **results[sim],
@@ -117,25 +117,25 @@ def load_map_file(
     """
     # read metadata from hdf5 file
     try:
-        box_size = io.read_from_hdf5(map_file, "box_size")
-        map_size = io.read_from_hdf5(map_file, "map_size")
-        map_pix = io.read_from_hdf5(map_file, "map_pix")
+        box_size = io.read_from_hdf5(map_file, "box_size", close=True)
+        map_size = io.read_from_hdf5(map_file, "map_size", close=True)
+        map_pix = io.read_from_hdf5(map_file, "map_pix", close=True)
         pix_size = map_size / map_pix
-        map_thickness = io.read_from_hdf5(map_file, "map_thickness")
-        snapshot = io.read_from_hdf5(map_file, "snapshot")
-        slice_axis = io.read_from_hdf5(map_file, "slice_axis")
+        map_thickness = io.read_from_hdf5(map_file, "map_thickness", close=True)
+        snapshot = io.read_from_hdf5(map_file, "snapshot", close=True)
+        slice_axis = io.read_from_hdf5(map_file, "slice_axis", close=True)
 
         # new files save map_thickness as 1d array, having box_size under key 0
         map_full = np.empty((map_thickness.shape[0], map_pix, map_pix), dtype=float)
         for idx, thickness in enumerate(map_thickness):
-            map_full[idx] = io.read_from_hdf5(map_file, f"dm_mass/{idx}").value
+            map_full[idx] = io.read_from_hdf5(map_file, f"dm_mass/{idx}", close=True).value
 
             if idx == 0:
-                unit = io.read_from_hdf5(map_file, f"dm_mass/{idx}").unit
+                unit = io.read_from_hdf5(map_file, f"dm_mass/{idx}", close=True).unit
 
             if "DMONLY" not in sim and sim_suite.lower() == "bahamas":
                 for mass_type in [f"gas_mass/{idx}", f"stars_mass/{idx}", f"bh_mass/{idx}"]:
-                    map_full[idx] += io.read_from_hdf5(map_file, mass_type).to_value(unit)
+                    map_full[idx] += io.read_from_hdf5(map_file, mass_type, close=True).to_value(unit)
 
         map_full = np.squeeze(map_full) * unit
 

@@ -119,7 +119,7 @@ def write_to_hdf5(
 def read_from_hdf5(
     h5file: Union[h5py.File, str],
     path: str,
-    close: bool = False,
+    close: bool = True,
 ) -> Any:
     """Read value from h5file[path] following our hdf5 schema."""
     if type(h5file) is str:
@@ -199,7 +199,7 @@ def recursively_fill_dict_hdf5(
                 path=new_path,
             )
         elif isinstance(val, h5py.Dataset):
-            data[key] = read_from_hdf5(h5file=h5file, path=new_path)
+            data[key] = read_from_hdf5(h5file=h5file, path=new_path, close=False)
         else:
             # don't know how we would end up here, best to debug...
             breakpoint()
