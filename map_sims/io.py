@@ -246,7 +246,7 @@ def dict_to_hdf5(
         recursively_save_dict_hdf5(h5file=f, path="", data=data, overwrite=overwrite)
 
 
-def hdf5_to_dict(fname: str) -> dict:
+def hdf5_to_dict(fname: str, path="/") -> dict:
     """Load an hdf5 file into a nested dict, possibly containing
     astropy.units.Quantity objects.
 
@@ -254,6 +254,8 @@ def hdf5_to_dict(fname: str) -> dict:
     ----------
     fname : str
         filename to load data from
+    path : str
+        path to start loading from
 
     Returns
     -------
@@ -262,7 +264,7 @@ def hdf5_to_dict(fname: str) -> dict:
 
     """
     with h5py.File(fname, "r") as f:
-        data = recursively_fill_dict_hdf5(h5file=f, path="/")
+        data = recursively_fill_dict_hdf5(h5file=f, path=path)
         if "attrs" in data.keys():
             raise ValueError("attrs is a reserved key for loading hdf5 attributes")
 
