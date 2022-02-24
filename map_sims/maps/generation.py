@@ -483,15 +483,14 @@ def save_map_full(
                     tf1 = time.time()
                     logger.info(f"{idx/len(file_nums) * 100:.1f}%: {file_num=} {dl=} calculated in {tf1 - tl0:.2f}s")
 
-
-                # ensure that we do not overwrite map that is already saved
+                # ensure that we do not overwrite map that is already saved if iterating
                 # read_from_hdf5 returns None if path not in map_name
-                map_saved = io.read_from_hdf5(
-                    h5file=map_name,
-                    path=f"/{map_type}/{idx_l}",
-                    close=True,
-                )
-                if map_saved is not None:
+                if iterate_files and idx > 0:
+                    map_saved = io.read_from_hdf5(
+                        h5file=map_name,
+                        path=f"/{map_type}/{idx_l}",
+                        close=True,
+                    )
                     mp = mp + map_saved
 
                 # save result
