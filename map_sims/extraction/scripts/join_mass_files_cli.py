@@ -47,7 +47,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--log_dir",
-    default=".",
+    default="",
     type=str,
     help="base directory for simulations",
 )

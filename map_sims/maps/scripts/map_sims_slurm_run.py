@@ -34,7 +34,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--log-dir",
-    default="/cosmo/scratch/debackere/logs/",
+    default="",
     type=str,
     dest="log_dir",
     help="path to log files to",
@@ -42,18 +42,19 @@ parser.add_argument(
 parser.add_argument("--save-info", dest="save_info", action="store_true")
 parser.add_argument("--no-save-info", dest="save_info", action="store_false")
 parser.set_defaults(save_info=False)
-parser.add_argument("--map-full", dest="map_full", action="store_true")
-parser.add_argument("--no-map-full", dest="map_full", action="store_false")
-parser.set_defaults(map_full=False)
+parser.add_argument("--project-full", dest="project_full", action="store_true")
+parser.add_argument("--no-project-full", dest="project_full", action="store_false")
+parser.set_defaults(project_full=False)
 
 
 def main():
     args = parser.parse_args()
     n_tasks = args.n_tasks
     save_info = args.save_info
-    map_full = args.map_full
+    project_full = args.project_full
+
     # flag to determine which version of map_sims_cli to run
-    flag = int(save_info) * 2 ** 0 + int(map_full) * 2 ** 1
+    flag = int(save_info) * 2 ** 0 + int(project_full) * 2 ** 1
 
     log_dir = args.log_dir
     cfg_fname = args.config
