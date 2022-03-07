@@ -1,0 +1,5 @@
+["radii"]
+r_aps = [0.5, 1.0, 1.5]
+r_ins = [0.5, 1.0, 1.5]
+r_out = [3.0, 3.0, 3.0]
+unit = "Mpc / littleh"

@@ -15,13 +15,13 @@ swmr = false
 
 [sims]
 base_dir = "/path/to/base_sim_dir/"
-sim_dirs = ['M001', 'M002', 'M003']
-sim_suite = "MiraTitan"
+sim_dirs = ['AGN_TUNED_nu0_L400N1024_WMAP9']
+sim_suite = "BAHAMAS"
 # scalar or list of lists for each sim_dir
-snapshots = [163, 189, 247, 300, 347, 401, 453, 499]
+snapshots = [28, 32]
 slice_axes = [0, 1, 2]
-box_sizes = 2100
-box_sizes_units = "Mpc"
+box_sizes = 400
+box_sizes_units = "Mpc / littleh"
 # any list of 'gas', 'dm', 'stars', 'bh'
 ptypes = ['dm']
 
@@ -34,7 +34,15 @@ info_dir = "/path/to/info_dir/"
 info_name = "clusters_m200c_gt_13p5"
 # masses are read in in M_sun
 log10_mass_range = [13.5, 16.0]
-mass_units = "Msun"
+mass_units = "Msun / littleh"
+
+# datasets storing the halo coordinates, mass and radius
+coord_dset = "FOF/GroupCentreOfPotential"
+mass_dset = "FOF/Group_M_Mean200"
+radius_dset = "FOF/Group_R_Mean200"
+
+# extra datasets to store for each halo
+extra_dsets = ["FOF/Group_M_Crit500", "FOF/Group_M_Crit200"]
 
 [maps]
 # maps are saved as
@@ -50,10 +58,10 @@ map_method = "bin"
 map_types = ['dm_mass']
 
 # details of the map, all in units of box size
-map_pix = 21000
+map_pix = 8000
 # if false, map_thickness can be list of different map_thickness for single sim
 map_full = true
 # only read if map_full = false
 # (possibly nested) list of map_thickness slices for each sim
-map_thickness = [[2100, 1000], 2100, 2100]
-map_units = "Mpc"
+map_thickness = [400]
+map_units = "Mpc / littleh"
