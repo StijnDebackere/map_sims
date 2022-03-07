@@ -169,3 +169,84 @@ def load_map_file(
         logger.debug(f"loaded map from {map_file}")
 
     return map_full, metadata
+
+
+def read_maps(
+    map_file: str,
+    sim_suite: str = "bahamas",
+    map_types: dict = {"dm": "dm_mass"},
+    logger: logging.Logger = None,
+) -> dict:
+    """Load maps for map_types and return metadata.
+
+    Parameters
+    ----------
+    sim : str
+        simulation name
+    sim_suite : str
+        simulation suite, needed for z conversion
+    map_file : str
+        location for map file
+    return_metadata : bool [Default = True]
+        return map metadata
+
+    Returns
+    -------
+    map_full : dict
+        mass map for each map_type
+    metadata : optional, dict
+        metadata for given map
+
+    """
+    # read metadata from hdf5 file
+    map_full = {}
+    try:
+        box_size = io.read_from_hdf5(map_file, "box_size", close=True)
+        map_size = io.read_from_hdf5(map_file, "map_size", close=True)
+        map_pix = io.read_from_hdf5(map_file, "map_pix", close=True)
+        pix_size = map_size / map_pix
+        map_thickness = io.read_from_hdf5(map_file, "map_thickness", close=True)
+        snapshot = io.read_from_hdf5(map_file, "snapshot", close=True)
+        slice_axis = io.read_from_hdf5(map_file, "slice_axis", close=True)
+
+        # new files save map_thickness as 1d array, having box_size under key 0
+        for idx, thickness in enumerate(map_thickness):
+            for name, map_type in map_types.items():
+                if idx == 0:
+                    mp = io.read_from_hdf5(map_file, f"{map_type}/{idx}", close=True)
+                    map_full[name] = np.empty((map_thickness.shape[0], map_pix, map_pix), dtype=float) * mp.unit
+
+                map_full[name][idx] = io.read_from_hdf5(map_file, f"dm_mass/{idx}", close=True).to_value(unit)
+
+        for map_type in map_full:
+            map_full[map_type] = np.squeeze(map_full[map_type])
+
+    except KeyError:
+        map_full = {}
+        with h5py.File(map_file, "r") as h5_map:
+            length_units = u.Unit(str(h5_map.attrs["length_units"]))
+            box_size = h5_map.attrs["box_size"] * length_units
+            map_size = h5_map.attrs["map_size"] * length_units
+            map_pix = h5_map.attrs["map_pix"]
+            pix_size = map_size / map_pix * length_units
+            map_thickness = h5_map.attrs["map_thickness"] * length_units
+            snapshot = h5_map.attrs["snapshot"]
+            slice_axis = h5_map.attrs["slice_axis"]
+
+            for name, map_type in map_types.items():
+                map_full[name] = h5_map[map_type][()]
+
+    z = read_sim.snap_to_z(sim_suite=sim_suite.lower(), snapshots=int(snapshot))
+    metadata = {
+        "box_size": box_size,
+        "map_size": map_size,
+        "pix_size": pix_size,
+        "map_thickness": map_thickness,
+        "snapshot": snapshot,
+        "slice_axis": slice_axis,
+        "z": z,
+    }
+    if logger:
+        logger.debug(f"loaded map from {map_file}")
+
+    return map_full, metadata
