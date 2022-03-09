@@ -2,6 +2,7 @@ from typing import Union
 
 import astropy.constants as constants
 from astropy.cosmology import FlatwCDM, FLRW
+from astropy.cosmology.units import with_H0
 import astropy.units as u
 import numpy as np
 
@@ -128,15 +129,15 @@ def shape_noise(
 
     if comoving:
         mpc_per_arcmin = cosmo.kpc_comoving_per_arcmin(z=z_l).to(
-            R_unit / u.arcmin, equivalencies=u.with_H0(cosmo.H0)
+            R_unit / u.arcmin, equivalencies=with_H0(cosmo.H0)
         )
     else:
         mpc_per_arcmin = cosmo.kpc_proper_per_arcmin(z=z_l).to(
-            R_unit / u.arcmin, equivalencies=u.with_H0(cosmo.H0)
+            R_unit / u.arcmin, equivalencies=with_H0(cosmo.H0)
         )
 
-    theta_bins = R_bins.to(R_unit, equivalencies=u.with_H0(cosmo.H0)) / mpc_per_arcmin
-    theta_centers = R_centers.to(R_unit, equivalencies=u.with_H0(cosmo.H0)) / mpc_per_arcmin
+    theta_bins = R_bins.to(R_unit, equivalencies=with_H0(cosmo.H0)) / mpc_per_arcmin
+    theta_centers = R_centers.to(R_unit, equivalencies=with_H0(cosmo.H0)) / mpc_per_arcmin
 
     # (z, R) array
     N_bins = 2 * np.pi * n_arcmin2 * (np.diff(R_bins) * R_centers)
@@ -191,9 +192,9 @@ def sigma_zetac(theta_edges, theta1, theta2, thetam, sigma_gal, n_gal):
 
 @u.quantity_input
 def sigma_delta_m(
-        theta1: u.arcmin,
-        theta2: u.arcmin,
-        thetam: u.arcmin,
+        theta1: Union[u.arcmin, u.Mpc, u.Mpc / u.littleh],
+        theta2: Union[u.arcmin, u.Mpc, u.Mpc / u.littleh],
+        thetam: Union[u.arcmin, u.Mpc, u.Mpc / u.littleh],
         z_l: float,
         z_s: float,
         sigma_gal: float,
@@ -201,6 +202,7 @@ def sigma_delta_m(
         cosmo: FLRW,
         beta_mean: float = None,
         n_bins: int = 10,
+        comoving=False,
 ) -> u.Quantity:
     """Compute the uncertainty in the aperture mass for zeta_c due to
     background galaxy sampling.
@@ -225,7 +227,23 @@ def sigma_delta_m(
         mean lensing efficiency, supersedes z_s
     n_bins : int
         number of bins for the observations
+    comoving : bool
+        if thetas are passed as lengths, are these lengths comoving?
     """
+    if theta1.unit.is_equivalent(theta2.unit) and theta2.unit.is_equivalent(thetam.unit):
+        if theta1.unit.is_equivalent(u.Mpc) or theta1.unit.is_equivalent(u.Mpc / u.littleh):
+            if comoving:
+                len2angle = 1. / cosmo.kpc_comoving_per_arcmin(z_l).to(u.Mpc / u.arcmin)
+            else:
+                len2angle = 1. / cosmo.kpc_proper_per_arcmin(z_l).to(u.Mpc / u.arcmin)
+
+            theta1 = theta1.to(u.Mpc, equivalencies=with_H0(cosmo.H0)) * len2angle
+            theta2 = theta2.to(u.Mpc, equivalencies=with_H0(cosmo.H0)) * len2angle
+            thetam = thetam.to(u.Mpc, equivalencies=with_H0(cosmo.H0)) * len2angle
+
+    else:
+        raise ValueError("theta1, theta2 and thetam should have consistent units")
+
     theta_edges = np.linspace(theta1, thetam, n_bins + 1)
     sigma_zc = sigma_zetac(
         theta_edges=theta_edges,
@@ -242,7 +260,7 @@ def sigma_delta_m(
     sigma_m = (
         np.pi * theta1 ** 2 * sigma_zc
         * cosmo.kpc_comoving_per_arcmin(z=z_l).to(
-            u.Mpc / u.arcmin, equivalencies=u.with_H0(cosmo.H0)
+            u.Mpc / u.arcmin, equivalencies=with_H0(cosmo.H0)
         ) ** 2 * sigma_crit(
             z_l=z_l,
             beta_mean=beta_mean,
