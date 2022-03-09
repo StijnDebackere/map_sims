@@ -3,8 +3,8 @@ import logging
 import sys
 
 import astropy.units as u
+from astropy.cosmology.units import littleh as h_unit
 import h5py
-
 
 logging.basicConfig(
     level=logging.INFO,
@@ -13,6 +13,11 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout),
     ]
 )
+
+# ensure littleh is recognized as a valid unit
+mpch = u.def_unit("Mpc / littleh", u.Mpc / h_unit)
+mh = u.def_unit("solMass / littleh", u.Msun / h_unit)
+u.add_enabled_units([mpch, mh])
 
 
 def to_schema(
