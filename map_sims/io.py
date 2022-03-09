@@ -15,9 +15,8 @@ logging.basicConfig(
 )
 
 # ensure littleh is recognized as a valid unit
-mpch = u.def_unit("Mpc / littleh", u.Mpc / h_unit)
-mh = u.def_unit("solMass / littleh", u.Msun / h_unit)
-u.add_enabled_units([mpch, mh])
+h_unit = u.def_unit("littleh", h_unit)
+u.add_enabled_units([h_unit])
 
 
 def to_schema(
