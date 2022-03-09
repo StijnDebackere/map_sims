@@ -24,7 +24,7 @@ setuptools.setup(
         ],
     },
     install_requires=[
-        "astropy",
+        "astropy>=5.0",
         "dagster",
         "h5py",
         # "gadget @ https://github.com/StijnDebackere/gadget",
